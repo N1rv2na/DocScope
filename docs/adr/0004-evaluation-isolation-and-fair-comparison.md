@@ -1,6 +1,6 @@
 # ADR 0004：隔离评测标签并同时报告实际与等预算对照
 
-状态：Accepted（设计决策；尚未实现）<br>
+状态：Accepted（DOCS-001 数据隔离与划分已实现；检索、回答和 Agent 对照尚未实现）<br>
 依据：[design.md §7](../design.md)、审查决策 Q2、Q6、Q7、Q10、Q12–Q15。
 
 ## Context
