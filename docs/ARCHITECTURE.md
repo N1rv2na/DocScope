@@ -63,13 +63,13 @@ flowchart TD
 
 - **Qdrant** 保存可检索 Chunk 的 Dense 向量、原文 payload、BM25 全文索引和来源元数据。该路径要求在 M0 固定并验证支持原生全文 BM25 的版本；参见 [ADR 0001](adr/0001-qdrant-hybrid-index.md)。
 - **本地文件存储** 保存上传的原始文件及必要解析产物。其内容与 Qdrant Chunk 通过稳定身份和源位置关联。
-- **远程 LLM** 通过后端配置的 OpenAI-compatible URL、调用标识和模型 ID 访问。开发阶段可使用本机 Magpie 网关；它属于 DocScope 外部环境，不承担项目内模型路由职责。正式 A–E 评测固定单一模型/渠道。
+- **远程 LLM** 通过后端配置的 OpenAI-compatible URL、调用标识和模型 ID 访问。开发与正式 A–E 评测可使用外部 Magpie `group/docscope-free`；它不属于 DocScope 的内部路由层。评测冻结路由组配置，逐次记录可获得的实际模型/渠道与 Token；渠道不可辨时明确标记未知。
 - **轻量状态存储** 保存导入状态；M4 的会话消息和 Checkpoint 职责边界尚未冻结。SQLite 是建议默认，不是已确认的完整数据模型。
 - **外部文档是不可信输入**。检索文本不能成为系统指令；LLM 凭据只在后端，公开产物不得包含凭据、保密材料或未经许可的原始语料。
 - **引用是运行时证据引用**。只有来自实际检索结果的 ID 才能进入答案；ID 合法还需与“内容支持具体结论”分开评估。参见 [ADR 0003](adr/0003-evidence-provenance-and-lifecycle.md)。
 
 ## 离线评测边界
 
-MultiHop-RAG 的文章正文可以进入检索索引；问题参考答案、`evidence_list.fact`、不可回答标签及人工结论只进入 Evaluation。项目自行冻结开发集和封存测试集。文章级召回与支持事实片段级覆盖分别报告；无证据的 `null_query` 不进入 Recall 分母，而用于拒答评测。全部问题可运行离线检索，回答/Agent 对照使用预先固定的分层子集，以遵守远程 LLM 100 元总预算。
+MultiHop-RAG 的文章正文可以进入检索索引；问题参考答案、`evidence_list.fact`、不可回答标签及人工结论只进入 Evaluation。项目自行冻结开发集和封存测试集。文章级召回与支持事实片段级覆盖分别报告；无证据的 `null_query` 不进入 Recall 分母，而用于拒答评测。全部问题可运行离线检索，回答/Agent 对照使用预先固定的分层子集，以保持组间可比性；不设项目级累计金额上限。
 
 对照同时报告实际效果与等预算 D/E 比较；检索、答案、引用、拒答、延迟和费用逐题记录。MultiHop-RAG 用于总体对照，另以人工审查样本验证第二跳依赖前跳证据。参见 [ADR 0004](adr/0004-evaluation-isolation-and-fair-comparison.md)。

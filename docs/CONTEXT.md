@@ -24,7 +24,7 @@
 | M3 秋招展示版 | 同批 Chunk 的 BM25 + Dense + RRF、Reranking、证据驱动的有界多跳 Agent、拒答、SSE 与简要轨迹；公平对照和误差分析 |
 | M4/M5 后续 | 会话级短期记忆、多轮会话、长对话压缩；Docker Compose、完整交付说明与体验完善 |
 
-M1 只是最早可运行成果。M3 的工程完成不预设效果优于单轮 RAG；提升主张只依据封存测试集的实测结果。远程 LLM 调用总费用上限为 100 元人民币。
+M1 只是最早可运行成果。M3 的工程完成不预设效果优于单轮 RAG；提升主张只依据封存测试集的实测结果。远程 LLM 使用外部 Magpie `group/docscope-free`；不设项目级累计金额上限，仍记录 Token、调用量与实际费用，并保留单次运行的有界执行约束。参见 [ADR 0005](adr/0005-llm-route-and-cost-observability.md)。
 
 ## 非目标
 

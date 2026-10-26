@@ -60,8 +60,7 @@ def validate_llm_base_url(base: str) -> None:
         raise FeasibilityError("remote LLM endpoints require HTTPS; HTTP is only allowed on loopback")
 
 
-def calculate_budget(
-    cap_cny: Decimal,
+def estimate_cost(
     prompt_tokens: int,
     completion_tokens: int,
     input_cny_per_million: Decimal,
@@ -69,35 +68,28 @@ def calculate_budget(
     development_calls: int,
     evaluation_calls: int,
     spent_cny: Decimal = Decimal(0),
-    reserve_cny: Decimal = Decimal(0),
 ) -> dict[str, str]:
-    """Project a maximum from one observed call and user-supplied CNY tariffs."""
-    cap_cny = Decimal(cap_cny)
+    """Estimate spend from observed usage and user-supplied CNY tariffs."""
     input_cny_per_million = Decimal(input_cny_per_million)
     output_cny_per_million = Decimal(output_cny_per_million)
     spent_cny = Decimal(spent_cny)
-    reserve_cny = Decimal(reserve_cny)
     if any(not isinstance(value, int) or isinstance(value, bool) for value in (prompt_tokens, completion_tokens)):
         raise FeasibilityError("measured token counts must be integers")
     if prompt_tokens < 0 or completion_tokens < 0 or prompt_tokens + completion_tokens == 0:
         raise FeasibilityError("measured token usage is required")
-    if not all(value.is_finite() for value in (cap_cny, input_cny_per_million, output_cny_per_million, spent_cny, reserve_cny)):
+    if not all(value.is_finite() for value in (input_cny_per_million, output_cny_per_million, spent_cny)):
         raise FeasibilityError("CNY values must be finite")
-    if min(cap_cny, input_cny_per_million, output_cny_per_million, spent_cny, reserve_cny) < 0:
+    if min(input_cny_per_million, output_cny_per_million, spent_cny) < 0:
         raise FeasibilityError("CNY values cannot be negative")
     if development_calls < 0 or evaluation_calls < 0:
         raise FeasibilityError("call counts cannot be negative")
     sample = (Decimal(prompt_tokens) * input_cny_per_million + Decimal(completion_tokens) * output_cny_per_million) / Decimal(1000000)
     projected = sample * (development_calls + evaluation_calls)
-    total = spent_cny + projected + reserve_cny
-    if total > cap_cny:
-        raise FeasibilityError("projected remote LLM cost exceeds CNY cap")
     return {
         "sample_cost_cny": f"{sample:.5f}",
         "projected_cost_cny": f"{projected:.5f}",
         "spent_cny": f"{spent_cny:.5f}",
-        "reserve_cny": f"{reserve_cny:.5f}",
-        "remaining_cny": f"{cap_cny - total:.5f}",
+        "estimated_total_cny": f"{spent_cny + projected:.5f}",
     }
 
 
@@ -246,14 +238,13 @@ def main() -> int:
     qdrant.add_argument("--url", default="http://127.0.0.1:6333")
     llm = sub.add_parser("llm")
     llm.add_argument("--scenario", choices=("short", "evidence"), default="short")
-    budget = sub.add_parser("budget")
-    budget.add_argument("--usage-json", type=Path, required=True)
-    budget.add_argument("--input-cny-per-million", type=Decimal, required=True)
-    budget.add_argument("--output-cny-per-million", type=Decimal, required=True)
-    budget.add_argument("--development-calls", type=int, required=True)
-    budget.add_argument("--evaluation-calls", type=int, required=True)
-    budget.add_argument("--spent-cny", type=Decimal, default=Decimal(0))
-    budget.add_argument("--reserve-cny", type=Decimal, default=Decimal(10))
+    cost = sub.add_parser("cost")
+    cost.add_argument("--usage-json", type=Path, required=True)
+    cost.add_argument("--input-cny-per-million", type=Decimal, required=True)
+    cost.add_argument("--output-cny-per-million", type=Decimal, required=True)
+    cost.add_argument("--development-calls", type=int, required=True)
+    cost.add_argument("--evaluation-calls", type=int, required=True)
+    cost.add_argument("--spent-cny", type=Decimal, default=Decimal(0))
     args = parser.parse_args()
     try:
         if args.command == "local":
@@ -264,9 +255,9 @@ def main() -> int:
             result = probe_llm(args.scenario)
         else:
             usage = json.loads(args.usage_json.read_text(encoding="utf-8"))
-            result = calculate_budget(Decimal(100), usage["prompt_tokens"], usage["completion_tokens"],
-                                      args.input_cny_per_million, args.output_cny_per_million,
-                                      args.development_calls, args.evaluation_calls, args.spent_cny, args.reserve_cny)
+            result = estimate_cost(usage["prompt_tokens"], usage["completion_tokens"],
+                                   args.input_cny_per_million, args.output_cny_per_million,
+                                   args.development_calls, args.evaluation_calls, args.spent_cny)
         print(json.dumps(result, indent=2, ensure_ascii=False))
         return 0
     except Exception as error:

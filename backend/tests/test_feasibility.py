@@ -3,7 +3,7 @@ from decimal import Decimal
 
 from docscope.feasibility import (
     FeasibilityError,
-    calculate_budget,
+    estimate_cost,
     classify_connection_error,
     validate_qdrant_results,
     validate_llm_base_url,
@@ -11,21 +11,19 @@ from docscope.feasibility import (
 
 
 class FeasibilityTest(unittest.TestCase):
-    def test_budget_uses_measured_tokens_and_stays_below_cap(self):
-        result = calculate_budget(100, 220, 80, Decimal("2"), Decimal("8"), 45, 5)
+    def test_cost_estimate_uses_measured_tokens_without_a_total_cap(self):
+        result = estimate_cost(220, 80, Decimal("2"), Decimal("8"), 45, 5)
         self.assertEqual(result["sample_cost_cny"], "0.00108")
         self.assertEqual(result["projected_cost_cny"], "0.05400")
-        self.assertEqual(result["remaining_cny"], "99.94600")
+        self.assertEqual(result["estimated_total_cny"], "0.05400")
+        expensive = estimate_cost(1000000, 0, Decimal("1"), Decimal("0"), 101, 0)
+        self.assertEqual(expensive["estimated_total_cny"], "101.00000")
 
-    def test_budget_rejects_missing_measurement_or_excess(self):
+    def test_cost_estimate_rejects_invalid_measurements(self):
         with self.assertRaisesRegex(FeasibilityError, "measured"):
-            calculate_budget(100, 0, 0, Decimal("1"), Decimal("1"), 1, 0)
-        with self.assertRaisesRegex(FeasibilityError, "exceeds"):
-            calculate_budget(Decimal("0.01"), 1000000, 0, Decimal("1"), Decimal("0"), 1, 0)
-        with self.assertRaisesRegex(FeasibilityError, "exceeds"):
-            calculate_budget(100, 1, 1, Decimal(0), Decimal(0), 0, 0, Decimal(91), Decimal(10))
+            estimate_cost(0, 0, Decimal("1"), Decimal("1"), 1, 0)
         with self.assertRaisesRegex(FeasibilityError, "integer"):
-            calculate_budget(100, "37", 16, Decimal(0), Decimal(0), 1, 0)
+            estimate_cost("37", 16, Decimal(0), Decimal(0), 1, 0)
 
     def test_llm_base_url_allows_local_http_and_remote_https_only(self):
         validate_llm_base_url("http://127.0.0.1:3425/v1")
