@@ -1,6 +1,8 @@
 # MultiHop-RAG 数据合同（DOCS-001）
 
-本目录包含[固定配置](configs/multihop_rag_v1.json)、[样本 ID 划分清单](manifests/multihop_rag_v1.json)及上游原始数据文件。按项目所有者的最新决定，原始文件纳入本地 Git；[归属和权利说明](datasets/raw/README.md)与文件同目录。此阶段没有检索指标、模型调用或 Answer/Agent 评测。
+M0 模型、Qdrant 和费用能力试运行见 [feasibility/README.md](feasibility/README.md) 与 [实测记录](feasibility/result.md)。
+
+本目录包含[固定配置](configs/multihop_rag_v1.json)、[样本 ID 划分清单](manifests/multihop_rag_v1.json)及上游原始数据文件。按项目所有者的最新决定，原始文件纳入本地 Git；[归属和权利说明](datasets/raw/README.md)与文件同目录。DOCS-001 数据合同阶段没有检索指标、模型调用或 Answer/Agent 评测；DOCS-002 只做最小能力试运行。
 
 ## 来源与使用边界
 

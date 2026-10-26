@@ -191,7 +191,7 @@ M3 不交付多轮会话记忆、中文检索能力、文档版本历史、生�
 
 ## 16. Deployment Model
 
-- M1–M3：单用户、本地运行的 React 前端、FastAPI 后端、Qdrant 和本地源文件；Embedding 与 Reranker 在本地推理，LLM 通过远程 API 调用。具体 Provider、模型、版本及凭据配置须在 M0 验证。
+- M1–M3：单用户、本地运行的 React 前端、FastAPI 后端、Qdrant 和本地源文件；Embedding 与 Reranker 在本地推理，LLM 通过 OpenAI-compatible API 调用。开发阶段外部 Magpie 可用 `group/docscope-free`，正式 A–E 评测须固定单一模型/渠道；凭据仅在后端环境。M0 最小调用和 Token 已验证，实际计价与正式预算仍待确定。
 - M3：提供锁定依赖/模型配置、本地启动步骤、评测步骤和固定演示路径；不要求生产级高可用或权限隔离。
 - M5：补充 Docker Compose 与新环境复现说明。远程 LLM 凭据只存在后端环境配置，不提交仓库。
 

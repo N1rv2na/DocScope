@@ -1,0 +1,10 @@
+{
+  "status": "passed",
+  "scenario": "evidence",
+  "configured_model": "group/docscope-free",
+  "response_model": "loomy/DeepSeek-V4.1-Flash",
+  "prompt_tokens": 103,
+  "completion_tokens": 136,
+  "elapsed_seconds": 2.285,
+  "sample_scope": "one evidence-conditioned Chat Completions call through Magpie on 2026-10-26"
+}

@@ -170,11 +170,11 @@ Evaluation（独立离线执行）：MultiHop-RAG + 自建证据依赖/导入场
 | 重排 | Cross-Encoder Reranker | [已确定] | **具体模型与 Top-N 待测** |
 | 评测 | MultiHop-RAG + pytest + 自定义评测代码 | [已确定] | 主 Benchmark + 单元/集成测试 |
 | 部署 | Docker + Docker Compose | [已确定] | M5 完善本地可复现启动；M3 提供本地运行步骤 |
-| LLM | 远程 API | [已确定] | 总调用费用上限 100 元人民币；具体模型/API 合同在 M0 验证 |
+| LLM | 远程 OpenAI-compatible API | [已确定] | 开发阶段通过外部 Magpie 网关使用 `group/docscope-free`；正式 A–E 固定单一模型/渠道；总调用费用上限 100 元人民币。M0 已测最小调用与 Token，实际计价和正式预算仍待验证。Magpie 不属于项目组件。 |
 | Embedding/Reranker | 本地推理 | [已确定] | 具体模型、版本与 CPU 时延在 M0/M2 验证 |
 
 技术选型要服务于评测和演示。LangGraph 是 DocScope 的目标框架；**不应为了增加简历关键词而把整个项目强行绑定多余的 LangChain 抽象**。
-Qdrant 的全文 BM25 评分从 v1.20.0 提供；M0 要固定服务端与客户端版本并做能力检查。若固定版本不支持该路径，应记录兼容性问题并重新审查，不在 M2 临时引入第二套索引。参见 [Qdrant BM25 索引文档](https://qdrant.tech/documentation/manage-data/indexing/) 与 [Hybrid 查询文档](https://qdrant.tech/documentation/search/text-search/hybrid-search/)。
+Qdrant 的全文 BM25 评分从 v1.20.0 提供；DOCS-002 已以服务端 v1.20.0 和 Python 3.10 标准库 REST 客户端完成同批 Chunk 的 Dense/BM25/RRF 最小能力检查，详见 [运行记录](../evaluation/feasibility/result.md)。M2 不引入第二套索引。参见 [Qdrant BM25 索引文档](https://qdrant.tech/documentation/manage-data/indexing/) 与 [Hybrid 查询文档](https://qdrant.tech/documentation/search/text-search/hybrid-search/)。
 
 ## 6. 核心模块详细设计
 

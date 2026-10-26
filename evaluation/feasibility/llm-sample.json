@@ -1,0 +1,9 @@
+{
+  "status": "passed",
+  "configured_model": "group/docscope-free",
+  "response_model": "loomy/DeepSeek-V4.1-Flash",
+  "prompt_tokens": 37,
+  "completion_tokens": 16,
+  "elapsed_seconds": 1.389,
+  "sample_scope": "one short Chat Completions call through Magpie on 2026-10-26"
+}

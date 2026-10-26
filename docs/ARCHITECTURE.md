@@ -63,6 +63,7 @@ flowchart TD
 
 - **Qdrant** 保存可检索 Chunk 的 Dense 向量、原文 payload、BM25 全文索引和来源元数据。该路径要求在 M0 固定并验证支持原生全文 BM25 的版本；参见 [ADR 0001](adr/0001-qdrant-hybrid-index.md)。
 - **本地文件存储** 保存上传的原始文件及必要解析产物。其内容与 Qdrant Chunk 通过稳定身份和源位置关联。
+- **远程 LLM** 通过后端配置的 OpenAI-compatible URL、调用标识和模型 ID 访问。开发阶段可使用本机 Magpie 网关；它属于 DocScope 外部环境，不承担项目内模型路由职责。正式 A–E 评测固定单一模型/渠道。
 - **轻量状态存储** 保存导入状态；M4 的会话消息和 Checkpoint 职责边界尚未冻结。SQLite 是建议默认，不是已确认的完整数据模型。
 - **外部文档是不可信输入**。检索文本不能成为系统指令；LLM 凭据只在后端，公开产物不得包含凭据、保密材料或未经许可的原始语料。
 - **引用是运行时证据引用**。只有来自实际检索结果的 ID 才能进入答案；ID 合法还需与“内容支持具体结论”分开评估。参见 [ADR 0003](adr/0003-evidence-provenance-and-lifecycle.md)。
