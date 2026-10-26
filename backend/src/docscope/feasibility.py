@@ -16,11 +16,10 @@ from decimal import Decimal
 from pathlib import Path
 from urllib.parse import urlsplit
 
+from docscope.embedding import EMBEDDING_MODEL, EMBEDDING_REVISION
 
 QDRANT_VERSION = "1.20.0"
-EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 RERANKER_MODEL = "cross-encoder/ms-marco-MiniLM-L6-v2"
-EMBEDDING_REVISION = "1110a243fdf4706b3f48f1d95db1a4f5529b4d41"
 RERANKER_REVISION = "233902d25c440f23af6f7d6e94d2946bac0bee0a"
 EXAMPLE_CHUNKS = [
     "The Orion telescope was built in 2022 by the North Observatory.",
