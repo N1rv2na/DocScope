@@ -7,7 +7,7 @@ import logging
 import os
 import uuid
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
@@ -15,6 +15,7 @@ from pydantic import BaseModel, Field, field_validator
 
 from docscope.document_store import DocumentStore
 from docscope.embedding import LocalEmbedder
+from docscope.llm import ContextLimitError, OpenAIResponder
 from docscope.markdown import markdown_chunks
 from docscope.qdrant_index import QdrantIndex
 
@@ -33,6 +34,23 @@ class DenseQuery(BaseModel):
         if not value.strip():
             raise ValueError("query cannot be blank")
         return value.strip()
+
+
+class ChatQuestion(BaseModel):
+    question: str = Field(min_length=1, max_length=500)
+
+    @field_validator("question")
+    @classmethod
+    def nonblank_question(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("question cannot be blank")
+        return value.strip()
+
+
+class ModelAnswer(BaseModel):
+    status: Literal["answered", "insufficient_evidence"]
+    answer: str | None
+    citation_ids: list[str]
 
 
 def _validate_upload(file: UploadFile) -> tuple[str, bytes, str]:
@@ -60,10 +78,11 @@ def _validate_upload(file: UploadFile) -> tuple[str, bytes, str]:
     return filename, content, text
 
 
-def create_app(data_dir: Path | None = None, embedder: Any = None, index: Any = None) -> FastAPI:
+def create_app(data_dir: Path | None = None, embedder: Any = None, index: Any = None, llm: Any = None) -> FastAPI:
     root = (data_dir if data_dir is not None else Path(os.getenv("DOCSCOPE_DATA_DIR", "data"))).resolve()
     embedding = embedder if embedder is not None else LocalEmbedder()
     qdrant = index if index is not None else QdrantIndex(os.getenv("QDRANT_URL", "http://127.0.0.1:6333"))
+    responder = llm if llm is not None else OpenAIResponder()
     store: DocumentStore | None = None
     api = FastAPI(title="DocScope", version="0.1.0")
 
@@ -145,11 +164,10 @@ def create_app(data_dir: Path | None = None, embedder: Any = None, index: Any = 
             raise HTTPException(404, "document not found")
         return record
 
-    @api.post("/api/retrieval/dense")
-    def retrieve(request: DenseQuery) -> dict:
+    def dense_evidence(request: DenseQuery) -> list[dict[str, Any]]:
         ready_ids = documents().ready_ids()
         if not ready_ids:
-            return {"evidence": []}
+            return []
         try:
             query_vector = embedding.encode([request.query])[0]
             points = qdrant.query(query_vector, ready_ids, request.limit)
@@ -173,7 +191,69 @@ def create_app(data_dir: Path | None = None, embedder: Any = None, index: Any = 
                 "rank": len(evidence) + 1,
                 "score": point["score"],
             })
-        return {"evidence": evidence}
+        return evidence
+
+    @api.post("/api/retrieval/dense")
+    def retrieve(request: DenseQuery) -> dict:
+        return {"evidence": dense_evidence(request)}
+
+    @api.post("/api/chat", response_model=None)
+    def chat(request: ChatQuestion) -> dict | JSONResponse:
+        run_id = str(uuid.uuid4())
+        try:
+            evidence = dense_evidence(DenseQuery(query=request.question, limit=5))
+        except Exception:
+            logger.exception("Retrieval failed for run %s", run_id)
+            return JSONResponse(status_code=503, content={
+                "run_id": run_id, "status": "error", "error_code": "retrieval_failed",
+                "answer": None, "citations": [],
+            })
+        if not evidence:
+            return {"run_id": run_id, "status": "insufficient_evidence", "answer": None, "citations": []}
+        try:
+            raw = responder.generate(request.question, evidence)
+        except ContextLimitError:
+            return JSONResponse(status_code=422, content={
+                "run_id": run_id, "status": "error", "error_code": "context_limit_exceeded",
+                "answer": None, "citations": [],
+            })
+        except ValueError:
+            logger.exception("Invalid LLM output for run %s", run_id)
+            return JSONResponse(status_code=502, content={
+                "run_id": run_id, "status": "error", "error_code": "model_output_invalid",
+                "answer": None, "citations": [],
+            })
+        except Exception:
+            logger.exception("LLM call failed for run %s", run_id)
+            return JSONResponse(status_code=503, content={
+                "run_id": run_id, "status": "error", "error_code": "model_failed",
+                "answer": None, "citations": [],
+            })
+        try:
+            answer = ModelAnswer.model_validate(raw)
+            if answer.status == "insufficient_evidence":
+                if answer.answer is not None or answer.citation_ids:
+                    raise ValueError("refusal cannot have answer or citations")
+                return {"run_id": run_id, "status": "insufficient_evidence", "answer": None, "citations": []}
+            if not answer.answer or not answer.answer.strip() or not answer.citation_ids:
+                raise ValueError("answer and citations required")
+            by_id = {item["chunk_id"]: item for item in evidence}
+            if any(chunk_id not in by_id for chunk_id in answer.citation_ids):
+                raise ValueError("citation not in this run's evidence")
+            citations = []
+            for chunk_id in dict.fromkeys(answer.citation_ids):
+                item = by_id[chunk_id]
+                citations.append({key: item[key] for key in (
+                    "document_id", "chunk_id", "document_title", "source_path",
+                    "section", "line_start", "chunk_text",
+                )})
+            return {"run_id": run_id, "status": "answered", "answer": answer.answer.strip(), "citations": citations}
+        except (ValueError, KeyError):
+            logger.warning("Rejected invalid model answer for run %s", run_id, exc_info=True)
+            return JSONResponse(status_code=502, content={
+                "run_id": run_id, "status": "error", "error_code": "model_output_invalid",
+                "answer": None, "citations": [],
+            })
 
     return api
 
