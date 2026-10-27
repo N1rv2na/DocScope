@@ -1,0 +1,148 @@
+import { expect, test } from '@playwright/test'
+
+const citation = {
+  document_id: 'doc-1',
+  chunk_id: 'chunk-orion',
+  document_title: 'telescopes.md',
+  source_path: 'documents/doc-1.md',
+  section: 'Telescope Notes > Orion',
+  line_start: 4,
+  chunk_text: 'The Orion telescope was built in 2022 by the North Observatory.',
+}
+
+test('keyboard user uploads Markdown, asks, and opens the original citation', async ({ page }) => {
+  await page.route('**/api/documents', route => route.fulfill({
+    status: 201,
+    json: { document_id: 'doc-1', status: 'ready', filename: 'telescopes.md', chunk_count: 2 },
+  }))
+  await page.route('**/api/chat', route => route.fulfill({
+    json: { run_id: 'run-1', status: 'answered', answer: 'The North Observatory built it.', citations: [citation] },
+  }))
+  await page.goto('/')
+
+  const fileInput = page.getByLabel('Markdown 文件')
+  const fileChooser = page.waitForEvent('filechooser')
+  await page.keyboard.press('Tab')
+  await expect(fileInput).toBeFocused()
+  await expect(fileInput).toHaveCSS('outline-style', 'solid')
+  await page.keyboard.press('Enter')
+  await (await fileChooser).setFiles('../backend/tests/fixtures/telescopes.md')
+  await page.keyboard.press('Tab')
+  await expect(page.getByRole('button', { name: '上传并建立索引' })).toBeFocused()
+  await page.keyboard.press('Enter')
+  await expect(page.getByText('telescopes.md')).toBeVisible()
+  await expect(page.getByText('索引就绪')).toBeVisible()
+  await expect(page.getByRole('button', { name: '上传并建立索引' })).toBeFocused()
+
+  const question = page.getByRole('textbox', { name: '独立英文问题' })
+  await page.keyboard.press('Tab')
+  await expect(question).toBeFocused()
+  await page.keyboard.type('Which observatory built the Orion telescope?')
+  await page.keyboard.press('Tab')
+  await expect(page.getByRole('button', { name: '检索并回答' })).toBeFocused()
+  await page.keyboard.press('Enter')
+  await expect(page.getByText('The North Observatory built it.')).toBeVisible()
+  await expect(page.getByRole('button', { name: '检索并回答' })).toBeFocused()
+  const source = page.locator('summary').filter({ hasText: '查看来源 1' })
+  await page.keyboard.press('Tab')
+  await expect(source).toBeFocused()
+  await expect(source).toContainText('telescopes.md')
+  await expect(source).toContainText('Telescope Notes > Orion')
+  await page.keyboard.press('Enter')
+  await expect(page.getByText(citation.chunk_text)).toBeVisible()
+  await expect(page.getByText('Telescope Notes > Orion · 第 4 行')).toBeVisible()
+})
+
+test('blank question, failed import, and failed model have different messages', async ({ page }) => {
+  let uploadFails = true
+  await page.route('**/api/documents', route => route.fulfill(uploadFails ? {
+    status: 503,
+    json: { document_id: 'doc-failed', status: 'failed', error_code: 'index_failed' },
+  } : {
+    status: 201,
+    json: { document_id: 'doc-ready', status: 'ready', filename: 'telescopes.md', chunk_count: 2 },
+  }))
+  await page.route('**/api/chat', route => route.fulfill({
+    status: 503,
+    json: { run_id: 'run-failed', status: 'error', error_code: 'model_failed', answer: null, citations: [] },
+  }))
+  await page.goto('/')
+  await page.getByRole('button', { name: '检索并回答' }).click()
+  await expect(page.getByRole('alert')).toContainText('请输入问题')
+
+  await page.getByLabel('Markdown 文件').setInputFiles('../backend/tests/fixtures/telescopes.md')
+  await page.getByRole('button', { name: '上传并建立索引' }).click()
+  await expect(page.getByRole('alert')).toContainText('文档索引失败')
+  await expect(page.getByLabel('Markdown 文件')).toHaveAttribute('aria-describedby', /upload-error/)
+
+  uploadFails = false
+  await page.getByRole('button', { name: '上传并建立索引' }).click()
+  await expect(page.getByText('索引就绪')).toBeVisible()
+  await page.getByRole('textbox', { name: '独立英文问题' }).fill('Which observatory built Orion?')
+  await page.getByRole('button', { name: '检索并回答' }).click()
+  await expect(page.getByRole('alert')).toContainText('模型服务调用失败')
+  await expect(page.getByText('The North Observatory built it.')).toHaveCount(0)
+})
+
+test('an insufficient-evidence result is not displayed as a model failure', async ({ page }) => {
+  await page.route('**/api/chat', route => route.fulfill({
+    json: { run_id: 'run-2', status: 'insufficient_evidence', answer: null, citations: [] },
+  }))
+  await page.goto('/')
+  await page.getByRole('textbox', { name: '独立英文问题' }).fill('What is the launch mass?')
+  await page.getByRole('button', { name: '检索并回答' }).click()
+  await expect(page.getByText('当前文档没有足够证据回答这个问题。')).toBeVisible()
+  await expect(page.getByRole('alert')).toHaveCount(0)
+})
+
+test('a failed second import does not mark that file ready', async ({ page }) => {
+  let uploadCount = 0
+  await page.route('**/api/documents', route => {
+    uploadCount += 1
+    return route.fulfill(uploadCount === 1 ? {
+      status: 201,
+      json: { document_id: 'doc-ready', status: 'ready', filename: 'telescopes.md', chunk_count: 2 },
+    } : {
+      status: 503,
+      json: { document_id: 'doc-failed', status: 'failed', error_code: 'parse_failed' },
+    })
+  })
+  await page.goto('/')
+  await page.getByLabel('Markdown 文件').setInputFiles('../backend/tests/fixtures/telescopes.md')
+  await page.getByRole('button', { name: '上传并建立索引' }).click()
+  await expect(page.getByText('索引就绪')).toBeVisible()
+
+  await page.getByLabel('Markdown 文件').setInputFiles({ name: 'headings.md', mimeType: 'text/markdown', buffer: Buffer.from('# No body') })
+  await page.getByRole('button', { name: '上传并建立索引' }).click()
+  await expect(page.getByRole('alert')).toContainText('文档索引失败')
+  await expect(page.getByText('索引就绪')).toHaveCount(0)
+  await expect(page.getByText('此前已索引')).toBeVisible()
+  await expect(page.getByText('telescopes.md')).toBeVisible()
+})
+
+test('context limit error is associated with the question field', async ({ page }) => {
+  await page.route('**/api/chat', route => route.fulfill({
+    status: 422,
+    json: { status: 'error', error_code: 'context_limit_exceeded', run_id: 'run-long', answer: null, citations: [] },
+  }))
+  await page.goto('/')
+  const question = page.getByRole('textbox', { name: '独立英文问题' })
+  await question.fill('What happened?')
+  await page.getByRole('button', { name: '检索并回答' }).click()
+  await expect(page.getByRole('alert')).toContainText('超出本轮上下文限制')
+  await expect(question).toHaveAttribute('aria-invalid', 'true')
+  await expect(question).toHaveAttribute('aria-describedby', 'question-error')
+})
+
+test('long unbroken evidence remains readable on a narrow screen', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 })
+  await page.route('**/api/chat', route => route.fulfill({
+    json: { run_id: 'run-long-chunk', status: 'answered', answer: 'A supported answer.', citations: [{ ...citation, chunk_text: 'X'.repeat(600) }] },
+  }))
+  await page.goto('/')
+  await page.getByRole('textbox', { name: '独立英文问题' }).fill('What happened?')
+  await page.getByRole('button', { name: '检索并回答' }).click()
+  await page.locator('summary').click()
+  const width = await page.evaluate(() => ({ scroll: document.documentElement.scrollWidth, viewport: document.documentElement.clientWidth }))
+  expect(width.scroll).toBeLessThanOrEqual(width.viewport)
+})
