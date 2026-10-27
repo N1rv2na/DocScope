@@ -49,7 +49,8 @@ class OpenAIResponder:
             "question": question,
             "evidence": [
                 {"chunk_id": item["chunk_id"], "document_title": item["document_title"],
-                 "section": item["section"], "chunk_text": item["chunk_text"]}
+                 "page_number": item.get("page_number"), "section": item["section"],
+                 "chunk_text": item["chunk_text"]}
                 for item in evidence
             ],
         })

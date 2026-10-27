@@ -1,4 +1,4 @@
-"""M1 Markdown upload and Dense Evidence API; no answer generation yet."""
+"""M1 Markdown/PDF upload, Dense Evidence and single-question answering API."""
 
 from __future__ import annotations
 
@@ -17,6 +17,7 @@ from docscope.document_store import DocumentStore
 from docscope.embedding import LocalEmbedder
 from docscope.llm import ContextLimitError, OpenAIResponder
 from docscope.markdown import markdown_chunks
+from docscope.pdf import pdf_chunks
 from docscope.qdrant_index import QdrantIndex
 
 
@@ -53,7 +54,7 @@ class ModelAnswer(BaseModel):
     citation_ids: list[str]
 
 
-def _validate_upload(file: UploadFile) -> tuple[str, bytes, str]:
+def _validate_upload(file: UploadFile) -> tuple[str, bytes, str | None]:
     filename = file.filename or ""
     disposition = file.headers.get("content-disposition", "")
     # Multipart parsers can reduce Windows paths to a basename. Check the raw
@@ -64,11 +65,14 @@ def _validate_upload(file: UploadFile) -> tuple[str, bytes, str]:
         raise HTTPException(400, "unsafe filename")
     if any(ord(char) < 32 for char in filename):
         raise HTTPException(400, "unsafe filename")
-    if Path(filename).suffix.lower() not in {".md", ".markdown"}:
-        raise HTTPException(415, "only Markdown files are supported")
+    suffix = Path(filename).suffix.lower()
+    if suffix not in {".md", ".markdown", ".pdf"}:
+        raise HTTPException(415, "only Markdown and PDF files are supported")
     content = file.file.read(MAX_UPLOAD_BYTES + 1)
     if len(content) > MAX_UPLOAD_BYTES:
-        raise HTTPException(413, "Markdown file exceeds 1 MiB")
+        raise HTTPException(413, "file exceeds 1 MiB")
+    if suffix == ".pdf":
+        return filename, content, None
     try:
         text = content.decode("utf-8")
     except UnicodeDecodeError as error:
@@ -96,7 +100,8 @@ def create_app(data_dir: Path | None = None, embedder: Any = None, index: Any = 
     def upload_document(file: UploadFile = File(...)) -> dict | JSONResponse:
         filename, content, text = _validate_upload(file)
         document_id = str(uuid.uuid4())
-        source_path = f"documents/{document_id}.md"
+        is_pdf = Path(filename).suffix.lower() == ".pdf"
+        source_path = f"documents/{document_id}{'.pdf' if is_pdf else '.md'}"
         document_store = documents()
         document_store.create(document_id, filename, source_path, hashlib.sha256(content).hexdigest())
         stage = "storage_failed"
@@ -104,9 +109,9 @@ def create_app(data_dir: Path | None = None, embedder: Any = None, index: Any = 
         try:
             (root / source_path).write_bytes(content)
             stage = "parse_failed"
-            chunks = markdown_chunks(text)
+            chunks = pdf_chunks(content) if is_pdf else markdown_chunks(text or "")
             if not chunks:
-                raise ValueError("Markdown has no indexable body")
+                raise ValueError("document has no extractable text")
             stage = "embedding_failed"
             vectors = embedding.encode([chunk["chunk_text"] for chunk in chunks])
             if len(vectors) != len(chunks) or any(not vector for vector in vectors):
@@ -121,10 +126,11 @@ def create_app(data_dir: Path | None = None, embedder: Any = None, index: Any = 
                         "document_id": document_id,
                         "chunk_id": chunk_id,
                         "document_title": filename,
-                        "source_type": "markdown",
+                        "source_type": "pdf" if is_pdf else "markdown",
                         "source_path": source_path,
-                        "section": chunk["section"],
-                        "line_start": chunk["line_start"],
+                        "page_number": chunk.get("page_number"),
+                        "section": chunk.get("section"),
+                        "line_start": chunk.get("line_start"),
                         "chunk_text": chunk["chunk_text"],
                         "content_hash": hashlib.sha256(content).hexdigest(),
                         "index_version": 1,
@@ -184,6 +190,7 @@ def create_app(data_dir: Path | None = None, embedder: Any = None, index: Any = 
                 "chunk_id": payload["chunk_id"],
                 "document_title": payload["document_title"],
                 "source_path": payload["source_path"],
+                "page_number": payload.get("page_number"),
                 "section": payload["section"],
                 "line_start": payload["line_start"],
                 "chunk_text": payload["chunk_text"],
@@ -245,7 +252,7 @@ def create_app(data_dir: Path | None = None, embedder: Any = None, index: Any = 
                 item = by_id[chunk_id]
                 citations.append({key: item[key] for key in (
                     "document_id", "chunk_id", "document_title", "source_path",
-                    "section", "line_start", "chunk_text",
+                    "page_number", "section", "line_start", "chunk_text",
                 )})
             return {"run_id": run_id, "status": "answered", "answer": answer.answer.strip(), "citations": citations}
         except (ValueError, KeyError):

@@ -1,9 +1,9 @@
 # DocScope M1 Backend
 
-This M1 slice accepts UTF-8 Markdown up to 1 MiB, stores the original file and
-document status locally, and writes searchable chunks to Qdrant. A separate
+This M1 slice accepts UTF-8 Markdown or text-based PDF up to 1 MiB, stores the
+original file and document status locally, and writes searchable chunks to Qdrant. A separate
 single-question API uses Dense Evidence to answer or abstain with validated
-citations. PDF, replacement, deletion, streaming, and multi-hop are not part of
+citations. OCR, replacement, deletion, streaming, and multi-hop are not part of
 this slice.
 
 ## Start locally
@@ -32,6 +32,14 @@ export LLM_MODEL=group/docscope-free
 # Set LLM_API_KEY in this terminal from your local gateway configuration.
 python -m uvicorn docscope.api:app --host 127.0.0.1 --port 8000
 ```
+
+PDF text is extracted with pinned `pypdf`; chunks stay within one PDF page and
+carry a one-based `page_number`. Markdown chunks retain their heading section
+and source line. PDF scans without extractable text, and damaged PDFs, remain
+in `failed` state with `parse_failed`; OCR is not supported. PDF extraction is
+bounded to 100 pages and 200,000 extracted characters; exceeding either limit
+also results in `parse_failed`. The fixed two-page
+sample is `backend/tests/fixtures/observatories.pdf` (Orion is on page 2).
 
 The embedding model is `sentence-transformers/all-MiniLM-L6-v2` at revision
 `1110a243fdf4706b3f48f1d95db1a4f5529b4d41`, run on CPU. Its first use
@@ -64,6 +72,21 @@ Evidence should contain the original Orion sentence, a `chunk_id`, that
 request `GET /api/documents/{document_id}`. Failed imports return a
 `document_id`, `status: failed`, and an `error_code`; only ready documents are
 eligible for retrieval.
+
+To verify PDF page provenance, upload the fixed sample and ask about Orion:
+
+```sh
+curl -sS -F 'file=@backend/tests/fixtures/observatories.pdf;type=application/pdf' \
+  http://127.0.0.1:8000/api/documents
+curl -sS -H 'Content-Type: application/json' \
+  -d '{"question":"Which observatory built the Orion telescope?"}' \
+  http://127.0.0.1:8000/api/chat
+```
+
+The matching citation has `page_number: 2` and the extracted Orion sentence;
+Markdown citations have `page_number: null` and retain `section`/`line_start`.
+For a deterministic answer without the remote model, run
+`PYTHONPATH=backend/src python -m unittest backend.tests.test_pdf_page_citations -v`.
 
 `POST /api/chat` returns `run_id` plus one of three states:
 

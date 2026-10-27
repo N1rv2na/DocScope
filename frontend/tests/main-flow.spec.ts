@@ -20,7 +20,7 @@ test('keyboard user uploads Markdown, asks, and opens the original citation', as
   }))
   await page.goto('/')
 
-  const fileInput = page.getByLabel('Markdown 文件')
+  const fileInput = page.getByLabel('PDF 或 Markdown 文件')
   const fileChooser = page.waitForEvent('filechooser')
   await page.keyboard.press('Tab')
   await expect(fileInput).toBeFocused()
@@ -70,10 +70,10 @@ test('blank question, failed import, and failed model have different messages', 
   await page.getByRole('button', { name: '检索并回答' }).click()
   await expect(page.getByRole('alert')).toContainText('请输入问题')
 
-  await page.getByLabel('Markdown 文件').setInputFiles('../backend/tests/fixtures/telescopes.md')
+  await page.getByLabel('PDF 或 Markdown 文件').setInputFiles('../backend/tests/fixtures/telescopes.md')
   await page.getByRole('button', { name: '上传并建立索引' }).click()
   await expect(page.getByRole('alert')).toContainText('文档索引失败')
-  await expect(page.getByLabel('Markdown 文件')).toHaveAttribute('aria-describedby', /upload-error/)
+  await expect(page.getByLabel('PDF 或 Markdown 文件')).toHaveAttribute('aria-describedby', /upload-error/)
 
   uploadFails = false
   await page.getByRole('button', { name: '上传并建立索引' }).click()
@@ -108,11 +108,11 @@ test('a failed second import does not mark that file ready', async ({ page }) =>
     })
   })
   await page.goto('/')
-  await page.getByLabel('Markdown 文件').setInputFiles('../backend/tests/fixtures/telescopes.md')
+  await page.getByLabel('PDF 或 Markdown 文件').setInputFiles('../backend/tests/fixtures/telescopes.md')
   await page.getByRole('button', { name: '上传并建立索引' }).click()
   await expect(page.getByText('索引就绪')).toBeVisible()
 
-  await page.getByLabel('Markdown 文件').setInputFiles({ name: 'headings.md', mimeType: 'text/markdown', buffer: Buffer.from('# No body') })
+  await page.getByLabel('PDF 或 Markdown 文件').setInputFiles({ name: 'headings.md', mimeType: 'text/markdown', buffer: Buffer.from('# No body') })
   await page.getByRole('button', { name: '上传并建立索引' }).click()
   await expect(page.getByRole('alert')).toContainText('文档索引失败')
   await expect(page.getByText('索引就绪')).toHaveCount(0)
@@ -145,4 +145,46 @@ test('long unbroken evidence remains readable on a narrow screen', async ({ page
   await page.locator('summary').click()
   const width = await page.evaluate(() => ({ scroll: document.documentElement.scrollWidth, viewport: document.documentElement.clientWidth }))
   expect(width.scroll).toBeLessThanOrEqual(width.viewport)
+})
+
+test('PDF upload and answer show the cited page instead of a Markdown section', async ({ page }) => {
+  const pdfExcerpt = 'The Orion telescope was built in 2022 by the North Observatory.'
+  await page.route('**/api/documents', route => route.fulfill({
+    status: 201,
+    json: { document_id: 'pdf-1', status: 'ready', filename: 'observatories.pdf', chunk_count: 2 },
+  }))
+  await page.route('**/api/chat', route => route.fulfill({
+    json: { run_id: 'pdf-run', status: 'answered', answer: 'North Observatory built Orion.',
+      citations: [{ ...citation, document_id: 'pdf-1', document_title: 'observatories.pdf',
+        source_path: 'documents/pdf-1.pdf', section: null, line_start: null, page_number: 2,
+        chunk_text: pdfExcerpt }] },
+  }))
+  await page.goto('/')
+  const input = page.getByLabel('PDF 或 Markdown 文件')
+  await expect(input).toHaveAttribute('accept', /\.pdf/)
+  await input.setInputFiles('../backend/tests/fixtures/observatories.pdf')
+  await page.getByRole('button', { name: '上传并建立索引' }).click()
+  await expect(page.getByText('observatories.pdf')).toBeVisible()
+  await page.getByRole('textbox', { name: '独立英文问题' }).fill('Which observatory built Orion?')
+  await page.getByRole('button', { name: '检索并回答' }).click()
+  const source = page.locator('summary').filter({ hasText: '查看来源 1' })
+  await expect(source).toContainText('第 2 页')
+  await source.click()
+  await expect(page.getByText('第 2 页', { exact: true })).toBeVisible()
+  await expect(page.getByText('Telescope Notes > Orion · 第 4 行')).toHaveCount(0)
+  await expect(page.getByText(pdfExcerpt)).toBeVisible()
+})
+
+test('an unparseable PDF is shown as a failed import', async ({ page }) => {
+  await page.route('**/api/documents', route => route.fulfill({
+    status: 503,
+    json: { document_id: 'broken-pdf', status: 'failed', error_code: 'parse_failed' },
+  }))
+  await page.goto('/')
+  await page.getByLabel('PDF 或 Markdown 文件').setInputFiles({
+    name: 'broken.pdf', mimeType: 'application/pdf', buffer: Buffer.from('broken'),
+  })
+  await page.getByRole('button', { name: '上传并建立索引' }).click()
+  await expect(page.getByRole('alert')).toContainText('PDF')
+  await expect(page.getByText('索引就绪')).toHaveCount(0)
 })

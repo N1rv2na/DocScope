@@ -84,7 +84,7 @@ class MarkdownDenseApiTest(unittest.TestCase):
         for filename, content, expected in [
             ("empty.md", b"", 400),
             ("blank.md", b" \n ", 400),
-            ("notes.pdf", SAMPLE, 415),
+            ("notes.pdf", SAMPLE, 503),
             ("../escape.md", SAMPLE, 400),
             (r"C:\temp\escape.md", SAMPLE, 400),
             ("bad.md", b"\xff", 400),

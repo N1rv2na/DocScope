@@ -4,8 +4,9 @@ type Citation = {
   document_id: string
   chunk_id: string
   document_title: string
-  section: string
-  line_start: number
+  page_number?: number | null
+  section: string | null
+  line_start: number | null
   chunk_text: string
 }
 type UploadResponse = {
@@ -28,7 +29,7 @@ type ChatResult =
   | { kind: 'error'; message: string }
 
 const uploadErrors: Record<string, string> = {
-  parse_failed: '文档索引失败：没有可检索的正文。请检查 Markdown 内容。',
+  parse_failed: '文档索引失败：没有可检索的正文。请检查文件内容。',
   embedding_failed: '文档索引失败：本地向量模型未完成处理，请重试。',
   index_failed: '文档索引失败：检索索引不可用，请重试。',
   storage_failed: '文档索引失败：无法保存源文件。',
@@ -63,7 +64,7 @@ export default function App() {
     event.preventDefault()
     setUploadError(null)
     setQuestionError(null)
-    if (!file) { setUploadError('请选择 Markdown 文件。'); return }
+    if (!file) { setUploadError('请选择 PDF 或 Markdown 文件。'); return }
     const restoreButtonFocus = window.document.activeElement === uploadButtonRef.current
     setUploading(true)
     setResult(null)
@@ -75,11 +76,13 @@ export default function App() {
       if (response.ok && data?.status === 'ready' && data.filename && data.document_id) {
         setDocument({ name: data.filename, chunks: data.chunk_count ?? 0 })
       } else if (data?.status === 'failed') {
-        setUploadError(uploadErrors[data.error_code ?? ''] ?? '文档索引失败，请稍后重试。')
+        setUploadError(data.error_code === 'parse_failed' && file.name.toLowerCase().endsWith('.pdf')
+          ? 'PDF 导入失败：无法解析可检索文本。请检查是否为扫描件、损坏文件或文档过长。'
+          : uploadErrors[data.error_code ?? ''] ?? '文档索引失败，请稍后重试。')
       } else if (response.status === 413) {
-        setUploadError('文件超过 1 MiB 上限，请选择更小的 Markdown 文件。')
+        setUploadError('文件超过 1 MiB 上限，请选择更小的文件。')
       } else if (response.status === 415) {
-        setUploadError('仅支持 Markdown 文件（.md 或 .markdown）。')
+        setUploadError('仅支持 PDF 或 Markdown 文件。')
       } else {
         setUploadError('文件无效或上传失败，请检查内容后重试。')
       }
@@ -145,20 +148,20 @@ export default function App() {
       <div className="max-w-3xl">
         <p className="text-xs font-bold uppercase tracking-[0.24em] text-[#367653]">Document intelligence / 01</p>
         <h1 className="mt-4 text-4xl font-semibold leading-tight tracking-tight text-[#15352f] sm:text-5xl">从文档出发，<br />让每个回答都有出处。</h1>
-        <p className="mt-5 max-w-2xl text-base leading-7 text-[#60736b]">上传英文 Markdown 文档，提出一个独立问题。DocScope 会检索原文证据，并展示可核对的来源片段。</p>
+        <p className="mt-5 max-w-2xl text-base leading-7 text-[#60736b]">上传英文文本型 PDF 或 Markdown 文档，提出一个独立问题。DocScope 会检索原文证据，并展示可核对的来源片段。</p>
       </div>
 
       <div className="mt-10 grid gap-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
         <section aria-labelledby="upload-title" className="rounded-[26px] border border-[#dce5de] bg-white p-6 shadow-[0_18px_50px_-38px_#153b30] sm:p-8">
           <div className="flex items-start gap-4">
             <span aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#e9f4eb] text-sm font-bold text-[#2c6a46]">01</span>
-            <div><h2 id="upload-title" className="text-xl font-semibold tracking-tight">导入资料</h2><p className="mt-1 text-sm leading-6 text-[#60736b]">选择 Markdown，完成解析、分块与索引。</p></div>
+            <div><h2 id="upload-title" className="text-xl font-semibold tracking-tight">导入资料</h2><p className="mt-1 text-sm leading-6 text-[#60736b]">选择文本型 PDF 或 Markdown，完成解析、分块与索引。</p></div>
           </div>
           <form onSubmit={upload} className="mt-8 space-y-5">
             <div>
-              <label htmlFor="markdown-file" className="block text-sm font-semibold">Markdown 文件</label>
-              <input id="markdown-file" type="file" accept=".md,.markdown,text/markdown" onChange={event => { setFile(event.target.files?.[0] ?? null); setUploadError(null) }} aria-invalid={Boolean(uploadError)} aria-describedby={uploadError ? 'file-hint upload-error' : 'file-hint'} className={`mt-2 block w-full cursor-pointer rounded-xl border border-[#cddbd0] bg-[#f8faf7] p-2 text-sm text-[#52675d] file:mr-4 file:cursor-pointer file:rounded-lg file:border-0 file:bg-[#e4eee5] file:px-4 file:py-2 file:font-semibold file:text-[#23583a] ${focus}`} />
-              <p id="file-hint" className="mt-2 text-xs leading-5 text-[#60736b]">支持 .md / .markdown · UTF-8 · 最大 1 MiB</p>
+              <label htmlFor="markdown-file" className="block text-sm font-semibold">PDF 或 Markdown 文件</label>
+              <input id="markdown-file" type="file" accept=".pdf,application/pdf,.md,.markdown,text/markdown" onChange={event => { setFile(event.target.files?.[0] ?? null); setUploadError(null) }} aria-invalid={Boolean(uploadError)} aria-describedby={uploadError ? 'file-hint upload-error' : 'file-hint'} className={`mt-2 block w-full cursor-pointer rounded-xl border border-[#cddbd0] bg-[#f8faf7] p-2 text-sm text-[#52675d] file:mr-4 file:cursor-pointer file:rounded-lg file:border-0 file:bg-[#e4eee5] file:px-4 file:py-2 file:font-semibold file:text-[#23583a] ${focus}`} />
+              <p id="file-hint" className="mt-2 text-xs leading-5 text-[#60736b]">支持文本型 PDF 或 UTF-8 Markdown · 最大 1 MiB</p>
             </div>
             <button ref={uploadButtonRef} type="submit" disabled={uploading} className={`w-full rounded-xl bg-[#24583b] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#19472e] disabled:cursor-wait disabled:opacity-60 ${focus}`}>{uploading ? '正在建立索引…' : '上传并建立索引'}</button>
           </form>
@@ -190,8 +193,8 @@ export default function App() {
             {result?.kind === 'answered' && <div role="status" className="mt-4">
               <p className="text-lg font-medium leading-8 text-[#1a3b30]">{result.answer}</p>
               <div className="mt-6 min-w-0 space-y-3">{result.citations.map((citation, index) => <details key={`${result.runId}-${citation.chunk_id}`} className="group min-w-0 rounded-xl border border-[#d9e5dc] bg-[#f8faf7] [overflow-wrap:anywhere]">
-                <summary className={`cursor-pointer list-none rounded-xl px-4 py-3 text-sm font-semibold text-[#24583b] ${focus}`}>查看来源 {index + 1} · {citation.document_title} · {citation.section}<span aria-hidden="true" className="float-right text-[#648975] group-open:rotate-90">→</span></summary>
-                <div className="border-t border-[#dfe9e1] px-4 pb-4 pt-3"><p className="break-all text-xs font-semibold text-[#425c50]">{citation.document_title}</p><p className="mt-1 text-xs text-[#60736b]">{citation.section} · 第 {citation.line_start} 行</p><blockquote className="mt-3 border-l-2 border-[#74a783] pl-3 text-sm leading-6 text-[#243f32]">{citation.chunk_text}</blockquote></div>
+                <summary className={`cursor-pointer list-none rounded-xl px-4 py-3 text-sm font-semibold text-[#24583b] ${focus}`}>查看来源 {index + 1} · {citation.document_title} · {citation.page_number != null ? `第 ${citation.page_number} 页` : citation.section}<span aria-hidden="true" className="float-right text-[#648975] group-open:rotate-90">→</span></summary>
+                <div className="border-t border-[#dfe9e1] px-4 pb-4 pt-3"><p className="break-all text-xs font-semibold text-[#425c50]">{citation.document_title}</p><p className="mt-1 text-xs text-[#60736b]">{citation.page_number != null ? `第 ${citation.page_number} 页` : `${citation.section} · 第 ${citation.line_start} 行`}</p><blockquote className="mt-3 border-l-2 border-[#74a783] pl-3 text-sm leading-6 text-[#243f32]">{citation.chunk_text}</blockquote></div>
               </details>)}</div>
             </div>}
           </div>
