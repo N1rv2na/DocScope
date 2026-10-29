@@ -34,6 +34,9 @@ class FakeIndex:
             raise RuntimeError("injected cleanup failure")
         self.points = [point for point in self.points if point["payload"]["document_id"] != document_id]
 
+    def get_point(self, chunk_id):
+        return next((point for point in self.points if point["id"] == chunk_id), None)
+
     def query(self, vector, ready_ids, limit):
         scored = []
         for point in self.points:

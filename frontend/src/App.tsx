@@ -1,13 +1,12 @@
-import { useRef, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
+import { CitationView, type Citation } from './CitationView'
 
-type Citation = {
+type DocumentRecord = {
   document_id: string
-  chunk_id: string
-  document_title: string
-  page_number?: number | null
-  section: string | null
-  line_start: number | null
-  chunk_text: string
+  filename: string
+  status: 'processing' | 'ready' | 'failed' | 'deleting'
+  error_code?: string | null
+  chunk_count?: number | null
 }
 type UploadResponse = {
   status?: string
@@ -34,12 +33,16 @@ const uploadErrors: Record<string, string> = {
   index_failed: '文档索引失败：检索索引不可用，请重试。',
   storage_failed: '文档索引失败：无法保存源文件。',
   state_failed: '文档索引失败：无法保存导入状态。',
+  interrupted: '导入被中断，请重新上传此文档。',
+  delete_failed: '删除未完成，文档已不可检索，请重试删除。',
 }
+const documentStatuses = { processing: '处理中', ready: '索引就绪', failed: '失败', deleting: '删除中' }
 const chatErrors: Record<string, string> = {
   model_failed: '模型服务调用失败，请稍后重试。',
   model_output_invalid: '模型返回了无法验证的结果，请重试。',
   retrieval_failed: '检索服务暂时不可用，请稍后重试。',
   context_limit_exceeded: '问题和证据超出本轮上下文限制，请缩短问题。',
+  source_changed: '回答期间文档已发生变化，请重新提问。',
 }
 const focus = 'focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-[#317a53]'
 
@@ -51,7 +54,12 @@ export default function App() {
   const [file, setFile] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
-  const [document, setDocument] = useState<{ name: string; chunks: number } | null>(null)
+  const [documents, setDocuments] = useState<DocumentRecord[]>([])
+  const [documentsError, setDocumentsError] = useState<string | null>(null)
+  const [operationError, setOperationError] = useState<string | null>(null)
+  const [replacement, setReplacement] = useState<DocumentRecord | null>(null)
+  const [deleting, setDeleting] = useState<string | null>(null)
+  const [citationRefresh, setCitationRefresh] = useState(0)
   const [question, setQuestion] = useState('')
   const [questionError, setQuestionError] = useState<string | null>(null)
   const [asking, setAsking] = useState(false)
@@ -59,6 +67,51 @@ export default function App() {
   const questionRef = useRef<HTMLTextAreaElement>(null)
   const uploadButtonRef = useRef<HTMLButtonElement>(null)
   const askButtonRef = useRef<HTMLButtonElement>(null)
+  const fileRef = useRef<HTMLInputElement>(null)
+  const documentsHeadingRef = useRef<HTMLHeadingElement>(null)
+  const documentsRequest = useRef(0)
+
+  const refreshDocuments = useCallback(async () => {
+    const request = ++documentsRequest.current
+    try {
+      const response = await fetch('/api/documents')
+      const data = await jsonBody<{ documents: DocumentRecord[] }>(response)
+      if (!response.ok || !Array.isArray(data?.documents)) throw new Error('invalid list')
+      if (request === documentsRequest.current) { setDocuments(data.documents); setDocumentsError(null) }
+    } catch {
+      if (request === documentsRequest.current) setDocumentsError('无法读取文档状态，请刷新重试。')
+    }
+  }, [])
+
+  useEffect(() => {
+    void refreshDocuments()
+    const onFocus = () => { void refreshDocuments(); setCitationRefresh(value => value + 1) }
+    window.addEventListener('focus', onFocus)
+    return () => window.removeEventListener('focus', onFocus)
+  }, [refreshDocuments])
+
+  useEffect(() => {
+    if (!uploading && !deleting) return
+    const timer = window.setInterval(() => { void refreshDocuments() }, 1000)
+    return () => window.clearInterval(timer)
+  }, [uploading, deleting, refreshDocuments])
+
+  async function deleteDocument(record: DocumentRecord) {
+    setDeleting(record.document_id)
+    setOperationError(null)
+    try {
+      const response = await fetch(`/api/documents/${encodeURIComponent(record.document_id)}`, { method: 'DELETE' })
+      const data = await jsonBody<{ status?: string }>(response)
+      if (!response.ok || data?.status !== 'deleted') throw new Error('delete failed')
+      if (replacement?.document_id === record.document_id) setReplacement(null)
+    } catch { setOperationError('删除失败，请刷新状态后重试删除。') }
+    finally {
+      await refreshDocuments()
+      setDeleting(null)
+      setCitationRefresh(value => value + 1)
+      requestAnimationFrame(() => documentsHeadingRef.current?.focus())
+    }
+  }
 
   async function upload(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -67,14 +120,14 @@ export default function App() {
     if (!file) { setUploadError('请选择 PDF 或 Markdown 文件。'); return }
     const restoreButtonFocus = window.document.activeElement === uploadButtonRef.current
     setUploading(true)
-    setResult(null)
+    setOperationError(null)
     try {
       const body = new FormData()
       body.append('file', file)
-      const response = await fetch('/api/documents', { method: 'POST', body })
+      const response = await fetch(replacement ? `/api/documents/${encodeURIComponent(replacement.document_id)}` : '/api/documents', { method: replacement ? 'PUT' : 'POST', body })
       const data = await jsonBody<UploadResponse>(response)
       if (response.ok && data?.status === 'ready' && data.filename && data.document_id) {
-        setDocument({ name: data.filename, chunks: data.chunk_count ?? 0 })
+        setReplacement(null)
       } else if (data?.status === 'failed') {
         setUploadError(data.error_code === 'parse_failed' && file.name.toLowerCase().endsWith('.pdf')
           ? 'PDF 导入失败：无法解析可检索文本。请检查是否为扫描件、损坏文件或文档过长。'
@@ -83,13 +136,19 @@ export default function App() {
         setUploadError('文件超过 1 MiB 上限，请选择更小的文件。')
       } else if (response.status === 415) {
         setUploadError('仅支持 PDF 或 Markdown 文件。')
+      } else if (response.status === 409) {
+        setUploadError('文档名称冲突，请从列表选择要替换的文档或更改文件名。')
+      } else if (response.status === 404) {
+        setUploadError('要替换的文档已不存在，请刷新文档列表。')
       } else {
         setUploadError('文件无效或上传失败，请检查内容后重试。')
       }
     } catch {
       setUploadError('无法连接文档服务，请检查后端是否启动。')
     } finally {
+      await refreshDocuments()
       setUploading(false)
+      setCitationRefresh(value => value + 1)
       if (restoreButtonFocus) requestAnimationFrame(() => uploadButtonRef.current?.focus())
     }
   }
@@ -160,14 +219,27 @@ export default function App() {
           <form onSubmit={upload} className="mt-8 space-y-5">
             <div>
               <label htmlFor="markdown-file" className="block text-sm font-semibold">PDF 或 Markdown 文件</label>
-              <input id="markdown-file" type="file" accept=".pdf,application/pdf,.md,.markdown,text/markdown" onChange={event => { setFile(event.target.files?.[0] ?? null); setUploadError(null) }} aria-invalid={Boolean(uploadError)} aria-describedby={uploadError ? 'file-hint upload-error' : 'file-hint'} className={`mt-2 block w-full cursor-pointer rounded-xl border border-[#cddbd0] bg-[#f8faf7] p-2 text-sm text-[#52675d] file:mr-4 file:cursor-pointer file:rounded-lg file:border-0 file:bg-[#e4eee5] file:px-4 file:py-2 file:font-semibold file:text-[#23583a] ${focus}`} />
+              <input ref={fileRef} id="markdown-file" type="file" accept=".pdf,application/pdf,.md,.markdown,text/markdown" onChange={event => { setFile(event.target.files?.[0] ?? null); setUploadError(null) }} aria-invalid={Boolean(uploadError)} aria-describedby={uploadError ? 'file-hint upload-error' : 'file-hint'} className={`mt-2 block w-full cursor-pointer rounded-xl border border-[#cddbd0] bg-[#f8faf7] p-2 text-sm text-[#52675d] file:mr-4 file:cursor-pointer file:rounded-lg file:border-0 file:bg-[#e4eee5] file:px-4 file:py-2 file:font-semibold file:text-[#23583a] ${focus}`} />
               <p id="file-hint" className="mt-2 text-xs leading-5 text-[#60736b]">支持文本型 PDF 或 UTF-8 Markdown · 最大 1 MiB</p>
             </div>
-            <button ref={uploadButtonRef} type="submit" disabled={uploading} className={`w-full rounded-xl bg-[#24583b] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#19472e] disabled:cursor-wait disabled:opacity-60 ${focus}`}>{uploading ? '正在建立索引…' : '上传并建立索引'}</button>
+            <p className="text-xs leading-5 text-[#60736b]">同名文件重传会替换现有文档；同内容不会重复索引。</p>
+            {replacement && <p className="text-sm">替换目标：{replacement.filename}<button type="button" disabled={uploading} onClick={() => setReplacement(null)} className={`ml-2 rounded px-2 underline ${focus}`}>取消替换</button></p>}
+            <button ref={uploadButtonRef} type="submit" disabled={uploading || Boolean(deleting)} className={`w-full rounded-xl bg-[#24583b] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#19472e] disabled:cursor-wait disabled:opacity-60 ${focus}`}>{uploading ? '正在建立索引…' : replacement ? '上传并替换' : '上传并建立索引'}</button>
           </form>
           {uploading && <p role="status" className="mt-5 rounded-xl bg-[#eef5ef] px-4 py-3 text-sm text-[#285d42]">正在解析文档并建立索引，请稍候。</p>}
           {uploadError && <p id="upload-error" role="alert" className="mt-5 rounded-xl border border-[#edc8bb] bg-[#fff2ec] px-4 py-3 text-sm font-medium text-[#9a442a]">{uploadError}</p>}
-          {document && !uploading && <div role="status" className="mt-6 border-t border-[#e6ece6] pt-5"><p className="text-xs font-bold uppercase tracking-widest text-[#367653]">{uploadError ? '此前已索引' : '索引就绪'}</p><p className="mt-2 break-all font-semibold">{document.name}</p><p className="mt-1 text-sm text-[#60736b]">{document.chunks} 个原文片段可用于检索</p></div>}
+          <div className="mt-6 border-t border-[#e6ece6] pt-5">
+            <div className="flex items-center justify-between gap-2"><h3 ref={documentsHeadingRef} tabIndex={-1} className={`rounded text-sm font-semibold ${focus}`}>文档状态</h3><button type="button" onClick={() => { void refreshDocuments(); setCitationRefresh(value => value + 1) }} className={`rounded px-2 py-1 text-sm underline ${focus}`}>刷新文档</button></div>
+            {documentsError && <p role="alert" className="mt-2 text-sm text-[#9a442a]">{documentsError}</p>}
+            {operationError && <p role="alert" className="mt-2 text-sm text-[#9a442a]">{operationError}</p>}
+            {!documents.length && !documentsError && <p className="mt-3 text-sm text-[#60736b]">尚未导入文档</p>}
+            <ul aria-label="文档列表" className="mt-3 space-y-3">{documents.map(record => <li key={record.document_id} className="rounded-xl border border-[#d9e5dc] p-3">
+              <p className="break-all text-sm font-semibold">{record.filename}</p>
+              <p className="mt-1 text-sm text-[#60736b]">{documentStatuses[record.status]}{record.status === 'ready' && record.chunk_count != null ? ` · ${record.chunk_count} 个原文片段` : ''}</p>
+              {record.error_code && <p className="mt-1 text-xs text-[#9a442a]">{uploadErrors[record.error_code] ?? '操作失败，请重试。'}</p>}
+              <div className="mt-2 flex gap-3"><button type="button" aria-label={`替换 ${record.filename}`} disabled={uploading || Boolean(deleting) || ['processing', 'deleting'].includes(record.status)} onClick={() => { setReplacement(record); setUploadError(null); fileRef.current?.focus() }} className={`rounded px-2 py-1 text-sm underline disabled:opacity-50 ${focus}`}>替换 / 重试上传</button><button type="button" aria-label={`删除 ${record.filename}`} disabled={uploading || Boolean(deleting) || ['processing', 'deleting'].includes(record.status)} onClick={() => { void deleteDocument(record) }} className={`rounded px-2 py-1 text-sm text-[#9a442a] underline disabled:opacity-50 ${focus}`}>删除</button></div>
+            </li>)}</ul>
+          </div>
         </section>
 
         <section aria-labelledby="question-title" className="min-w-0 rounded-[26px] border border-[#dce5de] bg-white p-6 shadow-[0_18px_50px_-38px_#153b30] sm:p-8">
@@ -192,10 +264,7 @@ export default function App() {
             {result?.kind === 'insufficient' && <p role="status" className="mt-4 rounded-xl border border-[#d5e1dc] bg-[#f2f6f3] px-4 py-3 text-sm text-[#395d4b]">当前文档没有足够证据回答这个问题。</p>}
             {result?.kind === 'answered' && <div role="status" className="mt-4">
               <p className="text-lg font-medium leading-8 text-[#1a3b30]">{result.answer}</p>
-              <div className="mt-6 min-w-0 space-y-3">{result.citations.map((citation, index) => <details key={`${result.runId}-${citation.chunk_id}`} className="group min-w-0 rounded-xl border border-[#d9e5dc] bg-[#f8faf7] [overflow-wrap:anywhere]">
-                <summary className={`cursor-pointer list-none rounded-xl px-4 py-3 text-sm font-semibold text-[#24583b] ${focus}`}>查看来源 {index + 1} · {citation.document_title} · {citation.page_number != null ? `第 ${citation.page_number} 页` : citation.section}<span aria-hidden="true" className="float-right text-[#648975] group-open:rotate-90">→</span></summary>
-                <div className="border-t border-[#dfe9e1] px-4 pb-4 pt-3"><p className="break-all text-xs font-semibold text-[#425c50]">{citation.document_title}</p><p className="mt-1 text-xs text-[#60736b]">{citation.page_number != null ? `第 ${citation.page_number} 页` : `${citation.section} · 第 ${citation.line_start} 行`}</p><blockquote className="mt-3 border-l-2 border-[#74a783] pl-3 text-sm leading-6 text-[#243f32]">{citation.chunk_text}</blockquote></div>
-              </details>)}</div>
+              <div className="mt-6 min-w-0 space-y-3">{result.citations.map((citation, index) => <CitationView key={`${result.runId}-${citation.chunk_id}`} citation={citation} index={index} refreshToken={citationRefresh} updating={uploading || Boolean(deleting)} focusClass={focus} />)}</div>
             </div>}
           </div>
         </section>

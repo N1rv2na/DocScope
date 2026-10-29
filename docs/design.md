@@ -203,7 +203,7 @@ Input Document → Format Parsing → Text Normalization
 
 **[已确定] 生命周期合同**：M1 支持上传、状态查看、同一文档重传替换和删除；“更新”即替换现有索引，不保留版本历史。应使重传幂等、删除后不可检索；解析/Embedding/索引任一步失败都返回可诊断状态，不把未完成导入显示为可用。引用源文件被删除或替换后，UI 明确显示其已失效，不能静默跳到其他内容。文档身份、Chunk 身份及源位置需稳定且可追溯。
 
-**验收方向**：固定 PDF/Markdown 样例能导入并定位引用；重复导入不增加重复 Chunk；替换后旧内容不参与检索；删除后不再返回相应 Chunk；失败可恢复或重试。具体原子替换机制留到 Ingestion Issue。
+**验收方向**：固定 PDF/Markdown 样例能导入并定位引用；重复导入不增加重复 Chunk；替换后旧内容不参与检索；删除后不再返回相应 Chunk；失败可恢复或重试。DOCS-007 已明确同名身份、索引代号、先撤下后重建、失败恢复和引用复验，见[生命周期合同](document-lifecycle.md)。
 
 ### 6.2 Retrieval Engine：Hybrid Retrieval + Reranking
 
@@ -445,7 +445,7 @@ DocScope/
 |---|---|---|
 | M0 | 远程 LLM 路由组及结构化输出能力；本地 Embedding 模型/维度；Qdrant 服务端/客户端版本 | 能完成最小端到端调用，记录真实 Token/耗时并可估算费用；不引入项目内 Provider 路由层 |
 | M0 | 证据 `fact` 到 Chunk 的映射规则、K/分母、回答规范化与评测子集；数据版本和项目自建开发/测试分割已由 DOCS-001 冻结 | 映射失败可单列；开发集足以估算成本，测试集封存；数据合同见 [evaluation/README.md](../evaluation/README.md) |
-| M1 | Chunk 长度/重叠、文档身份与替换原子性、PDF 页码和 Markdown 章节定位、引用失效表示 | 固定文档的导入、重传、删除、引用验收通过 |
+| M1 | Chunk 参数与来源定位随对应导入 Issue 固定；文档身份、替换可见性与引用失效表示已由 DOCS-007 明确 | 固定文档的导入、重传、删除、引用验收；见[生命周期合同](document-lifecycle.md) |
 | M2 | 英文 BM25 文本处理、RRF 参数、本地 Reranker 模型/Top-N | 开发集检索指标与 CPU 时延，固定配置后跑封存测试集 |
 | M3 | 证据覆盖结构化输出、无新信息判定细则、SSE 事件与断连/重试语义、固定依赖样本及人工审查规程 | 有界循环与错误终态可测；轨迹证明真实动态第二跳 |
 | M4 | Checkpointer 版本、消息表与 Checkpoint 职责、Thread ID、摘要失败恢复、多轮样本规模 | 会话连续性和暂态重置回归测试 |

@@ -64,6 +64,18 @@ class QdrantIndex:
         return response["result"]["points"]
 
     def delete_document(self, document_id: str) -> None:
-        self._request("POST", f"/collections/{self.collection}/points/delete?wait=true", {
-            "filter": {"must": [{"key": "document_id", "match": {"value": document_id}}]},
-        })
+        try:
+            self._request("POST", f"/collections/{self.collection}/points/delete?wait=true", {
+                "filter": {"must": [{"key": "document_id", "match": {"value": document_id}}]},
+            })
+        except QdrantError as error:
+            if error.status_code != 404:
+                raise
+
+    def get_point(self, chunk_id: str) -> dict | None:
+        try:
+            return self._request("GET", f"/collections/{self.collection}/points/{chunk_id}")["result"]
+        except QdrantError as error:
+            if error.status_code != 404:
+                raise
+            return None

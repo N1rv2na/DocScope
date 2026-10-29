@@ -7,6 +7,7 @@ import logging
 import os
 import uuid
 from pathlib import Path
+from threading import RLock
 from typing import Any, Literal
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
@@ -88,25 +89,68 @@ def create_app(data_dir: Path | None = None, embedder: Any = None, index: Any = 
     qdrant = index if index is not None else QdrantIndex(os.getenv("QDRANT_URL", "http://127.0.0.1:6333"))
     responder = llm if llm is not None else OpenAIResponder()
     store: DocumentStore | None = None
+    lifecycle_lock = RLock()
     api = FastAPI(title="DocScope", version="0.1.0")
 
     def documents() -> DocumentStore:
         nonlocal store
         if store is None:
-            store = DocumentStore(root)
+            with lifecycle_lock:
+                if store is None:
+                    store = DocumentStore(root)
         return store
 
     @api.post("/api/documents", status_code=201, response_model=None)
     def upload_document(file: UploadFile = File(...)) -> dict | JSONResponse:
+        with lifecycle_lock:
+            return ingest(file)
+
+    @api.put("/api/documents/{document_id}", response_model=None)
+    def replace_document(document_id: str, file: UploadFile = File(...)) -> dict | JSONResponse:
+        with lifecycle_lock:
+            return ingest(file, document_id)
+
+    @api.get("/api/documents")
+    def list_documents() -> dict:
+        return {"documents": documents().list_documents()}
+
+    def remove_source_files(document_id: str) -> None:
+        for suffix in (".md", ".pdf"):
+            (root / "documents" / f"{document_id}{suffix}").unlink(missing_ok=True)
+
+    def ingest(file: UploadFile, target_id: str | None = None) -> dict | JSONResponse:
         filename, content, text = _validate_upload(file)
-        document_id = str(uuid.uuid4())
+        document_store = documents()
+        content_hash = hashlib.sha256(content).hexdigest()
+        matches = document_store.named(filename)
+        if target_id is not None:
+            existing = document_store.get(target_id)
+            if existing is None or existing["status"] == "deleted":
+                raise HTTPException(404, "document not found")
+            if existing["filename"] != filename and any(item["document_id"] != target_id for item in matches):
+                raise HTTPException(409, "filename belongs to another document")
+        elif len(matches) > 1:
+            raise HTTPException(409, "ambiguous filename; select a document ID")
+        else:
+            existing = matches[0] if matches else None
+        if existing and existing["status"] == "ready" and existing["content_hash"] == content_hash and existing["filename"] == filename:
+            return JSONResponse(status_code=200, content=existing)
+        document_id = existing["document_id"] if existing else str(uuid.uuid4())
         is_pdf = Path(filename).suffix.lower() == ".pdf"
         source_path = f"documents/{document_id}{'.pdf' if is_pdf else '.md'}"
-        document_store = documents()
-        document_store.create(document_id, filename, source_path, hashlib.sha256(content).hexdigest())
+        if existing:
+            document_store.begin_replace(document_id, filename, source_path, content_hash)
+        else:
+            document_store.create(document_id, filename, source_path, content_hash)
+        index_version = document_store.get(document_id)["index_version"]
         stage = "storage_failed"
         index_started = False
         try:
+            if existing:
+                stage = "index_failed"
+                qdrant.delete_document(document_id)
+                stage = "storage_failed"
+                remove_source_files(document_id)
             (root / source_path).write_bytes(content)
             stage = "parse_failed"
             chunks = pdf_chunks(content) if is_pdf else markdown_chunks(text or "")
@@ -118,7 +162,7 @@ def create_app(data_dir: Path | None = None, embedder: Any = None, index: Any = 
                 raise ValueError("embedding output does not match chunks")
             points = []
             for number, (chunk, vector) in enumerate(zip(chunks, vectors)):
-                chunk_id = str(uuid.uuid5(uuid.UUID(document_id), f"{number}:{chunk['chunk_text']}"))
+                chunk_id = str(uuid.uuid5(uuid.UUID(document_id), f"{index_version}:{number}:{chunk['chunk_text']}"))
                 points.append({
                     "id": chunk_id,
                     "vector": {"dense": vector},
@@ -132,8 +176,8 @@ def create_app(data_dir: Path | None = None, embedder: Any = None, index: Any = 
                         "section": chunk.get("section"),
                         "line_start": chunk.get("line_start"),
                         "chunk_text": chunk["chunk_text"],
-                        "content_hash": hashlib.sha256(content).hexdigest(),
-                        "index_version": 1,
+                        "content_hash": content_hash,
+                        "index_version": index_version,
                     },
                 })
             stage = "index_failed"
@@ -141,7 +185,7 @@ def create_app(data_dir: Path | None = None, embedder: Any = None, index: Any = 
             qdrant.ensure()
             qdrant.upsert(points)
             stage = "state_failed"
-            document_store.mark_ready(document_id)
+            document_store.mark_ready(document_id, len(chunks))
         except Exception:
             logger.exception("Document ingestion failed at %s for %s", stage, document_id)
             document_store.mark_failed(document_id, stage)
@@ -155,13 +199,27 @@ def create_app(data_dir: Path | None = None, embedder: Any = None, index: Any = 
                 "status": "failed",
                 "error_code": stage,
             })
-        return {
-            "document_id": document_id,
-            "status": "ready",
-            "filename": filename,
-            "source_path": source_path,
-            "chunk_count": len(chunks),
-        }
+        return JSONResponse(status_code=200 if existing else 201, content=document_store.get(document_id))
+
+    @api.delete("/api/documents/{document_id}", response_model=None)
+    def delete_document(document_id: str) -> dict | JSONResponse:
+        with lifecycle_lock:
+            document_store = documents()
+            record = document_store.get(document_id)
+            if record is None:
+                raise HTTPException(404, "document not found")
+            if record["status"] == "deleted":
+                return {"document_id": document_id, "status": "deleted"}
+            document_store.mark_deleting(document_id)
+            try:
+                qdrant.delete_document(document_id)
+                remove_source_files(document_id)
+                document_store.mark_deleted(document_id)
+            except Exception:
+                logger.exception("Document deletion failed for %s", document_id)
+                document_store.mark_failed(document_id, "delete_failed")
+                return JSONResponse(status_code=503, content={"document_id": document_id, "status": "failed", "error_code": "delete_failed"})
+            return {"document_id": document_id, "status": "deleted"}
 
     @api.get("/api/documents/{document_id}")
     def document_status(document_id: str) -> dict:
@@ -170,8 +228,37 @@ def create_app(data_dir: Path | None = None, embedder: Any = None, index: Any = 
             raise HTTPException(404, "document not found")
         return record
 
+    def current_payload(payload: dict, record: dict | None) -> bool:
+        return bool(record and record["status"] == "ready"
+                    and payload.get("document_id") == record["document_id"]
+                    and payload.get("content_hash") == record["content_hash"]
+                    and payload.get("index_version") == record["index_version"])
+
+    @api.get("/api/documents/{document_id}/citations/{chunk_id}", response_model=None)
+    def citation_status(document_id: str, chunk_id: str) -> dict | JSONResponse:
+        with lifecycle_lock:
+            record = documents().get(document_id)
+            if not record or record["status"] != "ready":
+                return {"status": "invalid"}
+            try:
+                uuid.UUID(chunk_id)
+            except ValueError:
+                return {"status": "invalid"}
+            try:
+                point = qdrant.get_point(chunk_id)
+            except Exception:
+                logger.exception("Citation lookup failed")
+                return JSONResponse(status_code=503, content={"status": "error", "error_code": "citation_check_failed"})
+            valid = bool(point and point["payload"].get("chunk_id") == chunk_id and current_payload(point["payload"], record))
+            return {"status": "valid" if valid else "invalid"}
+
     def dense_evidence(request: DenseQuery) -> list[dict[str, Any]]:
-        ready_ids = documents().ready_ids()
+        with lifecycle_lock:
+            return retrieve_current(request)
+
+    def retrieve_current(request: DenseQuery) -> list[dict[str, Any]]:
+        records = {item["document_id"]: item for item in documents().list_documents() if item["status"] == "ready"}
+        ready_ids = list(records)
         if not ready_ids:
             return []
         try:
@@ -183,13 +270,14 @@ def create_app(data_dir: Path | None = None, embedder: Any = None, index: Any = 
         evidence: list[dict[str, Any]] = []
         for point in points:
             payload = point["payload"]
-            if payload["document_id"] not in ready_ids:
+            if not current_payload(payload, records.get(payload["document_id"])):
                 continue
             evidence.append({
                 "document_id": payload["document_id"],
                 "chunk_id": payload["chunk_id"],
                 "document_title": payload["document_title"],
                 "source_path": payload["source_path"],
+                "index_version": payload["index_version"],
                 "page_number": payload.get("page_number"),
                 "section": payload["section"],
                 "line_start": payload["line_start"],
@@ -238,6 +326,16 @@ def create_app(data_dir: Path | None = None, embedder: Any = None, index: Any = 
             })
         try:
             answer = ModelAnswer.model_validate(raw)
+            # Any evidence supplied to the model can affect an answer or refusal,
+            # including chunks omitted from its final citation list.
+            with lifecycle_lock:
+                for item in evidence:
+                    current = documents().get(item["document_id"])
+                    if not current or current["status"] != "ready" or current["index_version"] != item["index_version"]:
+                        return JSONResponse(status_code=409, content={
+                            "run_id": run_id, "status": "error", "error_code": "source_changed",
+                            "answer": None, "citations": [],
+                        })
             if answer.status == "insufficient_evidence":
                 if answer.answer is not None or answer.citation_ids:
                     raise ValueError("refusal cannot have answer or citations")
@@ -252,7 +350,7 @@ def create_app(data_dir: Path | None = None, embedder: Any = None, index: Any = 
                 item = by_id[chunk_id]
                 citations.append({key: item[key] for key in (
                     "document_id", "chunk_id", "document_title", "source_path",
-                    "page_number", "section", "line_start", "chunk_text",
+                    "page_number", "section", "line_start", "chunk_text", "index_version",
                 )})
             return {"run_id": run_id, "status": "answered", "answer": answer.answer.strip(), "citations": citations}
         except (ValueError, KeyError):

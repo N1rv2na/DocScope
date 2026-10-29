@@ -1,0 +1,441 @@
+{
+  "timestamp": "2026-10-29T09:52:54.924908+00:00",
+  "base_url": "http://127.0.0.1:3425/v1",
+  "requested_model": "group/docscope-free",
+  "embedding": {
+    "model": "sentence-transformers/all-MiniLM-L6-v2",
+    "revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+    "device": "cpu"
+  },
+  "versions": {
+    "openai": "2.32.0",
+    "sentence-transformers": "5.1.2",
+    "torch": "2.5.1+cpu",
+    "fastapi": "0.115.14",
+    "pypdf": "6.21.2"
+  },
+  "llm_calls": [
+    {
+      "requested_model": "group/docscope-free",
+      "model": "loomy/DeepSeek-V4.1-Flash",
+      "finish_reason": "stop",
+      "usage": {
+        "completion_tokens": 119,
+        "prompt_tokens": 321,
+        "total_tokens": 440,
+        "completion_tokens_details": {
+          "accepted_prediction_tokens": null,
+          "audio_tokens": null,
+          "reasoning_tokens": 79,
+          "rejected_prediction_tokens": null
+        },
+        "prompt_tokens_details": {
+          "audio_tokens": null,
+          "cached_tokens": 0,
+          "cache_write_tokens": 0
+        }
+      },
+      "elapsed_seconds": 3.672
+    },
+    {
+      "requested_model": "group/docscope-free",
+      "model": "loomy/DeepSeek-V4.1-Flash",
+      "finish_reason": "stop",
+      "usage": {
+        "completion_tokens": 91,
+        "prompt_tokens": 324,
+        "total_tokens": 415,
+        "completion_tokens_details": {
+          "accepted_prediction_tokens": null,
+          "audio_tokens": null,
+          "reasoning_tokens": 49,
+          "rejected_prediction_tokens": null
+        },
+        "prompt_tokens_details": {
+          "audio_tokens": null,
+          "cached_tokens": 0,
+          "cache_write_tokens": 0
+        }
+      },
+      "elapsed_seconds": 1.442
+    },
+    {
+      "requested_model": "group/docscope-free",
+      "model": "loomy/DeepSeek-V4.1-Flash",
+      "finish_reason": "stop",
+      "usage": {
+        "completion_tokens": 33,
+        "prompt_tokens": 329,
+        "total_tokens": 362,
+        "completion_tokens_details": {
+          "accepted_prediction_tokens": null,
+          "audio_tokens": null,
+          "reasoning_tokens": 12,
+          "rejected_prediction_tokens": null
+        },
+        "prompt_tokens_details": {
+          "audio_tokens": null,
+          "cached_tokens": 0,
+          "cache_write_tokens": 0
+        }
+      },
+      "elapsed_seconds": 0.994
+    },
+    {
+      "requested_model": "group/docscope-free",
+      "model": "loomy/DeepSeek-V4.1-Flash",
+      "finish_reason": "stop",
+      "usage": {
+        "completion_tokens": 64,
+        "prompt_tokens": 307,
+        "total_tokens": 371,
+        "completion_tokens_details": {
+          "accepted_prediction_tokens": null,
+          "audio_tokens": null,
+          "reasoning_tokens": 15,
+          "rejected_prediction_tokens": null
+        },
+        "prompt_tokens_details": {
+          "audio_tokens": null,
+          "cached_tokens": 0,
+          "cache_write_tokens": 0
+        }
+      },
+      "elapsed_seconds": 1.168
+    }
+  ],
+  "steps": [
+    {
+      "name": "upload_markdown",
+      "http_status": 201,
+      "elapsed_seconds": 38.23,
+      "response": {
+        "document_id": "4451d0cb-602e-40f7-8ca0-6a12218222c1",
+        "filename": "telescopes.md",
+        "source_path": "documents/4451d0cb-602e-40f7-8ca0-6a12218222c1.md",
+        "content_hash": "b25a61b38f4bc7b381e2c8880521e1b1fdac43cccd471500f289072fe4def8b9",
+        "status": "ready",
+        "error_code": null,
+        "index_version": 1,
+        "chunk_count": 2
+      }
+    },
+    {
+      "name": "dense_original",
+      "http_status": 200,
+      "elapsed_seconds": 0.039,
+      "response": {
+        "evidence": [
+          {
+            "document_id": "4451d0cb-602e-40f7-8ca0-6a12218222c1",
+            "chunk_id": "a4a889f8-a096-5d6c-b250-469a48aa4cc0",
+            "document_title": "telescopes.md",
+            "source_path": "documents/4451d0cb-602e-40f7-8ca0-6a12218222c1.md",
+            "index_version": 1,
+            "page_number": null,
+            "section": "Telescope Notes > Orion",
+            "line_start": 4,
+            "chunk_text": "The Orion telescope was built in 2022 by the North Observatory.",
+            "retrieval_stage": "dense",
+            "rank": 1,
+            "score": 0.8118941
+          },
+          {
+            "document_id": "4451d0cb-602e-40f7-8ca0-6a12218222c1",
+            "chunk_id": "e58dda42-7117-571b-a8a1-98ee0f5169b2",
+            "document_title": "telescopes.md",
+            "source_path": "documents/4451d0cb-602e-40f7-8ca0-6a12218222c1.md",
+            "index_version": 1,
+            "page_number": null,
+            "section": "Telescope Notes > Vega",
+            "line_start": 7,
+            "chunk_text": "The Vega telescope was built in 2020 by the South Observatory.",
+            "retrieval_stage": "dense",
+            "rank": 2,
+            "score": 0.5329597
+          }
+        ]
+      }
+    },
+    {
+      "name": "answer_original",
+      "http_status": 200,
+      "elapsed_seconds": 5.706,
+      "response": {
+        "run_id": "80067c15-b9c0-4c12-86ab-afa92ed37613",
+        "status": "answered",
+        "answer": "North Observatory",
+        "citations": [
+          {
+            "document_id": "4451d0cb-602e-40f7-8ca0-6a12218222c1",
+            "chunk_id": "a4a889f8-a096-5d6c-b250-469a48aa4cc0",
+            "document_title": "telescopes.md",
+            "source_path": "documents/4451d0cb-602e-40f7-8ca0-6a12218222c1.md",
+            "page_number": null,
+            "section": "Telescope Notes > Orion",
+            "line_start": 4,
+            "chunk_text": "The Orion telescope was built in 2022 by the North Observatory.",
+            "index_version": 1
+          }
+        ]
+      }
+    },
+    {
+      "name": "original_citation_valid",
+      "http_status": 200,
+      "elapsed_seconds": 0.009,
+      "response": {
+        "status": "valid"
+      }
+    },
+    {
+      "name": "identical_reupload",
+      "http_status": 200,
+      "elapsed_seconds": 0.002,
+      "response": {
+        "document_id": "4451d0cb-602e-40f7-8ca0-6a12218222c1",
+        "filename": "telescopes.md",
+        "source_path": "documents/4451d0cb-602e-40f7-8ca0-6a12218222c1.md",
+        "content_hash": "b25a61b38f4bc7b381e2c8880521e1b1fdac43cccd471500f289072fe4def8b9",
+        "status": "ready",
+        "error_code": null,
+        "index_version": 1,
+        "chunk_count": 2
+      }
+    },
+    {
+      "name": "dense_after_reupload",
+      "http_status": 200,
+      "elapsed_seconds": 0.018,
+      "response": {
+        "evidence": [
+          {
+            "document_id": "4451d0cb-602e-40f7-8ca0-6a12218222c1",
+            "chunk_id": "a4a889f8-a096-5d6c-b250-469a48aa4cc0",
+            "document_title": "telescopes.md",
+            "source_path": "documents/4451d0cb-602e-40f7-8ca0-6a12218222c1.md",
+            "index_version": 1,
+            "page_number": null,
+            "section": "Telescope Notes > Orion",
+            "line_start": 4,
+            "chunk_text": "The Orion telescope was built in 2022 by the North Observatory.",
+            "retrieval_stage": "dense",
+            "rank": 1,
+            "score": 0.5627433
+          },
+          {
+            "document_id": "4451d0cb-602e-40f7-8ca0-6a12218222c1",
+            "chunk_id": "e58dda42-7117-571b-a8a1-98ee0f5169b2",
+            "document_title": "telescopes.md",
+            "source_path": "documents/4451d0cb-602e-40f7-8ca0-6a12218222c1.md",
+            "index_version": 1,
+            "page_number": null,
+            "section": "Telescope Notes > Vega",
+            "line_start": 7,
+            "chunk_text": "The Vega telescope was built in 2020 by the South Observatory.",
+            "retrieval_stage": "dense",
+            "rank": 2,
+            "score": 0.24710727
+          }
+        ]
+      }
+    },
+    {
+      "name": "replace_markdown",
+      "http_status": 200,
+      "elapsed_seconds": 0.042,
+      "response": {
+        "document_id": "4451d0cb-602e-40f7-8ca0-6a12218222c1",
+        "filename": "telescopes.md",
+        "source_path": "documents/4451d0cb-602e-40f7-8ca0-6a12218222c1.md",
+        "content_hash": "8da15cfb326d109d0ec978064b5751501990dac5c385744d447ec257e30c24ba",
+        "status": "ready",
+        "error_code": null,
+        "index_version": 2,
+        "chunk_count": 2
+      }
+    },
+    {
+      "name": "old_citation_invalid_after_replace",
+      "http_status": 200,
+      "elapsed_seconds": 0.007,
+      "response": {
+        "status": "invalid"
+      }
+    },
+    {
+      "name": "dense_after_replace",
+      "http_status": 200,
+      "elapsed_seconds": 0.014,
+      "response": {
+        "evidence": [
+          {
+            "document_id": "4451d0cb-602e-40f7-8ca0-6a12218222c1",
+            "chunk_id": "da6c1e85-429c-5e9a-af9f-a9645096b38a",
+            "document_title": "telescopes.md",
+            "source_path": "documents/4451d0cb-602e-40f7-8ca0-6a12218222c1.md",
+            "index_version": 2,
+            "page_number": null,
+            "section": "Telescope Notes > Orion",
+            "line_start": 4,
+            "chunk_text": "The Orion telescope was built in 2022 by the East Observatory.",
+            "retrieval_stage": "dense",
+            "rank": 1,
+            "score": 0.55778456
+          },
+          {
+            "document_id": "4451d0cb-602e-40f7-8ca0-6a12218222c1",
+            "chunk_id": "9b7002b7-70f5-51f0-a36b-4bf87982f8ed",
+            "document_title": "telescopes.md",
+            "source_path": "documents/4451d0cb-602e-40f7-8ca0-6a12218222c1.md",
+            "index_version": 2,
+            "page_number": null,
+            "section": "Telescope Notes > Vega",
+            "line_start": 7,
+            "chunk_text": "The Vega telescope was built in 2020 by the South Observatory.",
+            "retrieval_stage": "dense",
+            "rank": 2,
+            "score": 0.24710727
+          }
+        ]
+      }
+    },
+    {
+      "name": "answer_replacement",
+      "http_status": 200,
+      "elapsed_seconds": 1.618,
+      "response": {
+        "run_id": "1f47e5a6-04a6-4324-ae79-3105929470a1",
+        "status": "answered",
+        "answer": "East Observatory",
+        "citations": [
+          {
+            "document_id": "4451d0cb-602e-40f7-8ca0-6a12218222c1",
+            "chunk_id": "da6c1e85-429c-5e9a-af9f-a9645096b38a",
+            "document_title": "telescopes.md",
+            "source_path": "documents/4451d0cb-602e-40f7-8ca0-6a12218222c1.md",
+            "page_number": null,
+            "section": "Telescope Notes > Orion",
+            "line_start": 4,
+            "chunk_text": "The Orion telescope was built in 2022 by the East Observatory.",
+            "index_version": 2
+          }
+        ]
+      }
+    },
+    {
+      "name": "replacement_citation_valid",
+      "http_status": 200,
+      "elapsed_seconds": 0.007,
+      "response": {
+        "status": "valid"
+      }
+    },
+    {
+      "name": "unsupported_question",
+      "http_status": 200,
+      "elapsed_seconds": 1.165,
+      "response": {
+        "run_id": "448c7606-346d-44a3-a53b-64f34b91e5cf",
+        "status": "insufficient_evidence",
+        "answer": null,
+        "citations": []
+      }
+    },
+    {
+      "name": "delete_markdown",
+      "http_status": 200,
+      "elapsed_seconds": 0.01,
+      "response": {
+        "document_id": "4451d0cb-602e-40f7-8ca0-6a12218222c1",
+        "status": "deleted"
+      }
+    },
+    {
+      "name": "citation_invalid_after_delete",
+      "http_status": 200,
+      "elapsed_seconds": 0.001,
+      "response": {
+        "status": "invalid"
+      }
+    },
+    {
+      "name": "dense_after_delete",
+      "http_status": 200,
+      "elapsed_seconds": 0.001,
+      "response": {
+        "evidence": []
+      }
+    },
+    {
+      "name": "empty_store_abstention",
+      "http_status": 200,
+      "elapsed_seconds": 0.001,
+      "response": {
+        "run_id": "8126843b-2938-4c88-9245-1c49e2419912",
+        "status": "insufficient_evidence",
+        "answer": null,
+        "citations": []
+      }
+    },
+    {
+      "name": "upload_pdf",
+      "http_status": 201,
+      "elapsed_seconds": 0.037,
+      "response": {
+        "document_id": "8c7be90a-ff58-411c-a6a6-99b4b66f645e",
+        "filename": "observatories.pdf",
+        "source_path": "documents/8c7be90a-ff58-411c-a6a6-99b4b66f645e.pdf",
+        "content_hash": "3ced13893bdeeba897a1cb9dc4706a431effab7ba9478e0f58764031f92cad79",
+        "status": "ready",
+        "error_code": null,
+        "index_version": 1,
+        "chunk_count": 2
+      }
+    },
+    {
+      "name": "pdf_answer_page_citation",
+      "http_status": 200,
+      "elapsed_seconds": 1.326,
+      "response": {
+        "run_id": "c577da24-f294-4859-9181-fedab20bd916",
+        "status": "answered",
+        "answer": "The North Observatory built the Orion telescope.",
+        "citations": [
+          {
+            "document_id": "8c7be90a-ff58-411c-a6a6-99b4b66f645e",
+            "chunk_id": "a3991cf3-8ec7-5880-9699-7a5728ac1816",
+            "document_title": "observatories.pdf",
+            "source_path": "documents/8c7be90a-ff58-411c-a6a6-99b4b66f645e.pdf",
+            "page_number": 2,
+            "section": null,
+            "line_start": null,
+            "chunk_text": "The Orion telescope was built in 2022 by the North Observatory.",
+            "index_version": 1
+          }
+        ]
+      }
+    },
+    {
+      "name": "delete_pdf",
+      "http_status": 200,
+      "elapsed_seconds": 0.011,
+      "response": {
+        "document_id": "8c7be90a-ff58-411c-a6a6-99b4b66f645e",
+        "status": "deleted"
+      }
+    },
+    {
+      "name": "final_empty_list",
+      "http_status": 200,
+      "elapsed_seconds": 0.001,
+      "response": {
+        "documents": []
+      }
+    }
+  ],
+  "passed": true,
+  "qdrant_version": "1.20.0",
+  "elapsed_seconds": 48.312,
+  "collection_cleanup": true
+}

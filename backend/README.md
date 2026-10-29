@@ -3,7 +3,7 @@
 This M1 slice accepts UTF-8 Markdown or text-based PDF up to 1 MiB, stores the
 original file and document status locally, and writes searchable chunks to Qdrant. A separate
 single-question API uses Dense Evidence to answer or abstain with validated
-citations. OCR, replacement, deletion, streaming, and multi-hop are not part of
+citations. OCR, streaming, and multi-hop are not part of
 this slice.
 
 ## Start locally
@@ -32,6 +32,10 @@ export LLM_MODEL=group/docscope-free
 # Set LLM_API_KEY in this terminal from your local gateway configuration.
 python -m uvicorn docscope.api:app --host 127.0.0.1 --port 8000
 ```
+
+Run one Uvicorn worker for each data directory/Qdrant collection. Lifecycle
+operations are serialized within that process. Do not share the same store
+between multiple API processes.
 
 PDF text is extracted with pinned `pypdf`; chunks stay within one PDF page and
 carry a one-based `page_number`. Markdown chunks retain their heading section
@@ -97,7 +101,30 @@ For a deterministic answer without the remote model, run
   model failure, and retrieval failure; it is never reported as a successful
   answer. Blank questions fail validation (HTTP 422) before retrieval or LLM.
   Question plus Evidence exceeding 12,000 UTF-8 bytes returns HTTP 422 with
-  `context_limit_exceeded`, without a model call.
+  `context_limit_exceeded`, without a model call. If a retrieved document changed
+  during generation, the result is rejected with HTTP 409 `source_changed`.
+  This checks every document supplied to the model, including uncited evidence,
+  before publishing either an answer or an insufficient-evidence result.
+
+## Document lifecycle (DOCS-007)
+
+`GET /api/documents` lists processing, ready and failed documents. Uploading
+the exact same filename and bytes again returns 200 with the same IDs and no
+new chunks. Changed bytes under that filename replace the document. The Web
+list also offers explicit replacement via `PUT /api/documents/{document_id}`.
+Deletion uses `DELETE /api/documents/{document_id}` and removes source files
+and Qdrant points. A missing ID returns 404.
+
+Replacement/deletion makes a document unavailable immediately. Failed
+operations stay unavailable even if index cleanup fails; retry an upload or
+deletion to recover. The initial store open marks interrupted operations as
+failed. Existing databases are migrated without discarding their documents.
+
+Citation checks use `GET /api/documents/{document_id}/citations/{chunk_id}`.
+Only `valid` sources may be displayed as current evidence; `invalid` means the
+source was replaced, deleted or is unavailable, while HTTP 503 means verification
+could not be completed. Full identity, migration and recovery rules are in
+[the lifecycle contract](../docs/document-lifecycle.md).
 
 The citation ID check establishes provenance, not factual support of every
 sentence. The LLM receives document text as untrusted evidence in the user
@@ -110,5 +137,15 @@ not a guarantee against all prompt injection or unsupported conclusions.
 PYTHONPATH=backend/src python -m unittest discover -s backend/tests -v
 ```
 
-The API tests use deterministic embedding/index/model doubles and do not invoke
-a real model or Qdrant. A real model and Qdrant run is a separate manual check.
+By default the API tests use deterministic embedding/index/model doubles and
+do not invoke a real model or Qdrant. The optional real Qdrant lifecycle test is
+skipped unless `QDRANT_TEST_URL` is set. To run it against Qdrant 1.20.0:
+
+```sh
+QDRANT_TEST_URL=http://127.0.0.1:6333 PYTHONPATH=backend/src python -m unittest backend.tests.test_qdrant_lifecycle -v
+```
+
+It creates and deletes its own uniquely named test collection and temporary
+source directory, leaving the application collection untouched. Embeddings
+and answers remain deterministic test doubles; this verifies storage and API
+behavior, not model quality. Real model validation is a separate authorized run.

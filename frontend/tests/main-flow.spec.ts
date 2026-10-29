@@ -1,4 +1,22 @@
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
+
+type UploadFixture = { status: number; json: { document_id: string; status: string; filename?: string; chunk_count?: number; error_code?: string } }
+
+async function mockUploads(page: Page, respond: () => UploadFixture) {
+  const documents = new Map<string, UploadFixture['json']>()
+  await page.route('**/api/documents', route => {
+    if (route.request().method() === 'GET') return route.fulfill({ json: { documents: [...documents.values()] } })
+    const response = respond()
+    const filename = route.request().postDataBuffer()?.toString().match(/filename="([^"]+)"/)?.[1]
+    documents.set(response.json.document_id, { ...response.json, filename: response.json.filename ?? filename })
+    return route.fulfill(response)
+  })
+}
+
+test.beforeEach(async ({ page }) => {
+  await page.route('**/api/documents', route => route.fulfill({ json: { documents: [] } }))
+  await page.route('**/api/documents/*/citations/*', route => route.fulfill({ json: { status: 'valid' } }))
+})
 
 const citation = {
   document_id: 'doc-1',
@@ -11,7 +29,7 @@ const citation = {
 }
 
 test('keyboard user uploads Markdown, asks, and opens the original citation', async ({ page }) => {
-  await page.route('**/api/documents', route => route.fulfill({
+  await mockUploads(page, () => ({
     status: 201,
     json: { document_id: 'doc-1', status: 'ready', filename: 'telescopes.md', chunk_count: 2 },
   }))
@@ -35,7 +53,7 @@ test('keyboard user uploads Markdown, asks, and opens the original citation', as
   await expect(page.getByRole('button', { name: '上传并建立索引' })).toBeFocused()
 
   const question = page.getByRole('textbox', { name: '独立英文问题' })
-  await page.keyboard.press('Tab')
+  for (let steps = 0; steps < 8 && !await question.evaluate(element => element === document.activeElement); steps++) await page.keyboard.press('Tab')
   await expect(question).toBeFocused()
   await page.keyboard.type('Which observatory built the Orion telescope?')
   await page.keyboard.press('Tab')
@@ -55,7 +73,7 @@ test('keyboard user uploads Markdown, asks, and opens the original citation', as
 
 test('blank question, failed import, and failed model have different messages', async ({ page }) => {
   let uploadFails = true
-  await page.route('**/api/documents', route => route.fulfill(uploadFails ? {
+  await mockUploads(page, () => (uploadFails ? {
     status: 503,
     json: { document_id: 'doc-failed', status: 'failed', error_code: 'index_failed' },
   } : {
@@ -97,15 +115,15 @@ test('an insufficient-evidence result is not displayed as a model failure', asyn
 
 test('a failed second import does not mark that file ready', async ({ page }) => {
   let uploadCount = 0
-  await page.route('**/api/documents', route => {
+  await mockUploads(page, () => {
     uploadCount += 1
-    return route.fulfill(uploadCount === 1 ? {
+    return uploadCount === 1 ? {
       status: 201,
       json: { document_id: 'doc-ready', status: 'ready', filename: 'telescopes.md', chunk_count: 2 },
     } : {
       status: 503,
       json: { document_id: 'doc-failed', status: 'failed', error_code: 'parse_failed' },
-    })
+    }
   })
   await page.goto('/')
   await page.getByLabel('PDF 或 Markdown 文件').setInputFiles('../backend/tests/fixtures/telescopes.md')
@@ -115,9 +133,10 @@ test('a failed second import does not mark that file ready', async ({ page }) =>
   await page.getByLabel('PDF 或 Markdown 文件').setInputFiles({ name: 'headings.md', mimeType: 'text/markdown', buffer: Buffer.from('# No body') })
   await page.getByRole('button', { name: '上传并建立索引' }).click()
   await expect(page.getByRole('alert')).toContainText('文档索引失败')
-  await expect(page.getByText('索引就绪')).toHaveCount(0)
-  await expect(page.getByText('此前已索引')).toBeVisible()
-  await expect(page.getByText('telescopes.md')).toBeVisible()
+  const entries = page.getByRole('list', { name: '文档列表' }).getByRole('listitem')
+  await expect(entries.filter({ hasText: 'headings.md' })).toContainText('失败')
+  await expect(entries.filter({ hasText: 'headings.md' })).not.toContainText('索引就绪')
+  await expect(entries.filter({ hasText: 'telescopes.md' })).toContainText('索引就绪')
 })
 
 test('context limit error is associated with the question field', async ({ page }) => {
@@ -143,13 +162,14 @@ test('long unbroken evidence remains readable on a narrow screen', async ({ page
   await page.getByRole('textbox', { name: '独立英文问题' }).fill('What happened?')
   await page.getByRole('button', { name: '检索并回答' }).click()
   await page.locator('summary').click()
+  await expect(page.locator('blockquote')).toContainText('X'.repeat(600))
   const width = await page.evaluate(() => ({ scroll: document.documentElement.scrollWidth, viewport: document.documentElement.clientWidth }))
   expect(width.scroll).toBeLessThanOrEqual(width.viewport)
 })
 
 test('PDF upload and answer show the cited page instead of a Markdown section', async ({ page }) => {
   const pdfExcerpt = 'The Orion telescope was built in 2022 by the North Observatory.'
-  await page.route('**/api/documents', route => route.fulfill({
+  await mockUploads(page, () => ({
     status: 201,
     json: { document_id: 'pdf-1', status: 'ready', filename: 'observatories.pdf', chunk_count: 2 },
   }))
@@ -176,7 +196,7 @@ test('PDF upload and answer show the cited page instead of a Markdown section', 
 })
 
 test('an unparseable PDF is shown as a failed import', async ({ page }) => {
-  await page.route('**/api/documents', route => route.fulfill({
+  await mockUploads(page, () => ({
     status: 503,
     json: { document_id: 'broken-pdf', status: 'failed', error_code: 'parse_failed' },
   }))
