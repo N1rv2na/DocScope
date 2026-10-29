@@ -36,3 +36,21 @@ PYTHONPATH=backend/src python3 -m unittest discover -s backend/tests -v
 ```
 
 `verify` 在文件哈希、必需字段、证据文章关联或清单划分不符时返回非零退出码。`freeze` 模式只用于首次生成清单；已有清单不同则拒绝覆盖，以免无意中重划封存集。
+
+## DOCS-008 Dense Baseline（已实测）
+
+固定评测配置是 [dense_baseline_v1.json](configs/dense_baseline_v1.json)：同一 609 篇文章通过现有 Markdown 上传 API 完成标准分块、CPU Embedding 和 Qdrant Dense 索引。使用冻结清单的全部 2,556 道题做离线检索；只有预先在配置中列出的 12 道 dev 题（每种类型 3 道）会调用问答 API。test 题参与检索，但不用于挑选配置或答案子集。配置中保留具体样本 ID，以便 A–E 后续对照使用相同问题。
+
+文章按 URL 的冻结适配器生成离线 ID，上传时用该 ID 作文件名，在线文档 ID 由上传 API 返回并建立离线映射。上传的文件内容只包含文章 `body`；参考答案、`evidence_list.fact` 和题目类型留在离线进程，不进入索引。对于每个标注事实，先 NFKC 规范化、大小写折叠并压缩空白，然后要求它恰好包含于同一篇文章的一个实际 Chunk：零个匹配记 `no_chunk`，多个记 `ambiguous_chunks`，整题只要有失败就不计片段分母。跨 Chunk 事实会列为未映射，不推测它被检索到。抽查 12 道题的离线映射状态：7 道映射、3 道 `no_chunk`、2 道 `null_query`；这是规则检查，不是模型结果。正式报告仍需人工核看部分匹配文本与跨 Chunk 失败案例。
+
+文章级 Recall@5/10 按去重后的标注文章计算，All-Evidence 需要全部标注文章命中；片段级 Fact Coverage@5/10 和 All-Fact 只在整题事实均能唯一映射时计分。`null_query` 不进入有证据指标分母，映射失败只影响片段级分母。全量检索直接使用在线路径的同一本地 Embedding 和 Qdrant Dense 查询，覆盖冻结题目中 13 道超出 Web API 500 字符限制的问题，不截断原题；评测集合只含本轮文章，故查询不发送在线服务所需的 ready ID 过滤。答案子集仍调用当前 `/api/chat` 路径。请求失败会留下失败产物，不计为漏检。逐题输出原始与稳定来源 ID、划分、映射分类、指标和耗时；分别汇总 dev/test 的分母。子集另输出回答、引用、HTTP 状态与逐次 Token、实际模型标识、有效网关配置和耗时。实际账单金额若网关不提供则为 `null`，不能认作零费用。
+
+获授权后，在仓库根目录、Qdrant 1.20.0 和已配置的 LLM 环境下运行：
+
+```sh
+PYTHONPATH=backend/src QDRANT_URL=http://127.0.0.1:6333 python -m docscope.evaluation.run_dense \
+  --config evaluation/configs/dense_baseline_v1.json \
+  --output evaluation/results/dense_baseline_all_v1.json
+```
+
+运行创建独立 Qdrant 测试集合及临时源文件目录，结束时清理集合；原始数据哈希与清单在导入前复验。运行失败会把已完成题目和错误写入同目录下的 `.failed.json`，不覆盖成功产物。该命令会把 12 道题的检索证据送往配置的外部 LLM 网关；本次已获用户针对该数据外发和可能费用的明确授权。实际运行产物是 [逐题 JSON](results/dense_baseline_all_v1.json) 与 [简报](results/dense_baseline_report.md)。

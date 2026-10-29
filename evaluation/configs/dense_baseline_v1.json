@@ -1,0 +1,25 @@
+{
+  "manifest": "evaluation/manifests/multihop_rag_v1.json",
+  "dataset_config": "evaluation/configs/multihop_rag_v1.json",
+  "split": "all",
+  "retrieval_k": [5, 10],
+  "answer_subset_per_type": 3,
+  "answer_subset_ids": [
+    "mhr-q-62607bbbdf8d4daa782b",
+    "mhr-q-66a99ee476b80008b802",
+    "mhr-q-692ecf2907b3b65bc418",
+    "mhr-q-71c3f55cd1150d560470",
+    "mhr-q-7e6673c52727a5c37faf",
+    "mhr-q-816c6ee52abe20ca42e6",
+    "mhr-q-9059b74afac51ed7cab5",
+    "mhr-q-9a4d7197bf10c336946a",
+    "mhr-q-a70bac4fbd4e8ee99073",
+    "mhr-q-c81a29ee075e961b2eb0",
+    "mhr-q-d527c115ed7cfd8f14b1",
+    "mhr-q-f4da8c5620114c384e0b"
+  ],
+  "mapping_rule": "NFKC casefold whitespace exact substring in exactly one ingested chunk",
+  "qdrant_version": "1.20.0",
+  "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+  "embedding_revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41"
+}

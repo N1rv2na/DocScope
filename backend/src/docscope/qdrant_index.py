@@ -53,14 +53,16 @@ class QdrantIndex:
     def upsert(self, points: list[dict]) -> None:
         self._request("PUT", f"/collections/{self.collection}/points?wait=true", {"points": points})
 
-    def query(self, vector: list[float], ready_ids: list[str], limit: int) -> list[dict]:
-        response = self._request("POST", f"/collections/{self.collection}/points/query", {
+    def query(self, vector: list[float], ready_ids: list[str] | None, limit: int) -> list[dict]:
+        request = {
             "query": vector,
             "using": "dense",
-            "filter": {"must": [{"key": "document_id", "match": {"any": ready_ids}}]},
             "limit": limit,
             "with_payload": True,
-        })
+        }
+        if ready_ids is not None:
+            request["filter"] = {"must": [{"key": "document_id", "match": {"any": ready_ids}}]}
+        response = self._request("POST", f"/collections/{self.collection}/points/query", request)
         return response["result"]["points"]
 
     def delete_document(self, document_id: str) -> None:
