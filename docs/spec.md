@@ -1,6 +1,6 @@
 # DocScope 技术规格
 
-> 状态：目标规格；M1 Dense 闭环、DOCS-009 Hybrid 检索及 DOCS-010 本地 Rerank 检索已实现并在开发集评测，后续里程碑仍是计划。DOCS-001 的离线数据合同见 [evaluation/README.md](../evaluation/README.md)。范围与决策依据来自 [CONTEXT.md](CONTEXT.md)、[ARCHITECTURE.md](ARCHITECTURE.md)、[ADR](adr/) 和 [design.md](design.md)。`M1/M2/M3` 是秋招展示版的递进交付；`M4/M5` 为后续迭代。标为 **Assumption** 的内容须在 [OPEN_QUESTIONS.md](OPEN_QUESTIONS.md) 所列阶段冻结，不能据此宣称已有能力。
+> 状态：目标规格；M1 Dense 闭环、DOCS-009 Hybrid 检索及 DOCS-010 本地 Rerank 检索已实现并在开发集评测；DOCS-011 已接通可追踪的单轮 LangGraph Run，动态多跳、SSE 和 Agent 评测仍是计划。DOCS-001 的离线数据合同见 [evaluation/README.md](../evaluation/README.md)。范围与决策依据来自 [CONTEXT.md](CONTEXT.md)、[ARCHITECTURE.md](ARCHITECTURE.md)、[ADR](adr/) 和 [design.md](design.md)。`M1/M2/M3` 是秋招展示版的递进交付；`M4/M5` 为后续迭代。标为 **Assumption** 的内容须在 [OPEN_QUESTIONS.md](OPEN_QUESTIONS.md) 所列阶段冻结，不能据此宣称已有能力。
 
 ## 1. System Overview
 

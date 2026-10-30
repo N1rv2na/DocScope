@@ -5,4 +5,5 @@ sentence-transformers==5.1.2
 transformers==4.57.6
 torch==2.5.1
 openai==2.32.0
+langgraph==1.2.18
 pypdf==6.21.2

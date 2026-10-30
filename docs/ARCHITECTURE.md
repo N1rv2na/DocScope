@@ -1,6 +1,6 @@
 # DocScope 系统架构
 
-> 状态：目标架构，尚未实现。阶段范围与验收以 [design.md](design.md) 为准；未冻结的实现选择统一列于 [OPEN_QUESTIONS.md](OPEN_QUESTIONS.md)。
+> 状态：目标架构；M1/M2 和 DOCS-011 单轮 LangGraph Run 已接通，动态多跳、SSE 和记忆仍未实现。阶段范围与验收以 [design.md](design.md) 为准；未冻结的实现选择统一列于 [OPEN_QUESTIONS.md](OPEN_QUESTIONS.md)。
 
 ## 结构与边界
 

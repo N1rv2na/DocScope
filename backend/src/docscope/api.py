@@ -14,6 +14,7 @@ from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, field_validator, model_validator
 
+from docscope.agent_run import AgentRunner, RunStore
 from docscope.document_store import DocumentStore
 from docscope.embedding import LocalEmbedder
 from docscope.llm import ContextLimitError, OpenAIResponder
@@ -70,6 +71,27 @@ class ModelAnswer(BaseModel):
     status: Literal["answered", "insufficient_evidence"]
     answer: str | None
     citation_ids: list[str]
+
+
+def validated_answer(answer: ModelAnswer, evidence: list[dict[str, Any]]) -> dict:
+    """Apply the same citation and refusal contract to both question paths."""
+    if answer.status == "insufficient_evidence":
+        if answer.answer is not None or answer.citation_ids:
+            raise ValueError("refusal cannot have answer or citations")
+        return {"status": "insufficient_evidence", "answer": None, "citations": []}
+    if not answer.answer or not answer.answer.strip() or not answer.citation_ids:
+        raise ValueError("answer and citations required")
+    by_id = {item["chunk_id"]: item for item in evidence}
+    if any(chunk_id not in by_id for chunk_id in answer.citation_ids):
+        raise ValueError("citation not in this run's evidence")
+    citations = []
+    for chunk_id in dict.fromkeys(answer.citation_ids):
+        item = by_id[chunk_id]
+        citations.append({key: item[key] for key in (
+            "document_id", "chunk_id", "document_title", "source_path",
+            "page_number", "section", "line_start", "chunk_text", "index_version",
+        )})
+    return {"status": "answered", "answer": answer.answer.strip(), "citations": citations}
 
 
 def _validate_upload(file: UploadFile) -> tuple[str, bytes, str | None]:
@@ -275,6 +297,16 @@ def create_app(data_dir: Path | None = None, embedder: Any = None, index: Any = 
         with lifecycle_lock:
             return retrieve_current(request)
 
+    def agent_evidence(query: str) -> list[dict[str, Any]]:
+        with lifecycle_lock:
+            return retrieve_current(HybridQuery(query=query, limit=5, candidate_limit=20))
+
+    def sources_current(evidence: list[dict]) -> bool:
+        with lifecycle_lock:
+            return all((current := documents().get(item["document_id"])) is not None
+                       and current["status"] == "ready"
+                       and current["index_version"] == item["index_version"] for item in evidence)
+
     def retrieve_current(request: DenseQuery) -> list[dict[str, Any]]:
         hybrid = isinstance(request, HybridQuery)
         reranked = isinstance(request, RerankQuery)
@@ -337,6 +369,26 @@ def create_app(data_dir: Path | None = None, embedder: Any = None, index: Any = 
         with lifecycle_lock:
             return {"evidence": retrieve_current(request)}
 
+    agent = AgentRunner(agent_evidence, responder.generate,
+                        lambda raw, evidence: validated_answer(ModelAnswer.model_validate(raw), evidence),
+                        sources_current)
+    run_store = RunStore(root)
+
+    @api.post("/api/agent/run", response_model=None)
+    def agent_run(request: ChatQuestion) -> dict | JSONResponse:
+        result = agent.run(request.question)
+        try:
+            run_store.save(result)
+        except OSError:
+            logger.exception("Could not save Agent run %s", result["run_id"])
+            failed = {**result, "status": "error", "error_code": "run_record_failed",
+                      "stop_reason": "run_record_failed", "answer": None, "citations": [],
+                      "trace": result["trace"] + [{"stage": "persist", "status": "failed"}]}
+            return JSONResponse(status_code=503, content=failed)
+        status = {"context_limit_exceeded": 422, "model_output_invalid": 502,
+                  "source_changed": 409}.get(result.get("error_code"), 503)
+        return result if result["status"] != "error" else JSONResponse(status_code=status, content=result)
+
     @api.post("/api/chat", response_model=None)
     def chat(request: ChatQuestion) -> dict | JSONResponse:
         run_id = str(uuid.uuid4())
@@ -373,31 +425,12 @@ def create_app(data_dir: Path | None = None, embedder: Any = None, index: Any = 
             answer = ModelAnswer.model_validate(raw)
             # Any evidence supplied to the model can affect an answer or refusal,
             # including chunks omitted from its final citation list.
-            with lifecycle_lock:
-                for item in evidence:
-                    current = documents().get(item["document_id"])
-                    if not current or current["status"] != "ready" or current["index_version"] != item["index_version"]:
-                        return JSONResponse(status_code=409, content={
-                            "run_id": run_id, "status": "error", "error_code": "source_changed",
-                            "answer": None, "citations": [],
-                        })
-            if answer.status == "insufficient_evidence":
-                if answer.answer is not None or answer.citation_ids:
-                    raise ValueError("refusal cannot have answer or citations")
-                return {"run_id": run_id, "status": "insufficient_evidence", "answer": None, "citations": []}
-            if not answer.answer or not answer.answer.strip() or not answer.citation_ids:
-                raise ValueError("answer and citations required")
-            by_id = {item["chunk_id"]: item for item in evidence}
-            if any(chunk_id not in by_id for chunk_id in answer.citation_ids):
-                raise ValueError("citation not in this run's evidence")
-            citations = []
-            for chunk_id in dict.fromkeys(answer.citation_ids):
-                item = by_id[chunk_id]
-                citations.append({key: item[key] for key in (
-                    "document_id", "chunk_id", "document_title", "source_path",
-                    "page_number", "section", "line_start", "chunk_text", "index_version",
-                )})
-            return {"run_id": run_id, "status": "answered", "answer": answer.answer.strip(), "citations": citations}
+            if not sources_current(evidence):
+                return JSONResponse(status_code=409, content={
+                    "run_id": run_id, "status": "error", "error_code": "source_changed",
+                    "answer": None, "citations": [],
+                })
+            return {"run_id": run_id, **validated_answer(answer, evidence)}
         except (ValueError, KeyError):
             logger.warning("Rejected invalid model answer for run %s", run_id, exc_info=True)
             return JSONResponse(status_code=502, content={

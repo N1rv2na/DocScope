@@ -112,6 +112,38 @@ For a deterministic answer without the remote model, run
   This checks every document supplied to the model, including uncited evidence,
   before publishing either an answer or an insufficient-evidence result.
 
+## DOCS-011 single-run LangGraph path
+
+`POST /api/agent/run` accepts the same `{ "question": "..." }` body as
+`/api/chat`. It runs a compiled LangGraph with exactly one deterministic
+planning step (the standalone question becomes the query), one Hybrid RRF
+retrieval of at most five Evidence chunks, and at most one answer call. The
+legacy `/api/chat` endpoint remains Dense-only. The Agent path uses Hybrid
+without Cross-Encoder because the DOCS-010 dev ablation found that this fixed
+reranker configuration reduced evidence coverage; M3's eventual default
+retrieval path remains an open evaluation decision.
+
+The response includes `run_id`, the original `question`, `query`,
+`retrieved_evidence_ids`, ordered `trace` stages with elapsed times,
+`calls` for retrieval and responder invocation attempts, `stop_reason`,
+and the existing answer/refusal and citation fields. Captured failures use
+`status: error`, a failed trace stage, and `error_code`, with no success answer
+or citations. Final Run records are written atomically under
+`$DOCSCOPE_DATA_DIR/runs/<run_id>.json`; this local directory is ignored by
+Git. A local context check can fail before a remote model request, so
+`calls.model` is not a remote HTTP request or Token count. If Run storage
+fails, the API returns a failed persistence stage and existing trace but
+cannot write a local file. These records contain the question and returned
+citation text, so they must not be published without review. This Issue has no second hop, SSE,
+conversation memory, or persistent LangGraph Checkpointer.
+
+The fixed API tests use fake retrieval and LLM boundaries, with no remote
+model request:
+
+```sh
+PYTHONPATH=backend/src python -m unittest backend.tests.test_agent_run -v
+```
+
 ## Document lifecycle (DOCS-007)
 
 `GET /api/documents` lists processing, ready and failed documents. Uploading
