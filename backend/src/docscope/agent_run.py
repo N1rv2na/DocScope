@@ -16,6 +16,10 @@ from docscope.llm import ContextLimitError
 
 
 logger = logging.getLogger(__name__)
+MAX_RETRIEVAL_ROUNDS = 2
+MAX_MODEL_ATTEMPTS = 2
+MAX_FOLLOWUP_QUERY_CHARS = 500
+MAX_BRIDGE_TEXT_CHARS = 120
 
 
 class RunState(TypedDict, total=False):
@@ -24,6 +28,8 @@ class RunState(TypedDict, total=False):
     query: str
     evidence: list[dict[str, Any]]
     retrieved_evidence_ids: list[str]
+    retrieval_round: int
+    followup_ready: bool
     trace: list[dict[str, Any]]
     calls: dict[str, int]
     status: str
@@ -56,7 +62,8 @@ class AgentRunner:
     def __init__(self, retrieve: Callable[[str], list[dict]],
                  generate: Callable[[str, list[dict]], dict],
                  validate: Callable[[dict, list[dict]], dict],
-                 sources_current: Callable[[list[dict]], bool]):
+                 sources_current: Callable[[list[dict]], bool],
+                 plan_next: Callable[[str, list[dict]], dict] | None = None):
         def plan(state: RunState) -> dict:
             started = time.monotonic()
             query = state["question"]
@@ -67,6 +74,9 @@ class AgentRunner:
 
         def retrieve_once(state: RunState) -> dict:
             started = time.monotonic()
+            if state["retrieval_round"] >= MAX_RETRIEVAL_ROUNDS:
+                return {**self._failure("retrieval_budget_exhausted"),
+                        "trace": state["trace"] + [self._step("retrieve", "failed", started)]}
             calls = {**state["calls"], "retrieval": state["calls"]["retrieval"] + 1}
             try:
                 evidence = retrieve(state["query"])
@@ -75,19 +85,80 @@ class AgentRunner:
                 logger.exception("Agent retrieval failed for run %s", state["run_id"])
                 return {**self._failure("retrieval_failed"), "calls": calls,
                         "trace": state["trace"] + [self._step("retrieve", "failed", started)]}
-            update = {"evidence": evidence, "retrieved_evidence_ids": ids, "calls": calls,
+            existing_ids = set(state["retrieved_evidence_ids"])
+            new_evidence = []
+            for item in evidence:
+                if item["chunk_id"] not in existing_ids:
+                    new_evidence.append(item)
+                    existing_ids.add(item["chunk_id"])
+            combined = state.get("evidence", []) + new_evidence
+            round_number = state["retrieval_round"] + 1
+            update = {"evidence": combined,
+                      "retrieved_evidence_ids": state["retrieved_evidence_ids"] + [
+                          item["chunk_id"] for item in new_evidence],
+                      "retrieval_round": round_number, "calls": calls,
                       "trace": state["trace"] + [self._step("retrieve", "completed", started,
-                                                           evidence_ids=ids)]}
-            if not evidence:
+                                                           round=round_number, query=state["query"],
+                                                           evidence_ids=ids,
+                                                           new_evidence_ids=[item["chunk_id"] for item in new_evidence])]}
+            if not combined:
                 update.update(status="insufficient_evidence", stop_reason="no_evidence",
                               answer=None, citations=[])
             return update
 
         def next_stage(state: RunState) -> str:
-            return END if state.get("status") else "answer"
+            if state.get("status"):
+                return END
+            if plan_next is not None and state["retrieval_round"] < MAX_RETRIEVAL_ROUNDS:
+                return "plan_next"
+            return "answer"
+
+        def plan_from_evidence(state: RunState) -> dict:
+            started = time.monotonic()
+            if state["calls"]["model"] >= MAX_MODEL_ATTEMPTS:
+                return {**self._failure("model_budget_exhausted"),
+                        "trace": state["trace"] + [self._step("plan_next", "failed", started)]}
+            calls = {**state["calls"], "model": state["calls"]["model"] + 1}
+            try:
+                proposal = plan_next(state["question"], state["evidence"])
+            except ContextLimitError:
+                code = "context_limit_exceeded"
+            except ValueError:
+                logger.exception("Invalid next-query output for run %s", state["run_id"])
+                code = "plan_output_invalid"
+            except Exception:
+                logger.exception("Next-query planning failed for run %s", state["run_id"])
+                code = "planner_failed"
+            else:
+                code = None
+            if code:
+                return {**self._failure(code), "calls": calls,
+                        "trace": state["trace"] + [self._step("plan_next", "failed", started)]}
+            try:
+                next_query, bridge_text, source_chunk_id, skip_reason = self._validate_proposal(
+                    proposal, state["question"], state["query"], state["evidence"])
+            except ValueError:
+                logger.warning("Rejected next-query proposal for run %s", state["run_id"], exc_info=True)
+                return {**self._failure("plan_output_invalid"), "calls": calls,
+                        "trace": state["trace"] + [self._step("plan_next", "failed", started)]}
+            if next_query is None:
+                return {"calls": calls, "followup_ready": False,
+                        "trace": state["trace"] + [self._step("plan_next", "completed", started,
+                                                             reason=skip_reason)]}
+            return {"query": next_query, "calls": calls, "followup_ready": True,
+                    "trace": state["trace"] + [self._step("plan_next", "completed", started,
+                                                         next_query=next_query, bridge_text=bridge_text,
+                                                         source_chunk_id=source_chunk_id)]}
+
+        def after_followup(state: RunState) -> str:
+            if state.get("status"):
+                return END
+            return "retrieve" if state.get("followup_ready") else "answer"
 
         def answer_once(state: RunState) -> dict:
             started = time.monotonic()
+            if state["calls"]["model"] >= MAX_MODEL_ATTEMPTS:
+                return self._answer_failure(state, state["calls"], "model_budget_exhausted", started)
             calls = {**state["calls"], "model": state["calls"]["model"] + 1}
             try:
                 raw = generate(state["question"], state["evidence"])
@@ -116,12 +187,38 @@ class AgentRunner:
         graph = StateGraph(RunState)
         graph.add_node("plan", plan)
         graph.add_node("retrieve", retrieve_once)
+        graph.add_node("plan_next", plan_from_evidence)
         graph.add_node("answer", answer_once)
         graph.add_edge(START, "plan")
         graph.add_edge("plan", "retrieve")
-        graph.add_conditional_edges("retrieve", next_stage, ["answer", END])
+        graph.add_conditional_edges("retrieve", next_stage, ["plan_next", "answer", END])
+        graph.add_conditional_edges("plan_next", after_followup, ["retrieve", "answer", END])
         graph.add_edge("answer", END)
         self.graph = graph.compile()
+
+    @staticmethod
+    def _validate_proposal(proposal: dict | None, question: str, prior_query: str,
+                           evidence: list[dict]) -> tuple[str | None, str | None, str | None, str | None]:
+        if proposal is None or proposal == {"next_query": None, "bridge_text": None, "source_chunk_id": None}:
+            return None, None, None, "no_followup"
+        if not isinstance(proposal, dict) or set(proposal) != {"next_query", "bridge_text", "source_chunk_id"}:
+            raise ValueError("next-query proposal must contain exactly three fields")
+        query, bridge, source_id = (proposal[key] for key in ("next_query", "bridge_text", "source_chunk_id"))
+        if (not isinstance(query, str) or not query.strip() or len(query) > MAX_FOLLOWUP_QUERY_CHARS
+                or not isinstance(bridge, str) or not bridge.strip() or len(bridge) > MAX_BRIDGE_TEXT_CHARS
+                or not isinstance(source_id, str)):
+            raise ValueError("invalid next-query fields")
+        source = next((item for item in evidence if item["chunk_id"] == source_id), None)
+        normalized = lambda value: " ".join(value.casefold().split())
+        if source is None or normalized(bridge) not in normalized(source["chunk_text"]):
+            raise ValueError("bridge text is not in the cited retrieved Chunk")
+        if normalized(bridge) in normalized(question):
+            raise ValueError("bridge text was already present in the initial question")
+        if normalized(query) == normalized(prior_query):
+            return None, bridge, source_id, "repeated_query"
+        if normalized(bridge) not in normalized(query):
+            raise ValueError("next query does not use the discovered bridge")
+        return query.strip(), bridge.strip(), source_id, None
 
     @staticmethod
     def _step(stage: str, status: str, started: float, **details: Any) -> dict:
@@ -142,7 +239,8 @@ class AgentRunner:
         started = time.monotonic()
         initial: RunState = {"run_id": str(uuid.uuid4()), "question": question,
                              "trace": [], "calls": {"retrieval": 0, "model": 0},
-                             "retrieved_evidence_ids": []}
+                             "retrieved_evidence_ids": [], "retrieval_round": 0,
+                             "followup_ready": False}
         try:
             state = self.graph.invoke(initial)
         except Exception:

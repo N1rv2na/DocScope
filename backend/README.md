@@ -112,19 +112,24 @@ For a deterministic answer without the remote model, run
   This checks every document supplied to the model, including uncited evidence,
   before publishing either an answer or an insufficient-evidence result.
 
-## DOCS-011 single-run LangGraph path
+## DOCS-011/012 bounded LangGraph path
 
 `POST /api/agent/run` accepts the same `{ "question": "..." }` body as
-`/api/chat`. It runs a compiled LangGraph with exactly one deterministic
-planning step (the standalone question becomes the query), one Hybrid RRF
-retrieval of at most five Evidence chunks, and at most one answer call. The
-legacy `/api/chat` endpoint remains Dense-only. The Agent path uses Hybrid
+`/api/chat`. It runs a compiled LangGraph that first uses the standalone
+question as its query. DOCS-012 may then make one structured planning call
+over the first retrieval's actual Evidence and execute a second Hybrid RRF
+query using a newly discovered entity or fact. A proposed bridge must appear
+in the cited first-hop Chunk and the second query, and must be absent from
+the original question. The graph caps retrieval at two rounds and planner
+plus answerer at two model invocation attempts; each retrieval returns at most
+five Chunks. The legacy `/api/chat` endpoint remains Dense-only. The Agent path uses Hybrid
 without Cross-Encoder because the DOCS-010 dev ablation found that this fixed
 reranker configuration reduced evidence coverage; M3's eventual default
 retrieval path remains an open evaluation decision.
 
 The response includes `run_id`, the original `question`, `query`,
-`retrieved_evidence_ids`, ordered `trace` stages with elapsed times,
+`retrieved_evidence_ids`, ordered `trace` stages with round numbers,
+source Chunk IDs, new Evidence IDs and elapsed times,
 `calls` for retrieval and responder invocation attempts, `stop_reason`,
 and the existing answer/refusal and citation fields. Captured failures use
 `status: error`, a failed trace stage, and `error_code`, with no success answer
@@ -134,14 +139,26 @@ Git. A local context check can fail before a remote model request, so
 `calls.model` is not a remote HTTP request or Token count. If Run storage
 fails, the API returns a failed persistence stage and existing trace but
 cannot write a local file. These records contain the question and returned
-citation text, so they must not be published without review. This Issue has no second hop, SSE,
-conversation memory, or persistent LangGraph Checkpointer.
+citation text, so they must not be published without review. The fixed
+[dependency sample](../evaluation/dependency_samples/) demonstrates the
+first-hop bridge and second-hop answer without passing its answer label to
+the online Agent. Full sufficiency decisions, SSE, conversation memory and
+persistent LangGraph Checkpointer remain later work.
+
+Each OpenAI-compatible planner or answer response logs its stage, requested
+and actual model, `finish_reason`, output limit, and prompt/completion/reasoning/
+total token counts through Uvicorn's INFO logger. Truncated responses are
+logged before the Run reports an error; unavailable provider usage fields are
+logged as `None`. Prompts, responses, and API keys are not logged. The planner
+requests at most 2048 output tokens and the answerer at most 400. These
+diagnostics appear in server logs, not in the saved Run JSON.
 
 The fixed API tests use fake retrieval and LLM boundaries, with no remote
 model request:
 
 ```sh
 PYTHONPATH=backend/src python -m unittest backend.tests.test_agent_run -v
+PYTHONPATH=backend/src python -m unittest backend.tests.test_second_hop -v
 ```
 
 ## Document lifecycle (DOCS-007)

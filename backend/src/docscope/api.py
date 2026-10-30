@@ -371,7 +371,7 @@ def create_app(data_dir: Path | None = None, embedder: Any = None, index: Any = 
 
     agent = AgentRunner(agent_evidence, responder.generate,
                         lambda raw, evidence: validated_answer(ModelAnswer.model_validate(raw), evidence),
-                        sources_current)
+                        sources_current, plan_next=getattr(responder, "plan_next", None))
     run_store = RunStore(root)
 
     @api.post("/api/agent/run", response_model=None)
@@ -386,7 +386,7 @@ def create_app(data_dir: Path | None = None, embedder: Any = None, index: Any = 
                       "trace": result["trace"] + [{"stage": "persist", "status": "failed"}]}
             return JSONResponse(status_code=503, content=failed)
         status = {"context_limit_exceeded": 422, "model_output_invalid": 502,
-                  "source_changed": 409}.get(result.get("error_code"), 503)
+                  "plan_output_invalid": 502, "source_changed": 409}.get(result.get("error_code"), 503)
         return result if result["status"] != "error" else JSONResponse(status_code=status, content=result)
 
     @api.post("/api/chat", response_model=None)

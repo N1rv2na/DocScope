@@ -1,0 +1,10 @@
+{
+  "sample_id": "docs012-aster-polaris-operator",
+  "question": "Which team operates the service used for audit export by Aster Telemetry Console?",
+  "first_source": "aster-telemetry.md",
+  "second_source": "polaris-relay.md",
+  "bridge_text": "Polaris Relay",
+  "answer": "East Region Operations team",
+  "review_status": "owner_confirmed_2026-10-30",
+  "review_note": "The first source identifies Polaris Relay as the audit-export service but does not name its operator. The second source names the operator but does not mention Aster Telemetry Console. The question omits Polaris Relay, so a second query containing it can only be justified from the first source."
+}
