@@ -69,6 +69,9 @@ curl -sS -H 'Content-Type: application/json' \
   -d '{"query":"Which observatory built the Orion telescope?","limit":2,"candidate_limit":20}' \
   http://127.0.0.1:8000/api/retrieval/hybrid
 curl -sS -H 'Content-Type: application/json' \
+  -d '{"query":"Which observatory built the Orion telescope?","limit":2,"candidate_limit":20,"rerank_limit":20}' \
+  http://127.0.0.1:8000/api/retrieval/rerank
+curl -sS -H 'Content-Type: application/json' \
   -d '{"question":"Which observatory built the Orion telescope?"}' \
   http://127.0.0.1:8000/api/chat
 ```
@@ -141,6 +144,18 @@ tokenization and lowercase matching; Qdrant RRF merges Dense and BM25 rankings.
 returned evidence (1–10, default 5). If candidates are scarce, the response can
 contain fewer than `limit` items. `/api/chat` remains Dense-only in this
 Issue. Replacements and deletions remove points from both retrieval paths.
+
+`/api/retrieval/rerank` scores at most 20 Hybrid RRF candidates with the local
+CPU Cross-Encoder `cross-encoder/ms-marco-MiniLM-L6-v2` at revision
+`233902d25c440f23af6f7d6e94d2946bac0bee0a`. The `rerank_limit` is 1–20,
+at least the final `limit`, and no larger than `candidate_limit`; the final evidence remains limited to
+1–10 Chunks (at most 1,000 source characters each). The response retains
+`rrf_rank`, `rrf_score`, and the separate raw `rerank_score`; the ordinary
+`score` in this endpoint is the rerank score. These score scales must not be
+compared directly. Model weights load on the first rerank query; in this
+single-user local service, that initial load holds the lifecycle lock and can
+delay other requests. `/api/chat`
+still uses Dense retrieval at this stage.
 
 ## Tests
 

@@ -1,6 +1,6 @@
 # ADR 0001：在同一 Qdrant Chunk 集合上实现混合检索
 
-状态：Accepted（DOCS-009 已实现 BM25/RRF；Cross-Encoder Reranking 尚未实现）<br>
+状态：Accepted（DOCS-009 已实现 BM25/RRF；DOCS-010 已接入本地 Cross-Encoder，开发集效果见消融报告）<br>
 依据：[design.md §5–6.2](../design.md)、审查决策 Q5。
 
 ## Context

@@ -70,3 +70,19 @@ PYTHONPATH=backend/src QDRANT_URL=http://127.0.0.1:6333 python -m docscope.evalu
 脚本创建临时数据目录及隔离 Qdrant 集合，完成后删除。配置中 `word`、小写和 Qdrant 内置 RRF 是本轮固定选择；结果只证明这一配置在开发集上的观测，不能声称是全局最优或封存 test 的结果。
 
 本次授权运行的产物：[逐题 JSON](results/hybrid_dev_v1.json)、[简报](results/hybrid_dev_report.md)。
+
+## DOCS-010 三组检索消融
+
+[固定配置](configs/rerank_dev_v1.json)在同一冻结 `dev` 集和同一隔离 Qdrant 集合中比较 Dense、Hybrid、Hybrid+Cross-Encoder。每题只编码一次问题，Dense 与 Hybrid 查询顺序按题交错，待两路查询完成后才对 Hybrid RRF Top-20 候选进行 CPU 重排；三组最终分别以 Top-5/10 计分。重排保留原始 RRF 排名和分数，另外记录 Cross-Encoder 原始打分；逐题时延包含共享 Embedding，重排阶段时延另列。模型与修订固定为 M0 已冒烟的 `cross-encoder/ms-marco-MiniLM-L6-v2` / `233902d25c440f23af6f7d6e94d2946bac0bee0a`。本轮无远程 LLM 调用，不读取封存 test 结果。
+
+在仓库根目录、Qdrant 1.20.0 和本地模型可用时执行：
+
+```sh
+PYTHONPATH=backend/src QDRANT_URL=http://127.0.0.1:6333 python -m docscope.evaluation.run_rerank \
+  --config evaluation/configs/rerank_dev_v1.json \
+  --output evaluation/results/rerank_dev_v1.json
+```
+
+脚本按现有评测合同核对原始文件哈希和 dev 清单，摄取时仅发送文章正文。生成逐题质量/时延和映射失败记录，结束时删除隔离集合；运行失败写 `.failed.json`。Top-20 是本 Issue 的固定候选预算，后续是否使用该配置应依据实际质量与 CPU 代价判断，不能预设提升。
+
+本次授权运行产物：[逐题 JSON](results/rerank_dev_v1.json)、[消融报告](results/rerank_dev_report.md)。在本轮 dev 检索中，C 比 B 更慢且多项指标下降；报告保留改善与退化案例，不能据此宣称 Reranking 带来净增益。

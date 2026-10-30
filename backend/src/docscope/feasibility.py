@@ -17,10 +17,9 @@ from pathlib import Path
 from urllib.parse import urlsplit
 
 from docscope.embedding import EMBEDDING_MODEL, EMBEDDING_REVISION
+from docscope.reranking import RERANKER_MODEL, RERANKER_REVISION
 
 QDRANT_VERSION = "1.20.0"
-RERANKER_MODEL = "cross-encoder/ms-marco-MiniLM-L6-v2"
-RERANKER_REVISION = "233902d25c440f23af6f7d6e94d2946bac0bee0a"
 EXAMPLE_CHUNKS = [
     "The Orion telescope was built in 2022 by the North Observatory.",
     "The Vega telescope was built in 2020 by the South Observatory.",

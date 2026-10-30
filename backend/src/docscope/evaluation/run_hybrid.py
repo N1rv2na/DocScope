@@ -18,6 +18,7 @@ from docscope.api import create_app
 from docscope.embedding import EMBEDDING_MODEL, EMBEDDING_REVISION, LocalEmbedder
 from docscope.evaluation.dense_baseline import map_facts, score_retrieval
 from docscope.evaluation.run_dense import EvaluationIndex, load_inputs, scroll_chunks
+from docscope.reranking import MAX_RERANK_CANDIDATES, RERANKER_MODEL, RERANKER_REVISION, rerank_points
 
 
 METRIC_FIELDS = ("article_recall", "all_articles", "fact_coverage", "all_facts")
@@ -26,13 +27,16 @@ METRIC_FIELDS = ("article_recall", "all_articles", "fact_coverage", "all_facts")
 def summarize(rows: list[dict], ks: list[int]) -> dict:
     result = {"question_count": len(rows),
               "mapping_counts": dict(Counter(row["mapping_status"] for row in rows))}
-    for mode in ("dense", "hybrid"):
+    modes = ("dense", "hybrid", "rerank") if rows and "rerank" in rows[0] else ("dense", "hybrid")
+    for mode in modes:
         values = [row[mode]["retrieval_seconds"] for row in rows]
         ordered = sorted(values)
         result[mode] = {
             "retrieval_seconds_mean": sum(values) / len(values) if values else None,
             "retrieval_seconds_median": ordered[len(ordered) // 2] if ordered else None,
         }
+        if mode == "rerank":
+            result[mode]["rerank_seconds_mean"] = sum(row[mode]["rerank_seconds"] for row in rows) / len(rows)
         for k in ks:
             for field in METRIC_FIELDS:
                 scored = [row[mode]["metrics"][str(k)][field] for row in rows
@@ -44,7 +48,7 @@ def summarize(rows: list[dict], ks: list[int]) -> dict:
     return result
 
 
-def run(root: Path, settings: dict, output: Path) -> dict:
+def run(root: Path, settings: dict, output: Path, reranker=None) -> dict:
     if settings["split"] != "dev":
         raise ValueError("DOCS-009 selects parameters on dev only; test is sealed")
     if (settings["embedding_model"], settings["embedding_revision"]) != (EMBEDDING_MODEL, EMBEDDING_REVISION):
@@ -58,6 +62,16 @@ def run(root: Path, settings: dict, output: Path) -> dict:
     if (not isinstance(ks, list) or not ks or any(type(k) is not int or k < 1 or k > 10 for k in ks)
             or type(candidate_limit) is not int or not max(ks) <= candidate_limit <= 50):
         raise ValueError("invalid retrieval limits")
+    rerank_limit = None
+    if reranker is not None:
+        if (settings.get("reranker_model"), settings.get("reranker_revision")) != (
+            RERANKER_MODEL, RERANKER_REVISION
+        ):
+            raise ValueError("reranker configuration differs from implementation")
+        rerank_limit = settings.get("rerank_limit")
+        if (type(rerank_limit) is not int or not max(ks) <= rerank_limit <= MAX_RERANK_CANDIDATES
+                or candidate_limit < rerank_limit):
+            raise ValueError("invalid rerank candidate limit")
     articles, questions, question_ids = load_inputs(root, settings)
     if len(questions) != len(question_ids):
         raise ValueError("frozen dev question count differs from manifest")
@@ -111,19 +125,41 @@ def run(root: Path, settings: dict, output: Path) -> dict:
                        "embedding_seconds": round(embedding_seconds, 4)}
                 query_order = ("dense", "hybrid") if position % 2 else ("hybrid", "dense")
                 row["query_order"] = list(query_order)
+                hybrid_points = []
+                hybrid_seconds = 0.0
                 for mode in query_order:
                     query_start = time.monotonic()
                     points = (index.query(vector, None, max(ks)) if mode == "dense"
-                              else index.query_hybrid(vector, question["query"], None, max(ks), candidate_limit))
+                              else index.query_hybrid(vector, question["query"], None,
+                                                      rerank_limit if rerank_limit is not None else max(ks), candidate_limit))
                     seconds = embedding_seconds + time.monotonic() - query_start
                     retrieved = [{"document_id": point["payload"]["document_id"],
-                                  "chunk_id": point["payload"]["chunk_id"]} for point in points]
+                                  "chunk_id": point["payload"]["chunk_id"]} for point in points[:max(ks)]]
                     row[mode] = {
                         "retrieval_seconds": round(seconds, 4),
                         "retrieved": [{"source_document_id": source_by_online[item["document_id"]],
                                        "source_chunk_id": source_chunk_by_online[item["chunk_id"]]}
                                       for item in retrieved],
                         "metrics": {str(k): score_retrieval(retrieved, mapping,
+                            [item["document_id"] for item in evidence], k) for k in ks},
+                    }
+                    if mode == "hybrid":
+                        hybrid_points, hybrid_seconds = points, seconds
+                if reranker is not None:
+                    rerank_start = time.monotonic()
+                    ranked_points = rerank_points(question["query"], hybrid_points, reranker, max(ks))
+                    rerank_seconds = time.monotonic() - rerank_start
+                    ranked = [{"document_id": point["payload"]["document_id"],
+                               "chunk_id": point["payload"]["chunk_id"]} for point in ranked_points]
+                    row["rerank"] = {
+                        "retrieval_seconds": round(hybrid_seconds + rerank_seconds, 4),
+                        "rerank_seconds": round(rerank_seconds, 4),
+                        "candidate_count": len(hybrid_points),
+                        "retrieved": [{"source_document_id": source_by_online[point["payload"]["document_id"]],
+                                       "source_chunk_id": source_chunk_by_online[point["payload"]["chunk_id"]],
+                                       "rrf_rank": point["rrf_rank"], "rrf_score": point["rrf_score"],
+                                       "rerank_score": point["rerank_score"]} for point in ranked_points],
+                        "metrics": {str(k): score_retrieval(ranked, mapping,
                             [item["document_id"] for item in evidence], k) for k in ks},
                     }
                 rows.append(row)

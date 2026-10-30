@@ -9,6 +9,7 @@ from pathlib import Path
 from fastapi.testclient import TestClient
 
 from backend.tests.test_dense_chat_api import FakeLLM
+from backend.tests.test_reranking import FixedReranker
 from docscope.api import create_app
 from docscope.qdrant_index import QdrantIndex, QdrantError
 
@@ -39,7 +40,9 @@ class QdrantLifecycleTest(unittest.TestCase):
     def test_bm25_and_rrf_share_dense_point_ids(self):
         index = QdrantIndex(os.environ["QDRANT_TEST_URL"], collection=f"docscope_test_{uuid.uuid4().hex}")
         self.addCleanup(lambda: index._request("DELETE", f"/collections/{index.collection}"))
-        with tempfile.TemporaryDirectory() as root, TestClient(create_app(Path(root), FixedEmbedder(), index)) as client:
+        with tempfile.TemporaryDirectory() as root, TestClient(
+            create_app(Path(root), FixedEmbedder(), index, reranker=FixedReranker())
+        ) as client:
             first = client.post("/api/documents", files={"file": ("orion.md", b"# Orion\nOrion belongs to North Observatory.")})
             second = client.post("/api/documents", files={"file": ("vega.md", b"# Vega\nVega belongs to South Observatory.")})
             self.assertEqual((first.status_code, second.status_code), (201, 201))
@@ -52,6 +55,11 @@ class QdrantLifecycleTest(unittest.TestCase):
             self.assertEqual(hybrid.status_code, 200)
             self.assertIn(lexical[0]["payload"]["chunk_id"],
                           {point["chunk_id"] for point in hybrid.json()["evidence"]})
+            reranked = client.post("/api/retrieval/rerank", json={"query": "Vega", "limit": 2,
+                                                                     "rerank_limit": 2})
+            self.assertEqual(reranked.status_code, 200)
+            self.assertEqual({item["chunk_id"] for item in reranked.json()["evidence"]},
+                             {item["chunk_id"] for item in hybrid.json()["evidence"]})
 
     def test_reupload_replace_citation_lookup_and_delete(self):
         index = QdrantIndex(os.environ["QDRANT_TEST_URL"], collection=f"docscope_test_{uuid.uuid4().hex}")

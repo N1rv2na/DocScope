@@ -12,7 +12,7 @@ from typing import Any, Literal
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from docscope.document_store import DocumentStore
 from docscope.embedding import LocalEmbedder
@@ -20,6 +20,7 @@ from docscope.llm import ContextLimitError, OpenAIResponder
 from docscope.markdown import markdown_chunks
 from docscope.pdf import pdf_chunks
 from docscope.qdrant_index import QdrantIndex
+from docscope.reranking import LocalReranker, rerank_points
 
 
 logger = logging.getLogger(__name__)
@@ -40,6 +41,18 @@ class DenseQuery(BaseModel):
 
 class HybridQuery(DenseQuery):
     candidate_limit: int = Field(default=20, ge=1, le=50)
+
+
+class RerankQuery(HybridQuery):
+    rerank_limit: int = Field(default=20, ge=1, le=20)
+
+    @model_validator(mode="after")
+    def enough_candidates(self) -> RerankQuery:
+        if self.rerank_limit < self.limit:
+            raise ValueError("rerank_limit must be at least limit")
+        if self.candidate_limit < self.rerank_limit:
+            raise ValueError("candidate_limit must be at least rerank_limit")
+        return self
 
 
 class ChatQuestion(BaseModel):
@@ -87,11 +100,13 @@ def _validate_upload(file: UploadFile) -> tuple[str, bytes, str | None]:
     return filename, content, text
 
 
-def create_app(data_dir: Path | None = None, embedder: Any = None, index: Any = None, llm: Any = None) -> FastAPI:
+def create_app(data_dir: Path | None = None, embedder: Any = None, index: Any = None,
+               llm: Any = None, reranker: Any = None) -> FastAPI:
     root = (data_dir if data_dir is not None else Path(os.getenv("DOCSCOPE_DATA_DIR", "data"))).resolve()
     embedding = embedder if embedder is not None else LocalEmbedder()
     qdrant = index if index is not None else QdrantIndex(os.getenv("QDRANT_URL", "http://127.0.0.1:6333"))
     responder = llm if llm is not None else OpenAIResponder()
+    scorer = reranker if reranker is not None else LocalReranker()
     store: DocumentStore | None = None
     lifecycle_lock = RLock()
     api = FastAPI(title="DocScope", version="0.1.0")
@@ -262,6 +277,7 @@ def create_app(data_dir: Path | None = None, embedder: Any = None, index: Any = 
 
     def retrieve_current(request: DenseQuery) -> list[dict[str, Any]]:
         hybrid = isinstance(request, HybridQuery)
+        reranked = isinstance(request, RerankQuery)
         records = {item["document_id"]: item for item in documents().list_documents() if item["status"] == "ready"}
         ready_ids = list(records)
         if not ready_ids:
@@ -270,18 +286,24 @@ def create_app(data_dir: Path | None = None, embedder: Any = None, index: Any = 
             query_vector = embedding.encode([request.query])[0]
             if hybrid:
                 points = qdrant.query_hybrid(query_vector, request.query, ready_ids,
-                                             request.limit, request.candidate_limit)
+                                             request.rerank_limit if reranked else request.limit,
+                                             request.candidate_limit)
+                if reranked:
+                    points = [{**point, "rrf_rank": rank} for rank, point in enumerate(points, 1)
+                              if current_payload(point["payload"], records.get(point["payload"].get("document_id")))]
+                    points = rerank_points(request.query, points, scorer, request.limit)
             else:
                 points = qdrant.query(query_vector, ready_ids, request.limit)
         except Exception as error:
             logger.exception("Retrieval failed")
-            raise HTTPException(503, "hybrid retrieval failed" if hybrid else "dense retrieval failed") from error
+            stage = "rerank" if reranked else "hybrid" if hybrid else "dense"
+            raise HTTPException(503, f"{stage} retrieval failed") from error
         evidence: list[dict[str, Any]] = []
         for point in points:
             payload = point["payload"]
             if not current_payload(payload, records.get(payload["document_id"])):
                 continue
-            evidence.append({
+            item = {
                 "document_id": payload["document_id"],
                 "chunk_id": payload["chunk_id"],
                 "document_title": payload["document_title"],
@@ -291,10 +313,14 @@ def create_app(data_dir: Path | None = None, embedder: Any = None, index: Any = 
                 "section": payload["section"],
                 "line_start": payload["line_start"],
                 "chunk_text": payload["chunk_text"],
-                "retrieval_stage": "hybrid" if hybrid else "dense",
+                "retrieval_stage": "rerank" if reranked else "hybrid" if hybrid else "dense",
                 "rank": len(evidence) + 1,
-                "score": point["score"],
-            })
+                "score": point["rerank_score"] if reranked else point["score"],
+            }
+            if reranked:
+                item.update(rrf_rank=point["rrf_rank"], rrf_score=point["rrf_score"],
+                            rerank_score=point["rerank_score"])
+            evidence.append(item)
         return evidence
 
     @api.post("/api/retrieval/dense")
@@ -303,6 +329,11 @@ def create_app(data_dir: Path | None = None, embedder: Any = None, index: Any = 
 
     @api.post("/api/retrieval/hybrid")
     def retrieve_hybrid(request: HybridQuery) -> dict:
+        with lifecycle_lock:
+            return {"evidence": retrieve_current(request)}
+
+    @api.post("/api/retrieval/rerank")
+    def retrieve_rerank(request: RerankQuery) -> dict:
         with lifecycle_lock:
             return {"evidence": retrieve_current(request)}
 
