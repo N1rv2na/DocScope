@@ -66,6 +66,9 @@ curl -sS -H 'Content-Type: application/json' \
   -d '{"query":"Which observatory built the Orion telescope?","limit":2}' \
   http://127.0.0.1:8000/api/retrieval/dense
 curl -sS -H 'Content-Type: application/json' \
+  -d '{"query":"Which observatory built the Orion telescope?","limit":2,"candidate_limit":20}' \
+  http://127.0.0.1:8000/api/retrieval/hybrid
+curl -sS -H 'Content-Type: application/json' \
   -d '{"question":"Which observatory built the Orion telescope?"}' \
   http://127.0.0.1:8000/api/chat
 ```
@@ -130,6 +133,14 @@ The citation ID check establishes provenance, not factual support of every
 sentence. The LLM receives document text as untrusted evidence in the user
 message; it is instructed to ignore commands embedded in that text. This is
 not a guarantee against all prompt injection or unsupported conclusions.
+
+`/api/retrieval/hybrid` uses the same ready documents and Chunk IDs as Dense.
+Qdrant 1.20.0 maintains a `chunk_text` native BM25 index with English `word`
+tokenization and lowercase matching; Qdrant RRF merges Dense and BM25 rankings.
+`candidate_limit` bounds each branch (1–50, default 20); `limit` bounds the
+returned evidence (1–10, default 5). If candidates are scarce, the response can
+contain fewer than `limit` items. `/api/chat` remains Dense-only in this
+Issue. Replacements and deletions remove points from both retrieval paths.
 
 ## Tests
 

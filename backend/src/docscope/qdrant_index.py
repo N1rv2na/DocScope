@@ -1,4 +1,4 @@
-"""Direct Qdrant REST calls for the M1 Dense-only collection."""
+"""Direct Qdrant REST calls for Dense and BM25/RRF over one Chunk collection."""
 
 from __future__ import annotations
 
@@ -42,13 +42,26 @@ class QdrantIndex:
         if version != "1.20.0":
             raise QdrantError(f"Qdrant 1.20.0 required, received {version!r}")
         try:
-            self._request("GET", f"/collections/{self.collection}")
+            collection = self._request("GET", f"/collections/{self.collection}")["result"]
         except QdrantError as error:
             if error.status_code != 404:
                 raise
             self._request("PUT", f"/collections/{self.collection}", {
                 "vectors": {"dense": {"size": EMBEDDING_DIMENSION, "distance": "Cosine"}},
             })
+            collection = {"payload_schema": {}}
+        schema = collection.get("payload_schema", {}).get("chunk_text")
+        if schema is None:
+            self._request("PUT", f"/collections/{self.collection}/index?wait=true", {
+                "field_name": "chunk_text",
+                "field_schema": {"type": "text", "tokenizer": "word", "lowercase": True,
+                                 "scoring": {"type": "bm25"}},
+            })
+        elif (schema.get("data_type") != "text"
+              or schema.get("params", {}).get("scoring", {}).get("type") != "bm25"
+              or schema.get("params", {}).get("tokenizer") != "word"
+              or schema.get("params", {}).get("lowercase") is not True):
+            raise QdrantError("chunk_text index is incompatible with the configured English BM25 schema")
 
     def upsert(self, points: list[dict]) -> None:
         self._request("PUT", f"/collections/{self.collection}/points?wait=true", {"points": points})
@@ -63,6 +76,22 @@ class QdrantIndex:
         if ready_ids is not None:
             request["filter"] = {"must": [{"key": "document_id", "match": {"any": ready_ids}}]}
         response = self._request("POST", f"/collections/{self.collection}/points/query", request)
+        return response["result"]["points"]
+
+    def query_hybrid(self, vector: list[float], text: str, ready_ids: list[str] | None,
+                     limit: int, candidate_limit: int) -> list[dict]:
+        prefetch = [
+            {"query": vector, "using": "dense", "limit": candidate_limit},
+            {"query": {"text": text}, "using": "chunk_text", "limit": candidate_limit},
+        ]
+        if ready_ids is not None:
+            ready_filter = {"must": [{"key": "document_id", "match": {"any": ready_ids}}]}
+            for branch in prefetch:
+                branch["filter"] = ready_filter
+        response = self._request("POST", f"/collections/{self.collection}/points/query", {
+            "prefetch": prefetch, "query": {"fusion": "rrf"},
+            "limit": limit, "with_payload": True,
+        })
         return response["result"]["points"]
 
     def delete_document(self, document_id: str) -> None:

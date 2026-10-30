@@ -38,6 +38,10 @@ class DenseQuery(BaseModel):
         return value.strip()
 
 
+class HybridQuery(DenseQuery):
+    candidate_limit: int = Field(default=20, ge=1, le=50)
+
+
 class ChatQuestion(BaseModel):
     question: str = Field(min_length=1, max_length=500)
 
@@ -257,16 +261,21 @@ def create_app(data_dir: Path | None = None, embedder: Any = None, index: Any = 
             return retrieve_current(request)
 
     def retrieve_current(request: DenseQuery) -> list[dict[str, Any]]:
+        hybrid = isinstance(request, HybridQuery)
         records = {item["document_id"]: item for item in documents().list_documents() if item["status"] == "ready"}
         ready_ids = list(records)
         if not ready_ids:
             return []
         try:
             query_vector = embedding.encode([request.query])[0]
-            points = qdrant.query(query_vector, ready_ids, request.limit)
+            if hybrid:
+                points = qdrant.query_hybrid(query_vector, request.query, ready_ids,
+                                             request.limit, request.candidate_limit)
+            else:
+                points = qdrant.query(query_vector, ready_ids, request.limit)
         except Exception as error:
-            logger.exception("Dense retrieval failed")
-            raise HTTPException(503, "dense retrieval failed") from error
+            logger.exception("Retrieval failed")
+            raise HTTPException(503, "hybrid retrieval failed" if hybrid else "dense retrieval failed") from error
         evidence: list[dict[str, Any]] = []
         for point in points:
             payload = point["payload"]
@@ -282,7 +291,7 @@ def create_app(data_dir: Path | None = None, embedder: Any = None, index: Any = 
                 "section": payload["section"],
                 "line_start": payload["line_start"],
                 "chunk_text": payload["chunk_text"],
-                "retrieval_stage": "dense",
+                "retrieval_stage": "hybrid" if hybrid else "dense",
                 "rank": len(evidence) + 1,
                 "score": point["score"],
             })
@@ -291,6 +300,11 @@ def create_app(data_dir: Path | None = None, embedder: Any = None, index: Any = 
     @api.post("/api/retrieval/dense")
     def retrieve(request: DenseQuery) -> dict:
         return {"evidence": dense_evidence(request)}
+
+    @api.post("/api/retrieval/hybrid")
+    def retrieve_hybrid(request: HybridQuery) -> dict:
+        with lifecycle_lock:
+            return {"evidence": retrieve_current(request)}
 
     @api.post("/api/chat", response_model=None)
     def chat(request: ChatQuestion) -> dict | JSONResponse:

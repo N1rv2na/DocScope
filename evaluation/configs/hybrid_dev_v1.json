@@ -1,0 +1,14 @@
+{
+  "manifest": "evaluation/manifests/multihop_rag_v1.json",
+  "dataset_config": "evaluation/configs/multihop_rag_v1.json",
+  "split": "dev",
+  "retrieval_k": [5, 10],
+  "candidate_limit": 20,
+  "bm25_field": "chunk_text",
+  "bm25_tokenizer": "word",
+  "bm25_lowercase": true,
+  "fusion": "qdrant_rrf",
+  "qdrant_version": "1.20.0",
+  "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+  "embedding_revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41"
+}

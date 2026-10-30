@@ -54,3 +54,19 @@ PYTHONPATH=backend/src QDRANT_URL=http://127.0.0.1:6333 python -m docscope.evalu
 ```
 
 运行创建独立 Qdrant 测试集合及临时源文件目录，结束时清理集合；原始数据哈希与清单在导入前复验。运行失败会把已完成题目和错误写入同目录下的 `.failed.json`，不覆盖成功产物。该命令会把 12 道题的检索证据送往配置的外部 LLM 网关；本次已获用户针对该数据外发和可能费用的明确授权。实际运行产物是 [逐题 JSON](results/dense_baseline_all_v1.json) 与 [简报](results/dense_baseline_report.md)。
+
+## DOCS-009 Dense/Hybrid 同批开发集对照
+
+[固定配置](configs/hybrid_dev_v1.json)只允许 `dev` 划分，使用 DOCS-001 冻结清单与同一批 609 篇文章。上传入口、分块、CPU Embedding、文章与事实片段映射规则均沿用 DOCS-008；同一题先计算一次向量，再分别查询 Dense Top-10 和 Qdrant 原生 BM25 + Dense 双路候选各 Top-20、RRF 最终 Top-10。查询顺序按题交错，减少缓存预热造成的方向性偏差。逐题记录两路的文章级/片段级 @5/@10、稳定来源 ID、事实到 Chunk 的映射及检索耗时（每路包含共享的 Embedding 耗时）。索引或检索阶段的异常写入 `.failed.json`，不作为零分。此运行不调用远程 LLM，也不查看封存 test 的结果。
+
+在仓库根目录、Qdrant 1.20.0 和已缓存的本地 Embedding 模型下运行：
+
+```sh
+PYTHONPATH=backend/src QDRANT_URL=http://127.0.0.1:6333 python -m docscope.evaluation.run_hybrid \
+  --config evaluation/configs/hybrid_dev_v1.json \
+  --output evaluation/results/hybrid_dev_v1.json
+```
+
+脚本创建临时数据目录及隔离 Qdrant 集合，完成后删除。配置中 `word`、小写和 Qdrant 内置 RRF 是本轮固定选择；结果只证明这一配置在开发集上的观测，不能声称是全局最优或封存 test 的结果。
+
+本次授权运行的产物：[逐题 JSON](results/hybrid_dev_v1.json)、[简报](results/hybrid_dev_report.md)。

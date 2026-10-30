@@ -1,6 +1,6 @@
 # ADR 0001：在同一 Qdrant Chunk 集合上实现混合检索
 
-状态：Accepted（设计决策；尚未实现）<br>
+状态：Accepted（DOCS-009 已实现 BM25/RRF；Cross-Encoder Reranking 尚未实现）<br>
 依据：[design.md §5–6.2](../design.md)、审查决策 Q5。
 
 ## Context
