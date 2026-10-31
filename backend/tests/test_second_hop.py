@@ -13,7 +13,8 @@ from fastapi.testclient import TestClient
 
 from backend.tests.test_markdown_dense_api import FakeEmbedder, FakeIndex
 from docscope.api import create_app
-from docscope.llm import ContextLimitError, OpenAIResponder
+from docscope.llm import (MAX_MODEL_INPUT_BYTES, PLANNER_INSTRUCTIONS,
+                          ContextLimitError, OpenAIResponder)
 
 
 SAMPLE_DIR = Path(__file__).resolve().parents[2] / "evaluation" / "dependency_samples"
@@ -43,7 +44,8 @@ class EvidencePlanner:
         self.plan_calls.append((question, evidence))
         if self.proposal is not None:
             return self.proposal(question, evidence)
-        return {"next_query": "Polaris Relay operator team",
+        return {"evidence_status": "missing", "missing_fact": "the operator of Polaris Relay",
+                "next_query": "Polaris Relay operator team",
                 "bridge_text": SAMPLE["bridge_text"],
                 "source_chunk_id": evidence[0]["chunk_id"]}
 
@@ -103,25 +105,30 @@ class SecondHopApiTest(unittest.TestCase):
 
     def test_repeated_query_does_not_start_second_retrieval(self):
         self.llm.proposal = lambda question, evidence: {
+            "evidence_status": "missing", "missing_fact": "the operator of Polaris Relay",
             "next_query": question, "bridge_text": SAMPLE["bridge_text"],
             "source_chunk_id": evidence[0]["chunk_id"]}
         body = self.run_sample().json()
         self.assertEqual(body["status"], "insufficient_evidence")
         self.assertEqual(self.index.queries, [SAMPLE["question"]])
-        self.assertEqual(body["calls"], {"retrieval": 1, "model": 2})
+        self.assertEqual(body["calls"], {"retrieval": 1, "model": 1})
+        self.assertEqual(body["stop_reason"], "repeated_query")
         self.assertEqual(body["trace"][2]["reason"], "repeated_query")
+        self.assertEqual(self.llm.answer_calls, [])
 
     def test_planner_can_stop_after_first_hop_without_second_query(self):
         self.llm.proposal = lambda question, evidence: {
+            "evidence_status": "missing", "missing_fact": "the operator of Polaris Relay",
             "next_query": None, "bridge_text": None, "source_chunk_id": None}
         response = self.run_sample()
         self.assertEqual(response.status_code, 200)
         body = response.json()
         self.assertEqual(body["status"], "insufficient_evidence")
         self.assertEqual(self.index.queries, [SAMPLE["question"]])
-        self.assertEqual(body["calls"], {"retrieval": 1, "model": 2})
-        self.assertEqual(body["trace"][2]["reason"], "no_followup")
-        self.assertEqual(len(self.llm.answer_calls), 1)
+        self.assertEqual(body["calls"], {"retrieval": 1, "model": 1})
+        self.assertEqual(body["stop_reason"], "missing_fact_unresolved")
+        self.assertEqual(body["trace"][2]["reason"], "missing_fact_unresolved")
+        self.assertEqual(self.llm.answer_calls, [])
 
     def test_second_retrieval_failure_is_recorded_without_answer(self):
         original = self.index.query_hybrid
@@ -145,10 +152,14 @@ class SecondHopApiTest(unittest.TestCase):
 
     def test_preplanned_or_fabricated_bridge_is_not_counted_as_evidence_driven(self):
         for proposal in (
-            {"queries": [SAMPLE["question"], "Polaris Relay operator team"]},
-            {"next_query": "Polaris Relay operator team", "bridge_text": SAMPLE["bridge_text"],
+            {"evidence_status": "missing", "missing_fact": "operator", "next_query": None,
+             "bridge_text": None, "source_chunk_id": None,
+             "queries": [SAMPLE["question"], "Polaris Relay operator team"]},
+            {"evidence_status": "missing", "missing_fact": "operator",
+             "next_query": "Polaris Relay operator team", "bridge_text": SAMPLE["bridge_text"],
              "source_chunk_id": "not-a-retrieved-chunk"},
-            {"next_query": "Polaris Relay operator team", "bridge_text": "East Region Operations",
+            {"evidence_status": "missing", "missing_fact": "operator",
+             "next_query": "Polaris Relay operator team", "bridge_text": "East Region Operations",
              "source_chunk_id": "from-first"},
         ):
             with self.subTest(proposal=proposal):
@@ -179,9 +190,10 @@ class SecondHopApiTest(unittest.TestCase):
         self.index.query_hybrid = repeated_evidence
         body = self.run_sample().json()
         self.assertEqual(body["status"], "insufficient_evidence")
-        self.assertEqual(body["calls"], {"retrieval": 2, "model": 2})
+        self.assertEqual(body["calls"], {"retrieval": 2, "model": 1})
+        self.assertEqual(body["stop_reason"], "no_new_evidence")
         self.assertEqual(len(self.llm.plan_calls), 1)
-        self.assertEqual(len(self.llm.answer_calls), 1)
+        self.assertEqual(len(self.llm.answer_calls), 0)
         self.assertEqual(len(body["retrieved_evidence_ids"]), 1)
         self.assertEqual(body["trace"][3]["new_evidence_ids"], [])
 
@@ -199,7 +211,8 @@ class OpenAIPlannerTest(unittest.TestCase):
                     choices=[SimpleNamespace(
                         finish_reason="stop" if planner else "length",
                         message=SimpleNamespace(content=(
-                            '{"next_query":null,"bridge_text":null,"source_chunk_id":null}'
+                            '{"evidence_status":"sufficient","missing_fact":null,'
+                            '"next_query":null,"bridge_text":null,"source_chunk_id":null}'
                             if planner else None)))],
                     usage=SimpleNamespace(prompt_tokens=348, completion_tokens=387 if planner else 400,
                                           total_tokens=735 if planner else 748,
@@ -237,7 +250,8 @@ class OpenAIPlannerTest(unittest.TestCase):
         def fake_openai(**_):
             def create(**params):
                 complete = params["max_tokens"] >= observed_completion_tokens
-                content = json.dumps({"next_query": None, "bridge_text": None,
+                content = json.dumps({"evidence_status": "sufficient", "missing_fact": None,
+                                      "next_query": None, "bridge_text": None,
                                       "source_chunk_id": None}) if complete else None
                 return SimpleNamespace(choices=[SimpleNamespace(
                     finish_reason="stop" if complete else "length",
@@ -252,7 +266,8 @@ class OpenAIPlannerTest(unittest.TestCase):
                "LLM_MODEL": "group/docscope-free"}
         with patch.dict(os.environ, env), patch.dict(sys.modules, {"openai": SimpleNamespace(OpenAI=fake_openai)}):
             proposal = OpenAIResponder().plan_next("Which team?", evidence)
-        self.assertEqual(proposal, {"next_query": None, "bridge_text": None,
+        self.assertEqual(proposal, {"evidence_status": "sufficient", "missing_fact": None,
+                                    "next_query": None, "bridge_text": None,
                                     "source_chunk_id": None})
 
     def test_planner_uses_only_question_and_retrieved_chunks_as_untrusted_data(self):
@@ -265,6 +280,7 @@ class OpenAIPlannerTest(unittest.TestCase):
                 captured["request"] = params
                 return SimpleNamespace(choices=[SimpleNamespace(finish_reason="stop",
                     message=SimpleNamespace(content=json.dumps({
+                        "evidence_status": "missing", "missing_fact": "the operator of Polaris Relay",
                         "next_query": "Polaris Relay operator team",
                         "bridge_text": "Polaris Relay", "source_chunk_id": "first-chunk",
                     })))])
@@ -280,12 +296,15 @@ class OpenAIPlannerTest(unittest.TestCase):
         with patch.dict(os.environ, env), patch.dict(sys.modules, {"openai": SimpleNamespace(OpenAI=fake_openai)}):
             proposal = OpenAIResponder().plan_next(SAMPLE["question"], evidence)
         self.assertEqual(proposal["source_chunk_id"], "first-chunk")
+        self.assertEqual(proposal["evidence_status"], "missing")
         self.assertEqual(captured["settings"]["max_retries"], 0)
         self.assertEqual(captured["request"]["response_format"], {"type": "json_object"})
         self.assertEqual(captured["request"]["model"], "group/docscope-free")
         self.assertTrue(captured.get("closed"))
         system, user = captured["request"]["messages"]
         self.assertIn("untrusted", system["content"].lower())
+        self.assertIn("evidence_status", system["content"])
+        self.assertIn("missing_fact", system["content"])
         self.assertNotIn("Aster Telemetry Console uses", system["content"])
         payload = json.loads(user["content"])
         self.assertEqual(payload["question"], SAMPLE["question"])
@@ -296,6 +315,23 @@ class OpenAIPlannerTest(unittest.TestCase):
     def test_planner_rejects_oversized_prompt_before_network_call(self):
         evidence = [{"chunk_id": "first", "document_title": "notes.md", "section": "Notes",
                      "page_number": None, "chunk_text": "x" * 13000}]
+
+        def forbidden_client(**_):
+            raise AssertionError("network client must not be constructed")
+
+        env = {"LLM_BASE_URL": "http://127.0.0.1:3425/v1", "LLM_API_KEY": "local-test-key",
+               "LLM_MODEL": "group/docscope-free"}
+        with patch.dict(os.environ, env), patch.dict(sys.modules, {"openai": SimpleNamespace(OpenAI=forbidden_client)}):
+            with self.assertRaises(ContextLimitError):
+                OpenAIResponder().plan_next("Which team?", evidence)
+
+    def test_planner_bounds_system_and_user_messages_together_before_network(self):
+        evidence = [{"chunk_id": "first", "document_title": "notes.md", "section": "Notes",
+                     "page_number": None, "chunk_text": "x" * 11500}]
+        user_message = OpenAIResponder._user_message("Which team?", evidence)
+        self.assertLess(len(user_message.encode("utf-8")), MAX_MODEL_INPUT_BYTES)
+        self.assertGreater(len((PLANNER_INSTRUCTIONS + user_message).encode("utf-8")),
+                           MAX_MODEL_INPUT_BYTES)
 
         def forbidden_client(**_):
             raise AssertionError("network client must not be constructed")

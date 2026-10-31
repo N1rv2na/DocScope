@@ -20,6 +20,7 @@ MAX_RETRIEVAL_ROUNDS = 2
 MAX_MODEL_ATTEMPTS = 2
 MAX_FOLLOWUP_QUERY_CHARS = 500
 MAX_BRIDGE_TEXT_CHARS = 120
+MAX_MISSING_FACT_CHARS = 240
 
 
 class RunState(TypedDict, total=False):
@@ -104,6 +105,9 @@ class AgentRunner:
             if not combined:
                 update.update(status="insufficient_evidence", stop_reason="no_evidence",
                               answer=None, citations=[])
+            elif round_number > 1 and not new_evidence:
+                update.update(status="insufficient_evidence", stop_reason="no_new_evidence",
+                              answer=None, citations=[])
             return update
 
         def next_stage(state: RunState) -> str:
@@ -135,18 +139,25 @@ class AgentRunner:
                 return {**self._failure(code), "calls": calls,
                         "trace": state["trace"] + [self._step("plan_next", "failed", started)]}
             try:
-                next_query, bridge_text, source_chunk_id, skip_reason = self._validate_proposal(
+                assessment, missing_fact, next_query, bridge_text, source_chunk_id, stop_reason = self._validate_proposal(
                     proposal, state["question"], state["query"], state["evidence"])
             except ValueError:
                 logger.warning("Rejected next-query proposal for run %s", state["run_id"], exc_info=True)
                 return {**self._failure("plan_output_invalid"), "calls": calls,
                         "trace": state["trace"] + [self._step("plan_next", "failed", started)]}
             if next_query is None:
-                return {"calls": calls, "followup_ready": False,
-                        "trace": state["trace"] + [self._step("plan_next", "completed", started,
-                                                             reason=skip_reason)]}
+                update = {"calls": calls, "followup_ready": False,
+                          "trace": state["trace"] + [self._step("plan_next", "completed", started,
+                                                               evidence_status=assessment,
+                                                               missing_fact=missing_fact, reason=stop_reason)]}
+                if assessment == "missing":
+                    update.update(status="insufficient_evidence", stop_reason=stop_reason,
+                                  answer=None, citations=[])
+                return update
             return {"query": next_query, "calls": calls, "followup_ready": True,
                     "trace": state["trace"] + [self._step("plan_next", "completed", started,
+                                                         evidence_status=assessment,
+                                                         missing_fact=missing_fact,
                                                          next_query=next_query, bridge_text=bridge_text,
                                                          source_chunk_id=source_chunk_id)]}
 
@@ -180,7 +191,12 @@ class AgentRunner:
             except Exception:
                 logger.exception("Agent source check failed for run %s", state["run_id"])
                 return self._answer_failure(state, calls, "source_check_failed", started)
-            stop_reason = "answered" if outcome["status"] == "answered" else "model_abstained"
+            if outcome["status"] == "answered":
+                stop_reason = "answered"
+            elif plan_next is not None and state["retrieval_round"] >= MAX_RETRIEVAL_ROUNDS:
+                stop_reason = "retrieval_budget_exhausted"
+            else:
+                stop_reason = "model_abstained"
             return {**outcome, "stop_reason": stop_reason, "calls": calls,
                     "trace": state["trace"] + [self._step("answer", "completed", started)]}
 
@@ -198,12 +214,25 @@ class AgentRunner:
 
     @staticmethod
     def _validate_proposal(proposal: dict | None, question: str, prior_query: str,
-                           evidence: list[dict]) -> tuple[str | None, str | None, str | None, str | None]:
-        if proposal is None or proposal == {"next_query": None, "bridge_text": None, "source_chunk_id": None}:
-            return None, None, None, "no_followup"
-        if not isinstance(proposal, dict) or set(proposal) != {"next_query", "bridge_text", "source_chunk_id"}:
-            raise ValueError("next-query proposal must contain exactly three fields")
+                           evidence: list[dict]) -> tuple[str, str | None, str | None,
+                                                         str | None, str | None, str | None]:
+        required = {"evidence_status", "missing_fact", "next_query", "bridge_text", "source_chunk_id"}
+        if not isinstance(proposal, dict) or set(proposal) != required:
+            raise ValueError("evidence assessment must contain exactly five fields")
+        assessment = proposal["evidence_status"]
+        missing_fact = proposal["missing_fact"]
         query, bridge, source_id = (proposal[key] for key in ("next_query", "bridge_text", "source_chunk_id"))
+        if assessment == "sufficient":
+            if any(value is not None for value in (missing_fact, query, bridge, source_id)):
+                raise ValueError("sufficient assessment cannot request another retrieval")
+            return assessment, None, None, None, None, "sufficient"
+        if assessment != "missing" or not isinstance(missing_fact, str) or not missing_fact.strip() or len(missing_fact) > MAX_MISSING_FACT_CHARS:
+            raise ValueError("missing assessment requires a bounded missing fact")
+        missing_fact = missing_fact.strip()
+        if query is None:
+            if bridge is not None or source_id is not None:
+                raise ValueError("a missing query cannot cite a bridge")
+            return assessment, missing_fact, None, None, None, "missing_fact_unresolved"
         if (not isinstance(query, str) or not query.strip() or len(query) > MAX_FOLLOWUP_QUERY_CHARS
                 or not isinstance(bridge, str) or not bridge.strip() or len(bridge) > MAX_BRIDGE_TEXT_CHARS
                 or not isinstance(source_id, str)):
@@ -215,10 +244,10 @@ class AgentRunner:
         if normalized(bridge) in normalized(question):
             raise ValueError("bridge text was already present in the initial question")
         if normalized(query) == normalized(prior_query):
-            return None, bridge, source_id, "repeated_query"
+            return assessment, missing_fact, None, bridge, source_id, "repeated_query"
         if normalized(bridge) not in normalized(query):
             raise ValueError("next query does not use the discovered bridge")
-        return query.strip(), bridge.strip(), source_id, None
+        return assessment, missing_fact, query.strip(), bridge.strip(), source_id, None
 
     @staticmethod
     def _step(stage: str, status: str, started: float, **details: Any) -> dict:
