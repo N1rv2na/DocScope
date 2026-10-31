@@ -1,6 +1,6 @@
 # DocScope 系统架构
 
-> 状态：目标架构；M1/M2、DOCS-011 单轮 Run、DOCS-012 有界第二跳和 DOCS-013 充分性/停止/拒答路径已接通，SSE 和记忆仍未实现。阶段范围与验收以 [design.md](design.md) 为准；未冻结的实现选择统一列于 [OPEN_QUESTIONS.md](OPEN_QUESTIONS.md)。
+> 状态：目标架构；M1/M2、DOCS-011 单轮 Run、DOCS-012 有界第二跳、DOCS-013 充分性/停止/拒答及 DOCS-014 Web SSE 路径已接通，记忆仍未实现。阶段范围与验收以 [design.md](design.md) 为准；未冻结的实现选择统一列于 [OPEN_QUESTIONS.md](OPEN_QUESTIONS.md)。
 
 ## 结构与边界
 
@@ -57,7 +57,9 @@ DOCS-007 已冻结文档状态的 SQLite 持久化、替换可见性、Chunk 身
 5. API 将文本、阶段、引用、完成或错误事件经 SSE 发送到 Web；UI 展示实际引用与简要轨迹。一个独立问题由 `run_id` 关联事件和评测记录。
 6. M4 才加载 `thread_id` 对应历史，进行近期窗口、增量摘要与查询改写；本轮暂态在下一轮前重置，事实性回答仍重新检索文档。
 
-**Assumption**：初始最多三轮检索、固定候选上限和摘要阈值只是设计默认值，必须在对应阶段评测后冻结。SSE 的断连、重试与幂等语义尚未确定。
+DOCS-014 冻结单次 POST SSE 事件：`stage`、`token`、`citation` 为过程事件；连接可写时以唯一的 `done` 或 `error` 结束，每项均有 `run_id` 与 `message_id`。`token` 是已校验回答的文本片段，不是模型原生逐 Token 输出；`stage` 随 LangGraph 节点完成发送。Web 在未收到终态时丢弃临时回答，不自动重试；重新提交会产生新 Run，不提供恢复或幂等保证。
+
+**Assumption**：M4 摘要阈值仍须在对应阶段验证后冻结。
 
 ## 存储、来源与信任边界
 

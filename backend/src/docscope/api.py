@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import logging
 import os
 import uuid
@@ -12,6 +13,7 @@ from typing import Any, Literal
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 from docscope.agent_run import AgentRunner, RunStore
@@ -388,6 +390,49 @@ def create_app(data_dir: Path | None = None, embedder: Any = None, index: Any = 
         status = {"context_limit_exceeded": 422, "model_output_invalid": 502,
                   "plan_output_invalid": 502, "source_changed": 409}.get(result.get("error_code"), 503)
         return result if result["status"] != "error" else JSONResponse(status_code=status, content=result)
+
+    @api.post("/api/agent/run/stream")
+    def agent_stream(request: ChatQuestion) -> StreamingResponse:
+        run_id = str(uuid.uuid4())
+        message_id = str(uuid.uuid4())
+
+        def encode(kind: str, payload: dict) -> str:
+            data = {"run_id": run_id, "message_id": message_id, **payload}
+            return f"event: {kind}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
+
+        def events():
+            try:
+                for kind, payload in agent.stream_run(request.question, run_id):
+                    if kind == "stage":
+                        yield encode("stage", payload)
+                        continue
+                    try:
+                        run_store.save(payload)
+                    except OSError:
+                        logger.exception("Could not save streamed Agent run %s", run_id)
+                        yield encode("error", {"error_code": "run_record_failed"})
+                        return
+                    if payload["status"] == "error":
+                        yield encode("error", {"error_code": payload["error_code"],
+                                               "stop_reason": payload["stop_reason"]})
+                        return
+                    if payload["status"] == "answered":
+                        answer = payload["answer"]
+                        for offset in range(0, len(answer), 80):
+                            yield encode("token", {"text": answer[offset:offset + 80]})
+                        for citation in payload["citations"]:
+                            yield encode("citation", {"citation": citation})
+                    yield encode("done", {"status": payload["status"],
+                                          "stop_reason": payload["stop_reason"],
+                                          "answer": payload["answer"],
+                                          "citation_ids": [item["chunk_id"] for item in payload["citations"]]})
+                    return
+            except Exception:
+                logger.exception("Agent SSE failed for run %s", run_id)
+                yield encode("error", {"error_code": "stream_failed"})
+
+        return StreamingResponse(events(), media_type="text/event-stream",
+                                 headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
     @api.post("/api/chat", response_model=None)
     def chat(request: ChatQuestion) -> dict | JSONResponse:

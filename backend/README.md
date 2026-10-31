@@ -148,8 +148,29 @@ cannot write a local file. These records contain the question and returned
 citation text, so they must not be published without review. The fixed
 [dependency sample](../evaluation/dependency_samples/) demonstrates the
 first-hop bridge and second-hop answer without passing its answer label to
-the online Agent. SSE, conversation memory and
-persistent LangGraph Checkpointer remain later work.
+the online Agent. Conversation memory and persistent LangGraph Checkpointer
+remain later work.
+
+DOCS-014 adds `POST /api/agent/run/stream` with the same question body. Its
+`text/event-stream` response uses one JSON `data:` line per named event. Every
+event carries server-generated `run_id` and `message_id`. `stage` reports a
+completed graph node and only its public query/round/Evidence-ID fields;
+`token` carries up to 80 characters of the **already validated final answer**;
+`citation` carries one validated source object. Exactly one terminal event is
+sent while the connection remains writable: `done` contains `status`
+(`answered` or `insufficient_evidence`), `stop_reason`, `answer`, and
+`citation_ids`; `error` contains `error_code` and, when available,
+`stop_reason`. A captured Agent failure sends `error`, never success `done`.
+The answerer still uses a complete JSON response, so `token` events are SSE
+fragments after model completion, not upstream model token streaming. Stage
+events can arrive while later graph nodes are running. The Run is saved before
+answer fragments or `done` are sent.
+
+The POST stream has no automatic resume or replay. A client that loses the
+connection before `done` or `error` must mark the attempt incomplete and may
+start a new Run by submitting the question again; the old server Run may still
+finish and be stored. The Web does not interpret partial text as a successful
+answer and does not display private model reasoning.
 
 The planner and answerer each enforce a 12,000 UTF-8 byte cap on the combined
 system instructions and user/evidence text before constructing a model client.
@@ -169,6 +190,7 @@ model request:
 PYTHONPATH=backend/src python -m unittest backend.tests.test_agent_run -v
 PYTHONPATH=backend/src python -m unittest backend.tests.test_second_hop -v
 PYTHONPATH=backend/src python -m unittest backend.tests.test_sufficiency -v
+PYTHONPATH=backend/src python -m unittest backend.tests.test_agent_stream -v
 ```
 
 ## Document lifecycle (DOCS-007)

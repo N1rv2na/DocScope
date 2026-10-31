@@ -1,11 +1,12 @@
-# DocScope M1 Web
+# DocScope Web
 
-This M1 page supports UTF-8 Markdown and text-based PDF upload, one independent
+The page supports UTF-8 Markdown and text-based PDF upload, one independent
 English question, and expanding the original Chunk cited by an answer. PDF
 citations show a one-based page number; Markdown citations show section and
 line. The document list supports status refresh, replacement and deletion;
-old answer citations are revalidated before displaying source text. OCR,
-sessions, streaming and Agent trace are not implemented.
+old answer citations are revalidated before displaying source text. DOCS-014
+adds a separate Agent SSE action with stage/round trace, answer, citation,
+stop reason, and error display. OCR and sessions are not implemented.
 
 ## Local start
 
@@ -27,6 +28,14 @@ FastAPI service, so no browser LLM credentials or extra CORS configuration are
 needed. Upload `backend/tests/fixtures/telescopes.md` (from the repository
 root), ask “Which observatory built the Orion telescope?”, and expand the
 source under the answer.
+Choose **Agent 流式回答** to use the bounded Hybrid Agent instead of the
+**检索并回答** Dense baseline. The Agent UI reads the POST SSE stream with
+`fetch`. It only confirms an answer after a `done` event; a captured `error`
+or connection close without a terminal event clears provisional text. It
+never retries automatically, and the Run ID is shown beside the public trace.
+The `token` event carries chunks of the validated final answer after the model
+returns, not native model tokens. Stage changes are announced as status;
+fragment text is not announced character by character.
 For a PDF check, upload `backend/tests/fixtures/observatories.pdf` and ask the
 same Orion question. The citation should show page 2 and the Orion sentence.
 Damaged or image-only PDFs should display a failed import, not "索引就绪".

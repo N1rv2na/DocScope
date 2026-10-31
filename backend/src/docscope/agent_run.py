@@ -266,18 +266,49 @@ class AgentRunner:
 
     def run(self, question: str) -> dict[str, Any]:
         started = time.monotonic()
-        initial: RunState = {"run_id": str(uuid.uuid4()), "question": question,
-                             "trace": [], "calls": {"retrieval": 0, "model": 0},
-                             "retrieved_evidence_ids": [], "retrieval_round": 0,
-                             "followup_ready": False}
+        initial = self._initial_state(question)
         try:
             state = self.graph.invoke(initial)
         except Exception:
             logger.exception("LangGraph execution failed for run %s", initial["run_id"])
             state = {**initial, **self._failure("graph_failed"),
                      "trace": [self._step("graph", "failed", started)]}
+        return self._record(state, started)
+
+    def stream_run(self, question: str, run_id: str):
+        """Yield completed graph stages, then one final Run record."""
+        started = time.monotonic()
+        initial = self._initial_state(question, run_id)
+        state: RunState = initial.copy()
+        try:
+            for update in self.graph.stream(initial, stream_mode="updates"):
+                for stage, fields in update.items():
+                    if stage == "__interrupt__":
+                        continue
+                    state.update(fields)
+                    step = fields["trace"][-1]
+                    yield "stage", {key: step[key] for key in (
+                        "stage", "status", "elapsed_ms", "round", "query", "evidence_ids",
+                        "new_evidence_ids", "next_query", "source_chunk_id", "reason",
+                        "evidence_status") if key in step}
+        except Exception:
+            logger.exception("LangGraph streaming failed for run %s", run_id)
+            state = {**state, **self._failure("graph_failed"),
+                     "trace": state["trace"] + [self._step("graph", "failed", started)]}
+            yield "stage", {"stage": "graph", "status": "failed"}
+        yield "result", self._record(state, started)
+
+    @staticmethod
+    def _initial_state(question: str, run_id: str | None = None) -> RunState:
+        return {"run_id": run_id or str(uuid.uuid4()), "question": question,
+                "trace": [], "calls": {"retrieval": 0, "model": 0},
+                "retrieved_evidence_ids": [], "retrieval_round": 0,
+                "followup_ready": False}
+
+    @staticmethod
+    def _record(state: RunState, started: float) -> dict[str, Any]:
         return {"run_id": state["run_id"], "question": state["question"],
-                "query": state.get("query", question),
+                "query": state.get("query", state["question"]),
                 "status": state["status"], "stop_reason": state["stop_reason"],
                 "answer": state["answer"], "citations": state["citations"],
                 "retrieved_evidence_ids": state["retrieved_evidence_ids"],

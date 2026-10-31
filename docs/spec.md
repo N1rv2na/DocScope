@@ -1,6 +1,6 @@
 # DocScope 技术规格
 
-> 状态：目标规格；M1 Dense 闭环、DOCS-009 Hybrid 检索及 DOCS-010 本地 Rerank 检索已实现并在开发集评测；DOCS-011 单轮 Run、DOCS-012 有界第二跳与 DOCS-013 充分性/停止/拒答路径已接通，SSE 和 Agent 评测仍是计划。DOCS-001 的离线数据合同见 [evaluation/README.md](../evaluation/README.md)。范围与决策依据来自 [CONTEXT.md](CONTEXT.md)、[ARCHITECTURE.md](ARCHITECTURE.md)、[ADR](adr/) 和 [design.md](design.md)。`M1/M2/M3` 是秋招展示版的递进交付；`M4/M5` 为后续迭代。标为 **Assumption** 的内容须在 [OPEN_QUESTIONS.md](OPEN_QUESTIONS.md) 所列阶段冻结，不能据此宣称已有能力。
+> 状态：目标规格；M1 Dense 闭环、DOCS-009 Hybrid 检索及 DOCS-010 本地 Rerank 检索已实现并在开发集评测；DOCS-011 单轮 Run、DOCS-012 有界第二跳、DOCS-013 充分性/停止/拒答与 DOCS-014 Web SSE 路径已接通，Agent 效果评测仍是计划。DOCS-001 的离线数据合同见 [evaluation/README.md](../evaluation/README.md)。范围与决策依据来自 [CONTEXT.md](CONTEXT.md)、[ARCHITECTURE.md](ARCHITECTURE.md)、[ADR](adr/) 和 [design.md](design.md)。`M1/M2/M3` 是秋招展示版的递进交付；`M4/M5` 为后续迭代。标为 **Assumption** 的内容须在 [OPEN_QUESTIONS.md](OPEN_QUESTIONS.md) 所列阶段冻结，不能据此宣称已有能力。
 
 ## 1. System Overview
 
@@ -130,7 +130,7 @@ DOCS-007 已冻结文档状态、ID 生成、替换可见性及恢复机制，�
 
 - **导入状态 [M1]**：可区分处理中、可用和失败；只有索引完整后对问答可见。替换/删除先撤下旧内容，失败后保持不可用，重试可恢复，具体机制见[生命周期合同](document-lifecycle.md)。
 - **Run 状态 [M1/M3]**：每次问题有独立 `run_id`。M3 逐轮更新计划、Evidence、缺失事实、预算消耗与停止原因；成功回答、拒答和失败须可区分。不同 Run 的暂态不得相互污染。
-- **SSE 状态 [M3]**：`stage`、`token`、`citation` 为过程事件，`done` 表示完成，`error` 表示已捕获失败；UI 仅在完整完成后显示成功。断连/重试协议仍是开放问题。
+- **SSE 状态 [M3]**：`stage`、`token`、`citation` 为过程事件，`done` 表示完成，`error` 表示已捕获失败；UI 仅在收到有效 `done` 后显示成功。DOCS-014 冻结单次 POST 流不自动恢复或重试，断连显示未完成，重新提交创建新 Run。
 - **会话状态 [M4]**：按 `thread_id` 恢复；保存完整历史不等于把全部历史输入 LLM。近期窗口与滚动摘要只用于理解意图，当前事实重新检索；每轮重置检索计划和 Evidence 暂态。
 
 **Assumption**：最多三轮检索和基于 Token 阈值触发摘要只是候选默认值，不是本规格固定参数。

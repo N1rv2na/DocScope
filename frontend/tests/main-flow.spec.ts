@@ -63,6 +63,8 @@ test('keyboard user uploads Markdown, asks, and opens the original citation', as
   await expect(page.getByRole('button', { name: '检索并回答' })).toBeFocused()
   const source = page.locator('summary').filter({ hasText: '查看来源 1' })
   await page.keyboard.press('Tab')
+  await expect(page.getByRole('button', { name: 'Agent 流式回答' })).toBeFocused()
+  await page.keyboard.press('Tab')
   await expect(source).toBeFocused()
   await expect(source).toContainText('telescopes.md')
   await expect(source).toContainText('Telescope Notes > Orion')
