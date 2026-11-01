@@ -1,0 +1,2125 @@
+{
+  "config": {
+    "dataset_config": "evaluation/configs/multihop_rag_v1.json",
+    "manifest": "evaluation/manifests/multihop_rag_v1.json",
+    "split": "dev",
+    "answer_subset_ids": [
+      "mhr-q-62607bbbdf8d4daa782b",
+      "mhr-q-66a99ee476b80008b802",
+      "mhr-q-692ecf2907b3b65bc418",
+      "mhr-q-71c3f55cd1150d560470",
+      "mhr-q-7e6673c52727a5c37faf",
+      "mhr-q-816c6ee52abe20ca42e6",
+      "mhr-q-9059b74afac51ed7cab5",
+      "mhr-q-9a4d7197bf10c336946a",
+      "mhr-q-a70bac4fbd4e8ee99073",
+      "mhr-q-c81a29ee075e961b2eb0",
+      "mhr-q-d527c115ed7cfd8f14b1",
+      "mhr-q-f4da8c5620114c384e0b"
+    ],
+    "self_no_evidence": [
+      {
+        "sample_id": "docs015-fictional-telescope-93457",
+        "marker": "Quasar Crane Telescope 93457",
+        "question": "Which observatory built the fictional Quasar Crane Telescope 93457?"
+      },
+      {
+        "sample_id": "docs015-fictional-mission-93457",
+        "marker": "Cedar Meridian Mission 93457",
+        "question": "What year did the fictional Cedar Meridian Mission 93457 launch?"
+      }
+    ],
+    "dependency_sample": "evaluation/dependency_samples/docs012_v1.json",
+    "dependency_distractors": 4,
+    "qdrant_version": "1.20.0",
+    "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+    "embedding_revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+    "requested_model": "group/docscope-free",
+    "declared_route_members": [
+      "our-free-model/loomy/DeepSeek-V4.1-Flash",
+      "our-free-model/trae/deepseek-v4.1-flash",
+      "our-free-model/buddy/deepseek-v4.1-flash"
+    ],
+    "route_members_source": "owner_declared_not_runtime_verified",
+    "max_retrieval_rounds": 2,
+    "max_model_attempts": 2
+  },
+  "config_sha256": "8b7ba0b51fbc92c6228916e41c3896cc966d79cf73a9b63cff5d0414e310fbe9",
+  "effective_llm": {
+    "base_url": "http://127.0.0.1:3425/v1",
+    "requested_model": "group/docscope-free",
+    "declared_route_members": [
+      "our-free-model/loomy/DeepSeek-V4.1-Flash",
+      "our-free-model/trae/deepseek-v4.1-flash",
+      "our-free-model/buddy/deepseek-v4.1-flash"
+    ],
+    "route_members_source": "owner_declared_not_runtime_verified"
+  },
+  "summary": {
+    "fixed_subset_count": 14,
+    "answerable_count": 9,
+    "unanswerable_count": 5,
+    "error_count": 6,
+    "appropriate_abstention": {
+      "numerator": 5,
+      "denominator": 5,
+      "rate": 1.0
+    },
+    "false_abstention": {
+      "numerator": 1,
+      "denominator": 9,
+      "rate": 0.1111111111111111
+    },
+    "retrieval_all_articles": {
+      "numerator": 0,
+      "denominator": 9,
+      "rate": 0.0
+    },
+    "citation_id_legal": {
+      "numerator": 4,
+      "denominator": 4,
+      "rate": 1.0
+    },
+    "citation_support": {
+      "numerator": 4,
+      "denominator": 4,
+      "pending": 0,
+      "rate": 1.0
+    },
+    "exact_match": {
+      "numerator": 2,
+      "denominator": 2,
+      "rate": 1.0
+    },
+    "mean_token_f1": 1.0,
+    "corpus_count": 609,
+    "dependency_sample_count": 1,
+    "llm_call_count": 18,
+    "prompt_tokens": 26475,
+    "completion_tokens": 9087,
+    "usage_available_calls": 15,
+    "usage_unavailable_calls": 3,
+    "token_count_scope": "sum_of_calls_with_reported_usage_only",
+    "billed_cost_cny": null,
+    "cost_note": "Gateway did not expose billed cost; null is unknown, not zero.",
+    "elapsed_seconds": 422.701,
+    "scope": "fixed_dev_subset_only_not_full_answer_benchmark"
+  },
+  "rows": [
+    {
+      "sample_id": "mhr-q-62607bbbdf8d4daa782b",
+      "question_type": "inference_query",
+      "question": "What type of establishments, as reported by Sporting News, are known to modify their betting lines and odds in response to team news, player injuries, or roster changes, and can still secure profit irrespective of the wager's result, while also specifically altering NBA Rookie of the Year betting odds based on new information?",
+      "expected_answer_offline": "Sportsbooks",
+      "relevant_document_ids_offline": [
+        "mhr-doc-a7af298e15111cfe0335",
+        "mhr-doc-b496bb03968886a37b25",
+        "mhr-doc-ca3dbb200735a34de957"
+      ],
+      "http_status": 502,
+      "elapsed_seconds": 12.918,
+      "metrics": {
+        "sample_id": "mhr-q-62607bbbdf8d4daa782b",
+        "question_type": "inference_query",
+        "status": "error",
+        "appropriate_abstention": null,
+        "false_abstention": false,
+        "article_recall": 0.3333333333333333,
+        "all_support_articles_retrieved": false,
+        "exact_match": null,
+        "token_f1": null,
+        "citation_id_legal": []
+      },
+      "run": {
+        "run_id": "8836f1a7-048e-492f-9d15-015e3e02d1c2",
+        "question": "What type of establishments, as reported by Sporting News, are known to modify their betting lines and odds in response to team news, player injuries, or roster changes, and can still secure profit irrespective of the wager's result, while also specifically altering NBA Rookie of the Year betting odds based on new information?",
+        "query": "What type of establishments, as reported by Sporting News, are known to modify their betting lines and odds in response to team news, player injuries, or roster changes, and can still secure profit irrespective of the wager's result, while also specifically altering NBA Rookie of the Year betting odds based on new information?",
+        "status": "error",
+        "stop_reason": "plan_output_invalid",
+        "answer": null,
+        "citations": [],
+        "retrieved_evidence_ids": [
+          "e333cc98-726a-585b-a10a-05045151d922",
+          "63c6377e-dd94-52d0-943d-200424b4f69e",
+          "e6a93180-6ee7-540a-b2d2-db30d644cec7",
+          "24410f51-c562-5bfc-9483-908e7a64583b",
+          "4a40cc30-efed-5bd3-a021-61996dcb7e6c"
+        ],
+        "calls": {
+          "retrieval": 1,
+          "model": 1
+        },
+        "trace": [
+          {
+            "stage": "plan",
+            "status": "completed",
+            "query": "What type of establishments, as reported by Sporting News, are known to modify their betting lines and odds in response to team news, player injuries, or roster changes, and can still secure profit irrespective of the wager's result, while also specifically altering NBA Rookie of the Year betting odds based on new information?",
+            "elapsed_ms": 0.001
+          },
+          {
+            "stage": "retrieve",
+            "status": "completed",
+            "elapsed_ms": 30.859,
+            "round": 1,
+            "query": "What type of establishments, as reported by Sporting News, are known to modify their betting lines and odds in response to team news, player injuries, or roster changes, and can still secure profit irrespective of the wager's result, while also specifically altering NBA Rookie of the Year betting odds based on new information?",
+            "evidence_ids": [
+              "e333cc98-726a-585b-a10a-05045151d922",
+              "63c6377e-dd94-52d0-943d-200424b4f69e",
+              "e6a93180-6ee7-540a-b2d2-db30d644cec7",
+              "24410f51-c562-5bfc-9483-908e7a64583b",
+              "4a40cc30-efed-5bd3-a021-61996dcb7e6c"
+            ],
+            "new_evidence_ids": [
+              "e333cc98-726a-585b-a10a-05045151d922",
+              "63c6377e-dd94-52d0-943d-200424b4f69e",
+              "e6a93180-6ee7-540a-b2d2-db30d644cec7",
+              "24410f51-c562-5bfc-9483-908e7a64583b",
+              "4a40cc30-efed-5bd3-a021-61996dcb7e6c"
+            ]
+          },
+          {
+            "stage": "plan_next",
+            "status": "failed",
+            "elapsed_ms": 12863.593
+          }
+        ],
+        "elapsed_ms": 12915.95,
+        "error_code": "plan_output_invalid"
+      },
+      "llm_calls": [
+        {
+          "requested_model": "group/docscope-free",
+          "actual_model": "trae/deepseek-v4.1-flash",
+          "actual_channel": null,
+          "channel_status": "not_exposed_by_gateway",
+          "billed_cost_cny": null,
+          "usage": {
+            "completion_tokens": 595,
+            "prompt_tokens": 1757,
+            "total_tokens": 2352,
+            "completion_tokens_details": {
+              "accepted_prediction_tokens": null,
+              "audio_tokens": null,
+              "reasoning_tokens": 512,
+              "rejected_prediction_tokens": null
+            },
+            "prompt_tokens_details": {
+              "audio_tokens": null,
+              "cached_tokens": 0,
+              "cache_write_tokens": 0
+            }
+          },
+          "finish_reason": "stop",
+          "seconds": 10.256
+        }
+      ]
+    },
+    {
+      "sample_id": "mhr-q-66a99ee476b80008b802",
+      "question_type": "null_query",
+      "question": "Considering the information from a BBC article detailing Amitabh Bachchan's philanthropic efforts and a Times of India report on his recent filmography, which character, portrayed by Amitabh Bachchan, links his role in a movie addressing social issues to his real-life advocacy work as described in these articles?",
+      "expected_answer_offline": "Insufficient information.",
+      "relevant_document_ids_offline": [],
+      "http_status": 200,
+      "elapsed_seconds": 7.615,
+      "metrics": {
+        "sample_id": "mhr-q-66a99ee476b80008b802",
+        "question_type": "null_query",
+        "status": "insufficient_evidence",
+        "appropriate_abstention": true,
+        "false_abstention": null,
+        "article_recall": null,
+        "all_support_articles_retrieved": null,
+        "exact_match": null,
+        "token_f1": null,
+        "citation_id_legal": []
+      },
+      "run": {
+        "run_id": "d367a2cd-39fb-4713-8a4a-e4127ee57f12",
+        "question": "Considering the information from a BBC article detailing Amitabh Bachchan's philanthropic efforts and a Times of India report on his recent filmography, which character, portrayed by Amitabh Bachchan, links his role in a movie addressing social issues to his real-life advocacy work as described in these articles?",
+        "query": "Considering the information from a BBC article detailing Amitabh Bachchan's philanthropic efforts and a Times of India report on his recent filmography, which character, portrayed by Amitabh Bachchan, links his role in a movie addressing social issues to his real-life advocacy work as described in these articles?",
+        "status": "insufficient_evidence",
+        "stop_reason": "missing_fact_unresolved",
+        "answer": null,
+        "citations": [],
+        "retrieved_evidence_ids": [
+          "0da76da0-5950-50bb-8a2d-0483d4eb887d",
+          "4343b843-5d7a-5e47-862f-407c495cc178",
+          "724843ab-c2fa-5f9e-8c40-28d2474d9982",
+          "a31a225e-6dce-56e5-a1f8-23c1a1f8f419",
+          "fcb18191-0898-54b7-9f5d-db73d1732cce"
+        ],
+        "calls": {
+          "retrieval": 1,
+          "model": 1
+        },
+        "trace": [
+          {
+            "stage": "plan",
+            "status": "completed",
+            "query": "Considering the information from a BBC article detailing Amitabh Bachchan's philanthropic efforts and a Times of India report on his recent filmography, which character, portrayed by Amitabh Bachchan, links his role in a movie addressing social issues to his real-life advocacy work as described in these articles?",
+            "elapsed_ms": 0.001
+          },
+          {
+            "stage": "retrieve",
+            "status": "completed",
+            "elapsed_ms": 25.975,
+            "round": 1,
+            "query": "Considering the information from a BBC article detailing Amitabh Bachchan's philanthropic efforts and a Times of India report on his recent filmography, which character, portrayed by Amitabh Bachchan, links his role in a movie addressing social issues to his real-life advocacy work as described in these articles?",
+            "evidence_ids": [
+              "0da76da0-5950-50bb-8a2d-0483d4eb887d",
+              "4343b843-5d7a-5e47-862f-407c495cc178",
+              "724843ab-c2fa-5f9e-8c40-28d2474d9982",
+              "a31a225e-6dce-56e5-a1f8-23c1a1f8f419",
+              "fcb18191-0898-54b7-9f5d-db73d1732cce"
+            ],
+            "new_evidence_ids": [
+              "0da76da0-5950-50bb-8a2d-0483d4eb887d",
+              "4343b843-5d7a-5e47-862f-407c495cc178",
+              "724843ab-c2fa-5f9e-8c40-28d2474d9982",
+              "a31a225e-6dce-56e5-a1f8-23c1a1f8f419",
+              "fcb18191-0898-54b7-9f5d-db73d1732cce"
+            ]
+          },
+          {
+            "stage": "plan_next",
+            "status": "completed",
+            "elapsed_ms": 7585.043,
+            "evidence_status": "missing",
+            "missing_fact": "The identity of the Amitabh Bachchan character linking his social-issue film role to his real-life philanthropy",
+            "reason": "missing_fact_unresolved"
+          }
+        ],
+        "elapsed_ms": 7612.971
+      },
+      "llm_calls": [
+        {
+          "requested_model": "group/docscope-free",
+          "actual_model": "trae/deepseek-v4.1-flash",
+          "actual_channel": null,
+          "channel_status": "not_exposed_by_gateway",
+          "billed_cost_cny": null,
+          "usage": {
+            "completion_tokens": 371,
+            "prompt_tokens": 1835,
+            "total_tokens": 2206,
+            "completion_tokens_details": {
+              "accepted_prediction_tokens": null,
+              "audio_tokens": null,
+              "reasoning_tokens": 321,
+              "rejected_prediction_tokens": null
+            },
+            "prompt_tokens_details": {
+              "audio_tokens": null,
+              "cached_tokens": 0,
+              "cache_write_tokens": 0
+            }
+          },
+          "finish_reason": "stop",
+          "seconds": 7.424
+        }
+      ]
+    },
+    {
+      "sample_id": "mhr-q-692ecf2907b3b65bc418",
+      "question_type": "temporal_query",
+      "question": "Between the report from Fortune on Sam Bankman-Fried's use of Caroline Ellison as a front at Alameda Research published on October 4, 2023, and the TechCrunch report alleging Sam Bankman-Fried's instructions to Caroline Ellison to take customer funds published on October 6, 2023, was there consistency in the portrayal of Sam Bankman-Fried's involvement in the misuse of customer funds?",
+      "expected_answer_offline": "Yes",
+      "relevant_document_ids_offline": [
+        "mhr-doc-4cafe5fc2d4eae2a2870",
+        "mhr-doc-4fcc3e043883ec567c4e",
+        "mhr-doc-fd27fa8fdb95e03eb0c1"
+      ],
+      "http_status": 502,
+      "elapsed_seconds": 18.562,
+      "metrics": {
+        "sample_id": "mhr-q-692ecf2907b3b65bc418",
+        "question_type": "temporal_query",
+        "status": "error",
+        "appropriate_abstention": null,
+        "false_abstention": false,
+        "article_recall": 0.3333333333333333,
+        "all_support_articles_retrieved": false,
+        "exact_match": null,
+        "token_f1": null,
+        "citation_id_legal": []
+      },
+      "run": {
+        "run_id": "18210cfb-de46-4278-b365-27a2502a17b6",
+        "question": "Between the report from Fortune on Sam Bankman-Fried's use of Caroline Ellison as a front at Alameda Research published on October 4, 2023, and the TechCrunch report alleging Sam Bankman-Fried's instructions to Caroline Ellison to take customer funds published on October 6, 2023, was there consistency in the portrayal of Sam Bankman-Fried's involvement in the misuse of customer funds?",
+        "query": "Between the report from Fortune on Sam Bankman-Fried's use of Caroline Ellison as a front at Alameda Research published on October 4, 2023, and the TechCrunch report alleging Sam Bankman-Fried's instructions to Caroline Ellison to take customer funds published on October 6, 2023, was there consistency in the portrayal of Sam Bankman-Fried's involvement in the misuse of customer funds?",
+        "status": "error",
+        "stop_reason": "plan_output_invalid",
+        "answer": null,
+        "citations": [],
+        "retrieved_evidence_ids": [
+          "86264157-42dd-599f-9893-e848a3d786b1",
+          "6c1e790e-5432-54ee-83ce-0d0cee29b742",
+          "8f165cac-da4f-58a8-9d0b-ee138cc272b2",
+          "9b5e7db6-5588-5db1-92fe-27a5b94a01a9",
+          "74191c5c-9ca3-5f07-81b0-260503144fb5"
+        ],
+        "calls": {
+          "retrieval": 1,
+          "model": 1
+        },
+        "trace": [
+          {
+            "stage": "plan",
+            "status": "completed",
+            "query": "Between the report from Fortune on Sam Bankman-Fried's use of Caroline Ellison as a front at Alameda Research published on October 4, 2023, and the TechCrunch report alleging Sam Bankman-Fried's instructions to Caroline Ellison to take customer funds published on October 6, 2023, was there consistency in the portrayal of Sam Bankman-Fried's involvement in the misuse of customer funds?",
+            "elapsed_ms": 0.001
+          },
+          {
+            "stage": "retrieve",
+            "status": "completed",
+            "elapsed_ms": 33.614,
+            "round": 1,
+            "query": "Between the report from Fortune on Sam Bankman-Fried's use of Caroline Ellison as a front at Alameda Research published on October 4, 2023, and the TechCrunch report alleging Sam Bankman-Fried's instructions to Caroline Ellison to take customer funds published on October 6, 2023, was there consistency in the portrayal of Sam Bankman-Fried's involvement in the misuse of customer funds?",
+            "evidence_ids": [
+              "86264157-42dd-599f-9893-e848a3d786b1",
+              "6c1e790e-5432-54ee-83ce-0d0cee29b742",
+              "8f165cac-da4f-58a8-9d0b-ee138cc272b2",
+              "9b5e7db6-5588-5db1-92fe-27a5b94a01a9",
+              "74191c5c-9ca3-5f07-81b0-260503144fb5"
+            ],
+            "new_evidence_ids": [
+              "86264157-42dd-599f-9893-e848a3d786b1",
+              "6c1e790e-5432-54ee-83ce-0d0cee29b742",
+              "8f165cac-da4f-58a8-9d0b-ee138cc272b2",
+              "9b5e7db6-5588-5db1-92fe-27a5b94a01a9",
+              "74191c5c-9ca3-5f07-81b0-260503144fb5"
+            ]
+          },
+          {
+            "stage": "plan_next",
+            "status": "failed",
+            "elapsed_ms": 18523.585
+          }
+        ],
+        "elapsed_ms": 18559.72,
+        "error_code": "plan_output_invalid"
+      },
+      "llm_calls": [
+        {
+          "requested_model": "group/docscope-free",
+          "actual_model": "trae/deepseek-v4.1-flash",
+          "actual_channel": null,
+          "channel_status": "not_exposed_by_gateway",
+          "billed_cost_cny": null,
+          "usage": {
+            "completion_tokens": 1185,
+            "prompt_tokens": 1961,
+            "total_tokens": 3146,
+            "completion_tokens_details": {
+              "accepted_prediction_tokens": null,
+              "audio_tokens": null,
+              "reasoning_tokens": 1064,
+              "rejected_prediction_tokens": null
+            },
+            "prompt_tokens_details": {
+              "audio_tokens": null,
+              "cached_tokens": 0,
+              "cache_write_tokens": 0
+            }
+          },
+          "finish_reason": "stop",
+          "seconds": 18.374
+        }
+      ]
+    },
+    {
+      "sample_id": "mhr-q-71c3f55cd1150d560470",
+      "question_type": "comparison_query",
+      "question": "Does the 'Sporting News' article about Manchester United's defeat by Bayern indicate the same outcome for Manchester United's European competitions as the 'Sporting News' article about Alvaro Barreal's goal implies for Inter Miami's postseason running?",
+      "expected_answer_offline": "Yes",
+      "relevant_document_ids_offline": [
+        "mhr-doc-0ca1da328d8f9fb5f255",
+        "mhr-doc-70277a46b3eeb97f6043"
+      ],
+      "http_status": 503,
+      "elapsed_seconds": 30.277,
+      "metrics": {
+        "sample_id": "mhr-q-71c3f55cd1150d560470",
+        "question_type": "comparison_query",
+        "status": "error",
+        "appropriate_abstention": null,
+        "false_abstention": false,
+        "article_recall": 0.5,
+        "all_support_articles_retrieved": false,
+        "exact_match": null,
+        "token_f1": null,
+        "citation_id_legal": []
+      },
+      "run": {
+        "run_id": "47905102-2f59-4f14-8e12-f7cc00573fa3",
+        "question": "Does the 'Sporting News' article about Manchester United's defeat by Bayern indicate the same outcome for Manchester United's European competitions as the 'Sporting News' article about Alvaro Barreal's goal implies for Inter Miami's postseason running?",
+        "query": "Does the 'Sporting News' article about Manchester United's defeat by Bayern indicate the same outcome for Manchester United's European competitions as the 'Sporting News' article about Alvaro Barreal's goal implies for Inter Miami's postseason running?",
+        "status": "error",
+        "stop_reason": "planner_failed",
+        "answer": null,
+        "citations": [],
+        "retrieved_evidence_ids": [
+          "0dd3ec0a-b8db-5654-84b8-e74056eb24b6",
+          "73f9df8a-518c-543c-854c-e69c05f3b357",
+          "48785d80-2e83-5a0a-99e7-e4b807e2c508",
+          "e1e15685-0392-50f5-a5b0-b65a05a37bf6",
+          "5cb2d1da-3f00-5a18-91cd-672717119a26"
+        ],
+        "calls": {
+          "retrieval": 1,
+          "model": 1
+        },
+        "trace": [
+          {
+            "stage": "plan",
+            "status": "completed",
+            "query": "Does the 'Sporting News' article about Manchester United's defeat by Bayern indicate the same outcome for Manchester United's European competitions as the 'Sporting News' article about Alvaro Barreal's goal implies for Inter Miami's postseason running?",
+            "elapsed_ms": 0.0
+          },
+          {
+            "stage": "retrieve",
+            "status": "completed",
+            "elapsed_ms": 27.653,
+            "round": 1,
+            "query": "Does the 'Sporting News' article about Manchester United's defeat by Bayern indicate the same outcome for Manchester United's European competitions as the 'Sporting News' article about Alvaro Barreal's goal implies for Inter Miami's postseason running?",
+            "evidence_ids": [
+              "0dd3ec0a-b8db-5654-84b8-e74056eb24b6",
+              "73f9df8a-518c-543c-854c-e69c05f3b357",
+              "48785d80-2e83-5a0a-99e7-e4b807e2c508",
+              "e1e15685-0392-50f5-a5b0-b65a05a37bf6",
+              "5cb2d1da-3f00-5a18-91cd-672717119a26"
+            ],
+            "new_evidence_ids": [
+              "0dd3ec0a-b8db-5654-84b8-e74056eb24b6",
+              "73f9df8a-518c-543c-854c-e69c05f3b357",
+              "48785d80-2e83-5a0a-99e7-e4b807e2c508",
+              "e1e15685-0392-50f5-a5b0-b65a05a37bf6",
+              "5cb2d1da-3f00-5a18-91cd-672717119a26"
+            ]
+          },
+          {
+            "stage": "plan_next",
+            "status": "failed",
+            "elapsed_ms": 30245.291
+          }
+        ],
+        "elapsed_ms": 30275.0,
+        "error_code": "planner_failed"
+      },
+      "llm_calls": [
+        {
+          "requested_model": "group/docscope-free",
+          "actual_model": null,
+          "actual_channel": null,
+          "channel_status": "not_exposed_by_gateway",
+          "billed_cost_cny": null,
+          "usage": null,
+          "finish_reason": null,
+          "error_type": "APITimeoutError",
+          "seconds": 30.025
+        }
+      ]
+    },
+    {
+      "sample_id": "mhr-q-7e6673c52727a5c37faf",
+      "question_type": "inference_query",
+      "question": "Who is the individual facing a criminal trial for fraud and conspiracy, who previously persuaded a colleague from Jane Street to join his ventures at Alameda and FTX, is accused of misusing a billion dollars of customer funds to settle with Binance, and whose alleged fraudulent activities were aimed at gaining wealth, power, and influence, as reported by TechCrunch, Fortune, The Verge, and again by TechCrunch?",
+      "expected_answer_offline": "Sam Bankman-Fried",
+      "relevant_document_ids_offline": [
+        "mhr-doc-38d2f4918bb8bfb1073a",
+        "mhr-doc-4cafe5fc2d4eae2a2870",
+        "mhr-doc-4fcc3e043883ec567c4e",
+        "mhr-doc-5ad152b8fc841a56a2de"
+      ],
+      "http_status": 200,
+      "elapsed_seconds": 25.325,
+      "metrics": {
+        "sample_id": "mhr-q-7e6673c52727a5c37faf",
+        "question_type": "inference_query",
+        "status": "answered",
+        "appropriate_abstention": null,
+        "false_abstention": false,
+        "article_recall": 0.5,
+        "all_support_articles_retrieved": false,
+        "exact_match": true,
+        "token_f1": 1.0,
+        "citation_id_legal": [
+          true,
+          true
+        ]
+      },
+      "run": {
+        "run_id": "84b6a2ab-bc5a-4b7b-8889-538647dbb9f6",
+        "question": "Who is the individual facing a criminal trial for fraud and conspiracy, who previously persuaded a colleague from Jane Street to join his ventures at Alameda and FTX, is accused of misusing a billion dollars of customer funds to settle with Binance, and whose alleged fraudulent activities were aimed at gaining wealth, power, and influence, as reported by TechCrunch, Fortune, The Verge, and again by TechCrunch?",
+        "query": "Caroline Ellison",
+        "status": "answered",
+        "stop_reason": "answered",
+        "answer": "Sam Bankman-Fried",
+        "citations": [
+          {
+            "document_id": "728c16bb-2658-448e-973c-f48b1c082ab0",
+            "chunk_id": "7cf9b932-4935-5ee4-8c8f-3bbb031a2a96",
+            "document_title": "mhr-doc-50ec9e3acb3b1505befb.md",
+            "source_path": "documents/728c16bb-2658-448e-973c-f48b1c082ab0.md",
+            "page_number": null,
+            "section": "Document",
+            "line_start": 5,
+            "chunk_text": "the start,” diverting customers’ funds to Alameda.\n\nSam Bankman-Fried, the founder of failed cryptocurrency exchange FTX, is on trial for seven counts of wire fraud and conspiracy. FTX was a fraud “from the start,” the Securities and Exchange Commission alleges — with a “multi-billion-dollar deficiency caused by his own misappropriation of customer funds.” Follow along for all the latest news and regular updates from the trial.\n\n“Really just old-fashioned embezzlement.”\n\nWhat’s left of FTX is now being led by John J. Ray III — you may remember him as the guy who cleaned up Enron and who also said FTX is worse than Enron. Just before the trial began, the FTX lawyers filed suit against Bankman-Fried’s parents, saying they should give back millions of dollars they got from their kid. Ray has also referred to Bankman-Fried’s conduct as “really just old-fashioned embezzlement.”\n\nWe have some inkling of what the government will be arguing thanks to the filings prosecutors are making in this",
+            "index_version": 1,
+            "source_document_id": "mhr-doc-50ec9e3acb3b1505befb"
+          },
+          {
+            "document_id": "a8925584-9bc7-42e1-aeb1-b6d70c4a0546",
+            "chunk_id": "79b9d9d8-1af8-5489-9c02-1ab55a6f0f01",
+            "document_title": "mhr-doc-5ad152b8fc841a56a2de.md",
+            "source_path": "documents/a8925584-9bc7-42e1-aeb1-b6d70c4a0546.md",
+            "page_number": null,
+            "section": "Document",
+            "line_start": 1,
+            "chunk_text": "I’ve got some shitty ex-boyfriends, but none of them made me the CEO of their sin-eater hedge fund while refusing to give me equity and bragging about how there was a 5 percent chance they’d become the president of the United States, you know? Absolutely counting my blessings after Caroline Ellison’s first day on the stand. I wonder how many of the nine women on the jury are doing the same.\n\nEllison was the head of Alameda Research, the aforementioned hedge fund, during the implosion of it and FTX. She’s already pleaded guilty to criminal charges stemming from one of the worst romantic relationships I’ve ever heard of, and her testimony was widely anticipated before the trial. Today, that took the form of discussing a damning spreadsheet — one she prepared for her ex and boss Sam Bankman-Fried, now the defendant in a criminal fraud trial.\n\nSam Bankman-Fried, the founder of failed cryptocurrency exchange FTX, is on trial for seven counts of wire fraud and conspiracy. FTX was a fraud",
+            "index_version": 1,
+            "source_document_id": "mhr-doc-5ad152b8fc841a56a2de"
+          }
+        ],
+        "retrieved_evidence_ids": [
+          "8f165cac-da4f-58a8-9d0b-ee138cc272b2",
+          "82fe227b-cc83-52e4-9fb0-95f7135f0564",
+          "4d6fb72d-31e5-5226-990f-749d0244e19c",
+          "7cf9b932-4935-5ee4-8c8f-3bbb031a2a96",
+          "79b9d9d8-1af8-5489-9c02-1ab55a6f0f01",
+          "3059790d-fa02-5dad-b55d-c999503c571f",
+          "074aef96-2db9-5e12-af3a-1fe3dace62fa",
+          "f5041f19-f906-5655-bb88-12f1503d2993"
+        ],
+        "calls": {
+          "retrieval": 2,
+          "model": 2
+        },
+        "trace": [
+          {
+            "stage": "plan",
+            "status": "completed",
+            "query": "Who is the individual facing a criminal trial for fraud and conspiracy, who previously persuaded a colleague from Jane Street to join his ventures at Alameda and FTX, is accused of misusing a billion dollars of customer funds to settle with Binance, and whose alleged fraudulent activities were aimed at gaining wealth, power, and influence, as reported by TechCrunch, Fortune, The Verge, and again by TechCrunch?",
+            "elapsed_ms": 0.001
+          },
+          {
+            "stage": "retrieve",
+            "status": "completed",
+            "elapsed_ms": 48.388,
+            "round": 1,
+            "query": "Who is the individual facing a criminal trial for fraud and conspiracy, who previously persuaded a colleague from Jane Street to join his ventures at Alameda and FTX, is accused of misusing a billion dollars of customer funds to settle with Binance, and whose alleged fraudulent activities were aimed at gaining wealth, power, and influence, as reported by TechCrunch, Fortune, The Verge, and again by TechCrunch?",
+            "evidence_ids": [
+              "8f165cac-da4f-58a8-9d0b-ee138cc272b2",
+              "82fe227b-cc83-52e4-9fb0-95f7135f0564",
+              "4d6fb72d-31e5-5226-990f-749d0244e19c",
+              "7cf9b932-4935-5ee4-8c8f-3bbb031a2a96",
+              "79b9d9d8-1af8-5489-9c02-1ab55a6f0f01"
+            ],
+            "new_evidence_ids": [
+              "8f165cac-da4f-58a8-9d0b-ee138cc272b2",
+              "82fe227b-cc83-52e4-9fb0-95f7135f0564",
+              "4d6fb72d-31e5-5226-990f-749d0244e19c",
+              "7cf9b932-4935-5ee4-8c8f-3bbb031a2a96",
+              "79b9d9d8-1af8-5489-9c02-1ab55a6f0f01"
+            ]
+          },
+          {
+            "stage": "plan_next",
+            "status": "completed",
+            "elapsed_ms": 18604.266,
+            "evidence_status": "missing",
+            "missing_fact": "The identity of the Jane Street colleague who joined Alameda and FTX, the alleged misuse of $1 billion in customer funds to settle with Binance, and the wealth/power/influence motive as reported by the named outlets.",
+            "next_query": "Caroline Ellison",
+            "bridge_text": "Caroline Ellison",
+            "source_chunk_id": "4d6fb72d-31e5-5226-990f-749d0244e19c"
+          },
+          {
+            "stage": "retrieve",
+            "status": "completed",
+            "elapsed_ms": 45.125,
+            "round": 2,
+            "query": "Caroline Ellison",
+            "evidence_ids": [
+              "3059790d-fa02-5dad-b55d-c999503c571f",
+              "074aef96-2db9-5e12-af3a-1fe3dace62fa",
+              "4d6fb72d-31e5-5226-990f-749d0244e19c",
+              "f5041f19-f906-5655-bb88-12f1503d2993",
+              "8f165cac-da4f-58a8-9d0b-ee138cc272b2"
+            ],
+            "new_evidence_ids": [
+              "3059790d-fa02-5dad-b55d-c999503c571f",
+              "074aef96-2db9-5e12-af3a-1fe3dace62fa",
+              "f5041f19-f906-5655-bb88-12f1503d2993"
+            ]
+          },
+          {
+            "stage": "answer",
+            "status": "completed",
+            "elapsed_ms": 6621.299
+          }
+        ],
+        "elapsed_ms": 25322.882
+      },
+      "llm_calls": [
+        {
+          "requested_model": "group/docscope-free",
+          "actual_model": "trae/deepseek-v4.1-flash",
+          "actual_channel": null,
+          "channel_status": "not_exposed_by_gateway",
+          "billed_cost_cny": null,
+          "usage": {
+            "completion_tokens": 1079,
+            "prompt_tokens": 1919,
+            "total_tokens": 2998,
+            "completion_tokens_details": {
+              "accepted_prediction_tokens": null,
+              "audio_tokens": null,
+              "reasoning_tokens": 974,
+              "rejected_prediction_tokens": null
+            },
+            "prompt_tokens_details": {
+              "audio_tokens": null,
+              "cached_tokens": 0,
+              "cache_write_tokens": 0
+            }
+          },
+          "finish_reason": "stop",
+          "seconds": 18.456
+        },
+        {
+          "requested_model": "group/docscope-free",
+          "actual_model": "trae/deepseek-v4.1-flash",
+          "actual_channel": null,
+          "channel_status": "not_exposed_by_gateway",
+          "billed_cost_cny": null,
+          "usage": {
+            "completion_tokens": 381,
+            "prompt_tokens": 2814,
+            "total_tokens": 3195,
+            "completion_tokens_details": {
+              "accepted_prediction_tokens": null,
+              "audio_tokens": null,
+              "reasoning_tokens": 307,
+              "rejected_prediction_tokens": null
+            },
+            "prompt_tokens_details": {
+              "audio_tokens": null,
+              "cached_tokens": 0,
+              "cache_write_tokens": 0
+            }
+          },
+          "finish_reason": "stop",
+          "seconds": 6.431
+        }
+      ]
+    },
+    {
+      "sample_id": "mhr-q-816c6ee52abe20ca42e6",
+      "question_type": "temporal_query",
+      "question": "Has the focus of the European Commission's actions reported by TechCrunch changed from addressing unfair practices in Meta's ad-free subscription model to concerns about illegal content and disinformation in Elon Musk's X platform?",
+      "expected_answer_offline": "Yes",
+      "relevant_document_ids_offline": [
+        "mhr-doc-0393150822233807dab5",
+        "mhr-doc-b4a6e78eddb33190037e"
+      ],
+      "http_status": 503,
+      "elapsed_seconds": 30.232,
+      "metrics": {
+        "sample_id": "mhr-q-816c6ee52abe20ca42e6",
+        "question_type": "temporal_query",
+        "status": "error",
+        "appropriate_abstention": null,
+        "false_abstention": false,
+        "article_recall": 0.5,
+        "all_support_articles_retrieved": false,
+        "exact_match": null,
+        "token_f1": null,
+        "citation_id_legal": []
+      },
+      "run": {
+        "run_id": "1eec11fe-d0b9-4b1e-9246-e2060f948291",
+        "question": "Has the focus of the European Commission's actions reported by TechCrunch changed from addressing unfair practices in Meta's ad-free subscription model to concerns about illegal content and disinformation in Elon Musk's X platform?",
+        "query": "Has the focus of the European Commission's actions reported by TechCrunch changed from addressing unfair practices in Meta's ad-free subscription model to concerns about illegal content and disinformation in Elon Musk's X platform?",
+        "status": "error",
+        "stop_reason": "planner_failed",
+        "answer": null,
+        "citations": [],
+        "retrieved_evidence_ids": [
+          "41c5ced1-5734-5fec-badb-bc6e1446b406",
+          "55c872ea-29b6-5255-9bc6-b1e96f9bb798",
+          "2f086ced-8b2a-5e8d-a7df-9bbed6f81b85",
+          "f895e24c-3d21-5d8d-8c63-8fb39db67624",
+          "5f630acf-e893-531d-a242-304f08f981a6"
+        ],
+        "calls": {
+          "retrieval": 1,
+          "model": 1
+        },
+        "trace": [
+          {
+            "stage": "plan",
+            "status": "completed",
+            "query": "Has the focus of the European Commission's actions reported by TechCrunch changed from addressing unfair practices in Meta's ad-free subscription model to concerns about illegal content and disinformation in Elon Musk's X platform?",
+            "elapsed_ms": 0.0
+          },
+          {
+            "stage": "retrieve",
+            "status": "completed",
+            "elapsed_ms": 28.691,
+            "round": 1,
+            "query": "Has the focus of the European Commission's actions reported by TechCrunch changed from addressing unfair practices in Meta's ad-free subscription model to concerns about illegal content and disinformation in Elon Musk's X platform?",
+            "evidence_ids": [
+              "41c5ced1-5734-5fec-badb-bc6e1446b406",
+              "55c872ea-29b6-5255-9bc6-b1e96f9bb798",
+              "2f086ced-8b2a-5e8d-a7df-9bbed6f81b85",
+              "f895e24c-3d21-5d8d-8c63-8fb39db67624",
+              "5f630acf-e893-531d-a242-304f08f981a6"
+            ],
+            "new_evidence_ids": [
+              "41c5ced1-5734-5fec-badb-bc6e1446b406",
+              "55c872ea-29b6-5255-9bc6-b1e96f9bb798",
+              "2f086ced-8b2a-5e8d-a7df-9bbed6f81b85",
+              "f895e24c-3d21-5d8d-8c63-8fb39db67624",
+              "5f630acf-e893-531d-a242-304f08f981a6"
+            ]
+          },
+          {
+            "stage": "plan_next",
+            "status": "failed",
+            "elapsed_ms": 30199.254
+          }
+        ],
+        "elapsed_ms": 30229.993,
+        "error_code": "planner_failed"
+      },
+      "llm_calls": [
+        {
+          "requested_model": "group/docscope-free",
+          "actual_model": null,
+          "actual_channel": null,
+          "channel_status": "not_exposed_by_gateway",
+          "billed_cost_cny": null,
+          "usage": null,
+          "finish_reason": null,
+          "error_type": "APITimeoutError",
+          "seconds": 30.03
+        }
+      ]
+    },
+    {
+      "sample_id": "mhr-q-9059b74afac51ed7cab5",
+      "question_type": "comparison_query",
+      "question": "Does 'The Guardian' article suggest that Manchester United's recent performances in the Champions League have been stellar, while the 'Sporting News' article states that Manchester United are out of European competitions after a loss to Bayern, indicating a specific outcome in a European competition?",
+      "expected_answer_offline": "no",
+      "relevant_document_ids_offline": [
+        "mhr-doc-70277a46b3eeb97f6043",
+        "mhr-doc-ccb662a3d10ae9bbb802"
+      ],
+      "http_status": 503,
+      "elapsed_seconds": 30.223,
+      "metrics": {
+        "sample_id": "mhr-q-9059b74afac51ed7cab5",
+        "question_type": "comparison_query",
+        "status": "error",
+        "appropriate_abstention": null,
+        "false_abstention": false,
+        "article_recall": 0.5,
+        "all_support_articles_retrieved": false,
+        "exact_match": null,
+        "token_f1": null,
+        "citation_id_legal": []
+      },
+      "run": {
+        "run_id": "0f1a0a25-ef2b-4119-bc05-2347060decbd",
+        "question": "Does 'The Guardian' article suggest that Manchester United's recent performances in the Champions League have been stellar, while the 'Sporting News' article states that Manchester United are out of European competitions after a loss to Bayern, indicating a specific outcome in a European competition?",
+        "query": "Does 'The Guardian' article suggest that Manchester United's recent performances in the Champions League have been stellar, while the 'Sporting News' article states that Manchester United are out of European competitions after a loss to Bayern, indicating a specific outcome in a European competition?",
+        "status": "error",
+        "stop_reason": "planner_failed",
+        "answer": null,
+        "citations": [],
+        "retrieved_evidence_ids": [
+          "08e05094-ccf6-5eed-bc65-c5e01d2b6992",
+          "30a0a671-ad21-5862-87bb-0534e0292992",
+          "1a47d64f-5969-5bb6-9892-1cf2ca25d097",
+          "2356e360-db89-5f91-b42a-70f3553f6821",
+          "73f9df8a-518c-543c-854c-e69c05f3b357"
+        ],
+        "calls": {
+          "retrieval": 1,
+          "model": 1
+        },
+        "trace": [
+          {
+            "stage": "plan",
+            "status": "completed",
+            "query": "Does 'The Guardian' article suggest that Manchester United's recent performances in the Champions League have been stellar, while the 'Sporting News' article states that Manchester United are out of European competitions after a loss to Bayern, indicating a specific outcome in a European competition?",
+            "elapsed_ms": 0.0
+          },
+          {
+            "stage": "retrieve",
+            "status": "completed",
+            "elapsed_ms": 51.152,
+            "round": 1,
+            "query": "Does 'The Guardian' article suggest that Manchester United's recent performances in the Champions League have been stellar, while the 'Sporting News' article states that Manchester United are out of European competitions after a loss to Bayern, indicating a specific outcome in a European competition?",
+            "evidence_ids": [
+              "08e05094-ccf6-5eed-bc65-c5e01d2b6992",
+              "30a0a671-ad21-5862-87bb-0534e0292992",
+              "1a47d64f-5969-5bb6-9892-1cf2ca25d097",
+              "2356e360-db89-5f91-b42a-70f3553f6821",
+              "73f9df8a-518c-543c-854c-e69c05f3b357"
+            ],
+            "new_evidence_ids": [
+              "08e05094-ccf6-5eed-bc65-c5e01d2b6992",
+              "30a0a671-ad21-5862-87bb-0534e0292992",
+              "1a47d64f-5969-5bb6-9892-1cf2ca25d097",
+              "2356e360-db89-5f91-b42a-70f3553f6821",
+              "73f9df8a-518c-543c-854c-e69c05f3b357"
+            ]
+          },
+          {
+            "stage": "plan_next",
+            "status": "failed",
+            "elapsed_ms": 30168.12
+          }
+        ],
+        "elapsed_ms": 30221.55,
+        "error_code": "planner_failed"
+      },
+      "llm_calls": [
+        {
+          "requested_model": "group/docscope-free",
+          "actual_model": null,
+          "actual_channel": null,
+          "channel_status": "not_exposed_by_gateway",
+          "billed_cost_cny": null,
+          "usage": null,
+          "finish_reason": null,
+          "error_type": "APITimeoutError",
+          "seconds": 30.005
+        }
+      ]
+    },
+    {
+      "sample_id": "mhr-q-9a4d7197bf10c336946a",
+      "question_type": "null_query",
+      "question": "Considering the information from an article in The Times of India and another from The Hindu about Asha Shobana, which city is she planning to organize her next major dance recital in, if she has recently been awarded for her contributions to classical dance in Chennai and is also known for conducting workshops in Bangalore?",
+      "expected_answer_offline": "Insufficient information.",
+      "relevant_document_ids_offline": [],
+      "http_status": 200,
+      "elapsed_seconds": 5.687,
+      "metrics": {
+        "sample_id": "mhr-q-9a4d7197bf10c336946a",
+        "question_type": "null_query",
+        "status": "insufficient_evidence",
+        "appropriate_abstention": true,
+        "false_abstention": null,
+        "article_recall": null,
+        "all_support_articles_retrieved": null,
+        "exact_match": null,
+        "token_f1": null,
+        "citation_id_legal": []
+      },
+      "run": {
+        "run_id": "c03f95b7-e9b8-4071-ac42-41757d90116d",
+        "question": "Considering the information from an article in The Times of India and another from The Hindu about Asha Shobana, which city is she planning to organize her next major dance recital in, if she has recently been awarded for her contributions to classical dance in Chennai and is also known for conducting workshops in Bangalore?",
+        "query": "Considering the information from an article in The Times of India and another from The Hindu about Asha Shobana, which city is she planning to organize her next major dance recital in, if she has recently been awarded for her contributions to classical dance in Chennai and is also known for conducting workshops in Bangalore?",
+        "status": "insufficient_evidence",
+        "stop_reason": "missing_fact_unresolved",
+        "answer": null,
+        "citations": [],
+        "retrieved_evidence_ids": [
+          "40d21fb7-e350-5761-85d7-07801e2cbb2c",
+          "8ebf5f17-d15a-54c2-baed-656a4d3eb636",
+          "8cb4ccf8-6d4e-5092-9d26-fddad7a0fd6d",
+          "116b085c-2b8a-5c0e-b9a4-1cef4f38b230",
+          "dbe6b616-2bba-5b35-8e7c-ed472020365b"
+        ],
+        "calls": {
+          "retrieval": 1,
+          "model": 1
+        },
+        "trace": [
+          {
+            "stage": "plan",
+            "status": "completed",
+            "query": "Considering the information from an article in The Times of India and another from The Hindu about Asha Shobana, which city is she planning to organize her next major dance recital in, if she has recently been awarded for her contributions to classical dance in Chennai and is also known for conducting workshops in Bangalore?",
+            "elapsed_ms": 0.0
+          },
+          {
+            "stage": "retrieve",
+            "status": "completed",
+            "elapsed_ms": 43.164,
+            "round": 1,
+            "query": "Considering the information from an article in The Times of India and another from The Hindu about Asha Shobana, which city is she planning to organize her next major dance recital in, if she has recently been awarded for her contributions to classical dance in Chennai and is also known for conducting workshops in Bangalore?",
+            "evidence_ids": [
+              "40d21fb7-e350-5761-85d7-07801e2cbb2c",
+              "8ebf5f17-d15a-54c2-baed-656a4d3eb636",
+              "8cb4ccf8-6d4e-5092-9d26-fddad7a0fd6d",
+              "116b085c-2b8a-5c0e-b9a4-1cef4f38b230",
+              "dbe6b616-2bba-5b35-8e7c-ed472020365b"
+            ],
+            "new_evidence_ids": [
+              "40d21fb7-e350-5761-85d7-07801e2cbb2c",
+              "8ebf5f17-d15a-54c2-baed-656a4d3eb636",
+              "8cb4ccf8-6d4e-5092-9d26-fddad7a0fd6d",
+              "116b085c-2b8a-5c0e-b9a4-1cef4f38b230",
+              "dbe6b616-2bba-5b35-8e7c-ed472020365b"
+            ]
+          },
+          {
+            "stage": "plan_next",
+            "status": "completed",
+            "elapsed_ms": 5639.623,
+            "evidence_status": "missing",
+            "missing_fact": "The city where Asha Shobana plans to organize her next major dance recital.",
+            "reason": "missing_fact_unresolved"
+          }
+        ],
+        "elapsed_ms": 5684.88
+      },
+      "llm_calls": [
+        {
+          "requested_model": "group/docscope-free",
+          "actual_model": "trae/deepseek-v4.1-flash",
+          "actual_channel": null,
+          "channel_status": "not_exposed_by_gateway",
+          "billed_cost_cny": null,
+          "usage": {
+            "completion_tokens": 325,
+            "prompt_tokens": 1588,
+            "total_tokens": 1913,
+            "completion_tokens_details": {
+              "accepted_prediction_tokens": null,
+              "audio_tokens": null,
+              "reasoning_tokens": 278,
+              "rejected_prediction_tokens": null
+            },
+            "prompt_tokens_details": {
+              "audio_tokens": null,
+              "cached_tokens": 0,
+              "cache_write_tokens": 0
+            }
+          },
+          "finish_reason": "stop",
+          "seconds": 5.489
+        }
+      ]
+    },
+    {
+      "sample_id": "mhr-q-a70bac4fbd4e8ee99073",
+      "question_type": "inference_query",
+      "question": "What company, according to TechCrunch, claims to have developed a generative AI model with superior architecture while also spending billions to secure its position as the default search engine and is accused of harming news publishers’ revenues through anticompetitive practices?",
+      "expected_answer_offline": "Google",
+      "relevant_document_ids_offline": [
+        "mhr-doc-34eb7c087c1ef60f950e",
+        "mhr-doc-6e49ee62632cf0af10c9",
+        "mhr-doc-8fe5cc2f428f902c6bad"
+      ],
+      "http_status": 200,
+      "elapsed_seconds": 35.216,
+      "metrics": {
+        "sample_id": "mhr-q-a70bac4fbd4e8ee99073",
+        "question_type": "inference_query",
+        "status": "answered",
+        "appropriate_abstention": null,
+        "false_abstention": false,
+        "article_recall": 0.6666666666666666,
+        "all_support_articles_retrieved": false,
+        "exact_match": true,
+        "token_f1": 1.0,
+        "citation_id_legal": [
+          true,
+          true
+        ]
+      },
+      "run": {
+        "run_id": "a46d210a-bf65-4d4c-8123-9df33daad1d7",
+        "question": "What company, according to TechCrunch, claims to have developed a generative AI model with superior architecture while also spending billions to secure its position as the default search engine and is accused of harming news publishers’ revenues through anticompetitive practices?",
+        "query": "Bard AI chatbot TechCrunch generative AI model superior architecture billions default search engine",
+        "status": "answered",
+        "stop_reason": "answered",
+        "answer": "Google",
+        "citations": [
+          {
+            "document_id": "a6ffdb6d-bdfd-4e8a-a227-e0e3e298290a",
+            "chunk_id": "e97a5eec-1e7f-5a65-8815-22b61909a236",
+            "document_title": "mhr-doc-8fe5cc2f428f902c6bad.md",
+            "source_path": "documents/a6ffdb6d-bdfd-4e8a-a227-e0e3e298290a.md",
+            "page_number": null,
+            "section": "Document",
+            "line_start": 1,
+            "chunk_text": "This week, Google took the wraps off of Gemini, its new flagship generative AI model meant to power a range of products and services including Bard, Google’s ChatGPT competitor. In blog posts and press materials, Google touted Gemini’s superior architecture and capabilities, claiming that the model meets or exceeds the performance of other leading gen AI models like OpenAI’s GPT-4.\n\nBut the anecdotal evidence suggests otherwise.\n\nA “lite” version of Gemini, Gemini Pro, began rolling out to Bard yesterday, and it didn’t take long before users began voicing their frustrations with it on X (formerly Twitter).\n\nThe model fails to get basic facts right, like 2023 Oscar winners:\n\nI'm extremely disappointed with Gemini Pro on Bard. It still give very, very bad results to questions that shouldn't be hard anymore with RAG. A simple question like this with a simple answer like this, and it still got it WRONG. pic.twitter.com/5GowXtscRU — Vitor de Lucca 🏳️‍🌈 / threads.net/@vitor_dlucca",
+            "index_version": 1,
+            "source_document_id": "mhr-doc-8fe5cc2f428f902c6bad"
+          },
+          {
+            "document_id": "dc7d1528-1743-42c7-96f1-24a74e745c68",
+            "chunk_id": "5005fcd0-5532-5e37-93b1-ffef1009769a",
+            "document_title": "mhr-doc-6e49ee62632cf0af10c9.md",
+            "source_path": "documents/dc7d1528-1743-42c7-96f1-24a74e745c68.md",
+            "page_number": null,
+            "section": "Document",
+            "line_start": 1,
+            "chunk_text": "A new class action lawsuit filed this week in the U.S. District Court in D.C. accuses Google and parent company Alphabet of anticompetitive behavior in violation of U.S. antitrust law, the Sherman Act, and others, on behalf of news publishers. The case, filed by Arkansas-based publisher Helena World Chronicle, argues that Google “siphons off” news publishers’ content, their readers and ad revenue through anticompetitive means. It also specifically cites new AI technologies like Google’s Search Generative Experience (SGE) and Bard AI chatbot as worsening the problem.\n\nIn the complaint, Helena World Chronicle, which owns and publishes two weekly newspapers in Arkansas, argues that Google is “starving the free press” by sharing publishers’ content on Google, losing them “billions of dollars.”\n\nIn addition to new AI technologies, the suit points to Google’s older question-and-answer technologies, like the “Knowledge Graph” launched in May 2012, as part of the problem.\n\n“When a user",
+            "index_version": 1,
+            "source_document_id": "mhr-doc-6e49ee62632cf0af10c9"
+          }
+        ],
+        "retrieved_evidence_ids": [
+          "5005fcd0-5532-5e37-93b1-ffef1009769a",
+          "6f09989a-588b-5f1f-8aba-e316d7498801",
+          "22ff8e78-fda6-513e-92b7-d997cd8f76fa",
+          "ac74dc79-8aa0-5c81-a758-68cac71477a8",
+          "07e4e1be-255e-5a3a-8d70-3d70fc5886d0",
+          "5288b697-1967-54ca-b058-743dbd1dba51",
+          "e97a5eec-1e7f-5a65-8815-22b61909a236",
+          "967d741d-ccfe-5999-8e34-dac4385cc809"
+        ],
+        "calls": {
+          "retrieval": 2,
+          "model": 2
+        },
+        "trace": [
+          {
+            "stage": "plan",
+            "status": "completed",
+            "query": "What company, according to TechCrunch, claims to have developed a generative AI model with superior architecture while also spending billions to secure its position as the default search engine and is accused of harming news publishers’ revenues through anticompetitive practices?",
+            "elapsed_ms": 0.001
+          },
+          {
+            "stage": "retrieve",
+            "status": "completed",
+            "elapsed_ms": 30.461,
+            "round": 1,
+            "query": "What company, according to TechCrunch, claims to have developed a generative AI model with superior architecture while also spending billions to secure its position as the default search engine and is accused of harming news publishers’ revenues through anticompetitive practices?",
+            "evidence_ids": [
+              "5005fcd0-5532-5e37-93b1-ffef1009769a",
+              "6f09989a-588b-5f1f-8aba-e316d7498801",
+              "22ff8e78-fda6-513e-92b7-d997cd8f76fa",
+              "ac74dc79-8aa0-5c81-a758-68cac71477a8",
+              "07e4e1be-255e-5a3a-8d70-3d70fc5886d0"
+            ],
+            "new_evidence_ids": [
+              "5005fcd0-5532-5e37-93b1-ffef1009769a",
+              "6f09989a-588b-5f1f-8aba-e316d7498801",
+              "22ff8e78-fda6-513e-92b7-d997cd8f76fa",
+              "ac74dc79-8aa0-5c81-a758-68cac71477a8",
+              "07e4e1be-255e-5a3a-8d70-3d70fc5886d0"
+            ]
+          },
+          {
+            "stage": "plan_next",
+            "status": "completed",
+            "elapsed_ms": 26638.701,
+            "evidence_status": "missing",
+            "missing_fact": "TechCrunch-reported claim of a generative AI model with superior architecture and billions spent to secure default search engine status",
+            "next_query": "Bard AI chatbot TechCrunch generative AI model superior architecture billions default search engine",
+            "bridge_text": "Bard AI chatbot",
+            "source_chunk_id": "5005fcd0-5532-5e37-93b1-ffef1009769a"
+          },
+          {
+            "stage": "retrieve",
+            "status": "completed",
+            "elapsed_ms": 32.74,
+            "round": 2,
+            "query": "Bard AI chatbot TechCrunch generative AI model superior architecture billions default search engine",
+            "evidence_ids": [
+              "5288b697-1967-54ca-b058-743dbd1dba51",
+              "e97a5eec-1e7f-5a65-8815-22b61909a236",
+              "22ff8e78-fda6-513e-92b7-d997cd8f76fa",
+              "967d741d-ccfe-5999-8e34-dac4385cc809",
+              "5005fcd0-5532-5e37-93b1-ffef1009769a"
+            ],
+            "new_evidence_ids": [
+              "5288b697-1967-54ca-b058-743dbd1dba51",
+              "e97a5eec-1e7f-5a65-8815-22b61909a236",
+              "967d741d-ccfe-5999-8e34-dac4385cc809"
+            ]
+          },
+          {
+            "stage": "answer",
+            "status": "completed",
+            "elapsed_ms": 8507.531
+          }
+        ],
+        "elapsed_ms": 35212.651
+      },
+      "llm_calls": [
+        {
+          "requested_model": "group/docscope-free",
+          "actual_model": "trae/deepseek-v4.1-flash",
+          "actual_channel": null,
+          "channel_status": "not_exposed_by_gateway",
+          "billed_cost_cny": null,
+          "usage": {
+            "completion_tokens": 1746,
+            "prompt_tokens": 1816,
+            "total_tokens": 3562,
+            "completion_tokens_details": {
+              "accepted_prediction_tokens": null,
+              "audio_tokens": null,
+              "reasoning_tokens": 1639,
+              "rejected_prediction_tokens": null
+            },
+            "prompt_tokens_details": {
+              "audio_tokens": null,
+              "cached_tokens": 0,
+              "cache_write_tokens": 0
+            }
+          },
+          "finish_reason": "stop",
+          "seconds": 26.488
+        },
+        {
+          "requested_model": "group/docscope-free",
+          "actual_model": "trae/deepseek-v4.1-flash",
+          "actual_channel": null,
+          "channel_status": "not_exposed_by_gateway",
+          "billed_cost_cny": null,
+          "usage": {
+            "completion_tokens": 487,
+            "prompt_tokens": 2659,
+            "total_tokens": 3146,
+            "completion_tokens_details": {
+              "accepted_prediction_tokens": null,
+              "audio_tokens": null,
+              "reasoning_tokens": 422,
+              "rejected_prediction_tokens": null
+            },
+            "prompt_tokens_details": {
+              "audio_tokens": null,
+              "cached_tokens": 0,
+              "cache_write_tokens": 0
+            }
+          },
+          "finish_reason": "stop",
+          "seconds": 8.349
+        }
+      ]
+    },
+    {
+      "sample_id": "mhr-q-c81a29ee075e961b2eb0",
+      "question_type": "null_query",
+      "question": "Considering the information from an article in The New York Times and another in Architectural Digest about Eny Lee Parker, which city, known for a significant design event that Parker participated in according to The New York Times, is also where she unveiled a new collection as reported by Architectural Digest?",
+      "expected_answer_offline": "Insufficient information.",
+      "relevant_document_ids_offline": [],
+      "http_status": 200,
+      "elapsed_seconds": 5.431,
+      "metrics": {
+        "sample_id": "mhr-q-c81a29ee075e961b2eb0",
+        "question_type": "null_query",
+        "status": "insufficient_evidence",
+        "appropriate_abstention": true,
+        "false_abstention": null,
+        "article_recall": null,
+        "all_support_articles_retrieved": null,
+        "exact_match": null,
+        "token_f1": null,
+        "citation_id_legal": []
+      },
+      "run": {
+        "run_id": "4bab1a82-86e0-4f25-a456-d7e7d86f66a6",
+        "question": "Considering the information from an article in The New York Times and another in Architectural Digest about Eny Lee Parker, which city, known for a significant design event that Parker participated in according to The New York Times, is also where she unveiled a new collection as reported by Architectural Digest?",
+        "query": "Considering the information from an article in The New York Times and another in Architectural Digest about Eny Lee Parker, which city, known for a significant design event that Parker participated in according to The New York Times, is also where she unveiled a new collection as reported by Architectural Digest?",
+        "status": "insufficient_evidence",
+        "stop_reason": "missing_fact_unresolved",
+        "answer": null,
+        "citations": [],
+        "retrieved_evidence_ids": [
+          "ce32f5dc-68a6-564c-afe3-2cfea8f4eb43",
+          "aaad2c34-3805-58da-8b3b-60db42af938d",
+          "104026cc-261a-5a73-8325-5ddc7f0763e6",
+          "5344ce14-d7bf-5b9f-9a9c-124ec24876b2",
+          "9f2224e1-1bfd-5c7a-9a41-2c8515a1cb84"
+        ],
+        "calls": {
+          "retrieval": 1,
+          "model": 1
+        },
+        "trace": [
+          {
+            "stage": "plan",
+            "status": "completed",
+            "query": "Considering the information from an article in The New York Times and another in Architectural Digest about Eny Lee Parker, which city, known for a significant design event that Parker participated in according to The New York Times, is also where she unveiled a new collection as reported by Architectural Digest?",
+            "elapsed_ms": 0.002
+          },
+          {
+            "stage": "retrieve",
+            "status": "completed",
+            "elapsed_ms": 56.199,
+            "round": 1,
+            "query": "Considering the information from an article in The New York Times and another in Architectural Digest about Eny Lee Parker, which city, known for a significant design event that Parker participated in according to The New York Times, is also where she unveiled a new collection as reported by Architectural Digest?",
+            "evidence_ids": [
+              "ce32f5dc-68a6-564c-afe3-2cfea8f4eb43",
+              "aaad2c34-3805-58da-8b3b-60db42af938d",
+              "104026cc-261a-5a73-8325-5ddc7f0763e6",
+              "5344ce14-d7bf-5b9f-9a9c-124ec24876b2",
+              "9f2224e1-1bfd-5c7a-9a41-2c8515a1cb84"
+            ],
+            "new_evidence_ids": [
+              "ce32f5dc-68a6-564c-afe3-2cfea8f4eb43",
+              "aaad2c34-3805-58da-8b3b-60db42af938d",
+              "104026cc-261a-5a73-8325-5ddc7f0763e6",
+              "5344ce14-d7bf-5b9f-9a9c-124ec24876b2",
+              "9f2224e1-1bfd-5c7a-9a41-2c8515a1cb84"
+            ]
+          },
+          {
+            "stage": "plan_next",
+            "status": "completed",
+            "elapsed_ms": 5367.976,
+            "evidence_status": "missing",
+            "missing_fact": "The city where Eny Lee Parker participated in a significant design event according to The New York Times and unveiled a new collection according to Architectural Digest.",
+            "reason": "missing_fact_unresolved"
+          }
+        ],
+        "elapsed_ms": 5428.341
+      },
+      "llm_calls": [
+        {
+          "requested_model": "group/docscope-free",
+          "actual_model": "trae/deepseek-v4.1-flash",
+          "actual_channel": null,
+          "channel_status": "not_exposed_by_gateway",
+          "billed_cost_cny": null,
+          "usage": {
+            "completion_tokens": 334,
+            "prompt_tokens": 1829,
+            "total_tokens": 2163,
+            "completion_tokens_details": {
+              "accepted_prediction_tokens": null,
+              "audio_tokens": null,
+              "reasoning_tokens": 276,
+              "rejected_prediction_tokens": null
+            },
+            "prompt_tokens_details": {
+              "audio_tokens": null,
+              "cached_tokens": 0,
+              "cache_write_tokens": 0
+            }
+          },
+          "finish_reason": "stop",
+          "seconds": 5.218
+        }
+      ]
+    },
+    {
+      "sample_id": "mhr-q-d527c115ed7cfd8f14b1",
+      "question_type": "temporal_query",
+      "question": "After Jerome Powell's aggressive interest rate hikes mentioned by 'Fortune' on October 6th, 2023, did 'Business Line' report on October 14th, 2023, suggest that central bankers' stance on interest rates was consistent or inconsistent with Powell's approach as reported by 'Fortune'?",
+      "expected_answer_offline": "Consistent",
+      "relevant_document_ids_offline": [
+        "mhr-doc-3ebbb9a1a7656a18478a",
+        "mhr-doc-6d9d681bb9aab9df0291"
+      ],
+      "http_status": 502,
+      "elapsed_seconds": 21.09,
+      "metrics": {
+        "sample_id": "mhr-q-d527c115ed7cfd8f14b1",
+        "question_type": "temporal_query",
+        "status": "error",
+        "appropriate_abstention": null,
+        "false_abstention": false,
+        "article_recall": 0.5,
+        "all_support_articles_retrieved": false,
+        "exact_match": null,
+        "token_f1": null,
+        "citation_id_legal": []
+      },
+      "run": {
+        "run_id": "da3dd78b-d613-409f-922a-2fe9d48abe20",
+        "question": "After Jerome Powell's aggressive interest rate hikes mentioned by 'Fortune' on October 6th, 2023, did 'Business Line' report on October 14th, 2023, suggest that central bankers' stance on interest rates was consistent or inconsistent with Powell's approach as reported by 'Fortune'?",
+        "query": "After Jerome Powell's aggressive interest rate hikes mentioned by 'Fortune' on October 6th, 2023, did 'Business Line' report on October 14th, 2023, suggest that central bankers' stance on interest rates was consistent or inconsistent with Powell's approach as reported by 'Fortune'?",
+        "status": "error",
+        "stop_reason": "plan_output_invalid",
+        "answer": null,
+        "citations": [],
+        "retrieved_evidence_ids": [
+          "51cf494e-fe7c-582e-8b4d-11aa955716c5",
+          "7c6e8f05-1895-5c82-a8ec-44ca62fe1ed7",
+          "962a774e-3bee-59a8-b2c7-f86de3bb90fa",
+          "57457ad1-90ae-5292-8b92-0d3e4b1d7405",
+          "0b006b57-82a0-5813-b41e-0cda33fdcd4b"
+        ],
+        "calls": {
+          "retrieval": 1,
+          "model": 1
+        },
+        "trace": [
+          {
+            "stage": "plan",
+            "status": "completed",
+            "query": "After Jerome Powell's aggressive interest rate hikes mentioned by 'Fortune' on October 6th, 2023, did 'Business Line' report on October 14th, 2023, suggest that central bankers' stance on interest rates was consistent or inconsistent with Powell's approach as reported by 'Fortune'?",
+            "elapsed_ms": 0.0
+          },
+          {
+            "stage": "retrieve",
+            "status": "completed",
+            "elapsed_ms": 28.467,
+            "round": 1,
+            "query": "After Jerome Powell's aggressive interest rate hikes mentioned by 'Fortune' on October 6th, 2023, did 'Business Line' report on October 14th, 2023, suggest that central bankers' stance on interest rates was consistent or inconsistent with Powell's approach as reported by 'Fortune'?",
+            "evidence_ids": [
+              "51cf494e-fe7c-582e-8b4d-11aa955716c5",
+              "7c6e8f05-1895-5c82-a8ec-44ca62fe1ed7",
+              "962a774e-3bee-59a8-b2c7-f86de3bb90fa",
+              "57457ad1-90ae-5292-8b92-0d3e4b1d7405",
+              "0b006b57-82a0-5813-b41e-0cda33fdcd4b"
+            ],
+            "new_evidence_ids": [
+              "51cf494e-fe7c-582e-8b4d-11aa955716c5",
+              "7c6e8f05-1895-5c82-a8ec-44ca62fe1ed7",
+              "962a774e-3bee-59a8-b2c7-f86de3bb90fa",
+              "57457ad1-90ae-5292-8b92-0d3e4b1d7405",
+              "0b006b57-82a0-5813-b41e-0cda33fdcd4b"
+            ]
+          },
+          {
+            "stage": "plan_next",
+            "status": "failed",
+            "elapsed_ms": 21058.023
+          }
+        ],
+        "elapsed_ms": 21088.308,
+        "error_code": "plan_output_invalid"
+      },
+      "llm_calls": [
+        {
+          "requested_model": "group/docscope-free",
+          "actual_model": "trae/deepseek-v4.1-flash",
+          "actual_channel": null,
+          "channel_status": "not_exposed_by_gateway",
+          "billed_cost_cny": null,
+          "usage": {
+            "completion_tokens": 1326,
+            "prompt_tokens": 1818,
+            "total_tokens": 3144,
+            "completion_tokens_details": {
+              "accepted_prediction_tokens": null,
+              "audio_tokens": null,
+              "reasoning_tokens": 1206,
+              "rejected_prediction_tokens": null
+            },
+            "prompt_tokens_details": {
+              "audio_tokens": null,
+              "cached_tokens": 0,
+              "cache_write_tokens": 0
+            }
+          },
+          "finish_reason": "stop",
+          "seconds": 20.915
+        }
+      ]
+    },
+    {
+      "sample_id": "mhr-q-f4da8c5620114c384e0b",
+      "question_type": "comparison_query",
+      "question": "Does the 'Essentially Sports' article claim that Canelo Alvarez has a specific net worth figure in 2023, while the 'CBSSports.com' article focuses on the fan base's perception of David Benavidez as a successor to Canelo Alvarez, without mentioning any financial figures?",
+      "expected_answer_offline": "Yes",
+      "relevant_document_ids_offline": [
+        "mhr-doc-98e8878ea896ef575a1d",
+        "mhr-doc-e0c309e905a0452ec73e"
+      ],
+      "http_status": 200,
+      "elapsed_seconds": 8.852,
+      "metrics": {
+        "sample_id": "mhr-q-f4da8c5620114c384e0b",
+        "question_type": "comparison_query",
+        "status": "insufficient_evidence",
+        "appropriate_abstention": null,
+        "false_abstention": true,
+        "article_recall": 0.5,
+        "all_support_articles_retrieved": false,
+        "exact_match": null,
+        "token_f1": null,
+        "citation_id_legal": []
+      },
+      "run": {
+        "run_id": "2c6342c2-6b3f-49d9-8752-0dbd26b52c79",
+        "question": "Does the 'Essentially Sports' article claim that Canelo Alvarez has a specific net worth figure in 2023, while the 'CBSSports.com' article focuses on the fan base's perception of David Benavidez as a successor to Canelo Alvarez, without mentioning any financial figures?",
+        "query": "Does the 'Essentially Sports' article claim that Canelo Alvarez has a specific net worth figure in 2023, while the 'CBSSports.com' article focuses on the fan base's perception of David Benavidez as a successor to Canelo Alvarez, without mentioning any financial figures?",
+        "status": "insufficient_evidence",
+        "stop_reason": "missing_fact_unresolved",
+        "answer": null,
+        "citations": [],
+        "retrieved_evidence_ids": [
+          "b7ef027e-df9d-5d6d-933d-4fc9a419e2eb",
+          "d2eac988-8a23-5513-99cf-429d9a88c47a",
+          "5a11c42a-44f3-5f91-88ae-7c918d0aa8a3",
+          "6235cfc7-dcf9-5ce6-94c7-822ee7d0a4f8",
+          "6dd65383-8476-5a51-916f-73868e72ba58"
+        ],
+        "calls": {
+          "retrieval": 1,
+          "model": 1
+        },
+        "trace": [
+          {
+            "stage": "plan",
+            "status": "completed",
+            "query": "Does the 'Essentially Sports' article claim that Canelo Alvarez has a specific net worth figure in 2023, while the 'CBSSports.com' article focuses on the fan base's perception of David Benavidez as a successor to Canelo Alvarez, without mentioning any financial figures?",
+            "elapsed_ms": 0.0
+          },
+          {
+            "stage": "retrieve",
+            "status": "completed",
+            "elapsed_ms": 27.108,
+            "round": 1,
+            "query": "Does the 'Essentially Sports' article claim that Canelo Alvarez has a specific net worth figure in 2023, while the 'CBSSports.com' article focuses on the fan base's perception of David Benavidez as a successor to Canelo Alvarez, without mentioning any financial figures?",
+            "evidence_ids": [
+              "b7ef027e-df9d-5d6d-933d-4fc9a419e2eb",
+              "d2eac988-8a23-5513-99cf-429d9a88c47a",
+              "5a11c42a-44f3-5f91-88ae-7c918d0aa8a3",
+              "6235cfc7-dcf9-5ce6-94c7-822ee7d0a4f8",
+              "6dd65383-8476-5a51-916f-73868e72ba58"
+            ],
+            "new_evidence_ids": [
+              "b7ef027e-df9d-5d6d-933d-4fc9a419e2eb",
+              "d2eac988-8a23-5513-99cf-429d9a88c47a",
+              "5a11c42a-44f3-5f91-88ae-7c918d0aa8a3",
+              "6235cfc7-dcf9-5ce6-94c7-822ee7d0a4f8",
+              "6dd65383-8476-5a51-916f-73868e72ba58"
+            ]
+          },
+          {
+            "stage": "plan_next",
+            "status": "completed",
+            "elapsed_ms": 8820.659,
+            "evidence_status": "missing",
+            "missing_fact": "Whether the CBSSports.com article focuses on fans perceiving David Benavidez as a successor to Canelo Alvarez and does not mention financial figures.",
+            "reason": "missing_fact_unresolved"
+          }
+        ],
+        "elapsed_ms": 8850.11
+      },
+      "llm_calls": [
+        {
+          "requested_model": "group/docscope-free",
+          "actual_model": "trae/deepseek-v4.1-flash",
+          "actual_channel": null,
+          "channel_status": "not_exposed_by_gateway",
+          "billed_cost_cny": null,
+          "usage": {
+            "completion_tokens": 509,
+            "prompt_tokens": 1877,
+            "total_tokens": 2386,
+            "completion_tokens_details": {
+              "accepted_prediction_tokens": null,
+              "audio_tokens": null,
+              "reasoning_tokens": 450,
+              "rejected_prediction_tokens": null
+            },
+            "prompt_tokens_details": {
+              "audio_tokens": null,
+              "cached_tokens": 0,
+              "cache_write_tokens": 0
+            }
+          },
+          "finish_reason": "stop",
+          "seconds": 8.676
+        }
+      ]
+    },
+    {
+      "sample_id": "docs015-fictional-telescope-93457",
+      "question_type": "self_no_evidence",
+      "question": "Which observatory built the fictional Quasar Crane Telescope 93457?",
+      "expected_answer_offline": null,
+      "relevant_document_ids_offline": [],
+      "http_status": 200,
+      "elapsed_seconds": 6.221,
+      "metrics": {
+        "sample_id": "docs015-fictional-telescope-93457",
+        "question_type": "self_no_evidence",
+        "status": "insufficient_evidence",
+        "appropriate_abstention": true,
+        "false_abstention": null,
+        "article_recall": null,
+        "all_support_articles_retrieved": null,
+        "exact_match": null,
+        "token_f1": null,
+        "citation_id_legal": []
+      },
+      "run": {
+        "run_id": "0177915a-3d81-40c4-9ff8-efc44386c831",
+        "question": "Which observatory built the fictional Quasar Crane Telescope 93457?",
+        "query": "Which observatory built the fictional Quasar Crane Telescope 93457?",
+        "status": "insufficient_evidence",
+        "stop_reason": "missing_fact_unresolved",
+        "answer": null,
+        "citations": [],
+        "retrieved_evidence_ids": [
+          "030fc801-c684-5377-90ac-b4398fe045d3",
+          "53a21a3c-f9bc-56b2-bd0e-530e28a6f700",
+          "23d2866b-0e59-57ce-8286-3b6a22fc6902",
+          "952a4ecb-72c1-5ca8-9abd-0b1d425da086",
+          "9efa88f2-21b5-56c5-9d34-5bde15886c48"
+        ],
+        "calls": {
+          "retrieval": 1,
+          "model": 1
+        },
+        "trace": [
+          {
+            "stage": "plan",
+            "status": "completed",
+            "query": "Which observatory built the fictional Quasar Crane Telescope 93457?",
+            "elapsed_ms": 0.0
+          },
+          {
+            "stage": "retrieve",
+            "status": "completed",
+            "elapsed_ms": 27.094,
+            "round": 1,
+            "query": "Which observatory built the fictional Quasar Crane Telescope 93457?",
+            "evidence_ids": [
+              "030fc801-c684-5377-90ac-b4398fe045d3",
+              "53a21a3c-f9bc-56b2-bd0e-530e28a6f700",
+              "23d2866b-0e59-57ce-8286-3b6a22fc6902",
+              "952a4ecb-72c1-5ca8-9abd-0b1d425da086",
+              "9efa88f2-21b5-56c5-9d34-5bde15886c48"
+            ],
+            "new_evidence_ids": [
+              "030fc801-c684-5377-90ac-b4398fe045d3",
+              "53a21a3c-f9bc-56b2-bd0e-530e28a6f700",
+              "23d2866b-0e59-57ce-8286-3b6a22fc6902",
+              "952a4ecb-72c1-5ca8-9abd-0b1d425da086",
+              "9efa88f2-21b5-56c5-9d34-5bde15886c48"
+            ]
+          },
+          {
+            "stage": "plan_next",
+            "status": "completed",
+            "elapsed_ms": 6190.262,
+            "evidence_status": "missing",
+            "missing_fact": "The identity of the observatory that built the fictional Quasar Crane Telescope 93457.",
+            "reason": "missing_fact_unresolved"
+          }
+        ],
+        "elapsed_ms": 6219.277
+      },
+      "llm_calls": [
+        {
+          "requested_model": "group/docscope-free",
+          "actual_model": "trae/deepseek-v4.1-flash",
+          "actual_channel": null,
+          "channel_status": "not_exposed_by_gateway",
+          "billed_cost_cny": null,
+          "usage": {
+            "completion_tokens": 338,
+            "prompt_tokens": 1730,
+            "total_tokens": 2068,
+            "completion_tokens_details": {
+              "accepted_prediction_tokens": null,
+              "audio_tokens": null,
+              "reasoning_tokens": 291,
+              "rejected_prediction_tokens": null
+            },
+            "prompt_tokens_details": {
+              "audio_tokens": null,
+              "cached_tokens": 0,
+              "cache_write_tokens": 0
+            }
+          },
+          "finish_reason": "stop",
+          "seconds": 6.042
+        }
+      ]
+    },
+    {
+      "sample_id": "docs015-fictional-mission-93457",
+      "question_type": "self_no_evidence",
+      "question": "What year did the fictional Cedar Meridian Mission 93457 launch?",
+      "expected_answer_offline": null,
+      "relevant_document_ids_offline": [],
+      "http_status": 200,
+      "elapsed_seconds": 3.49,
+      "metrics": {
+        "sample_id": "docs015-fictional-mission-93457",
+        "question_type": "self_no_evidence",
+        "status": "insufficient_evidence",
+        "appropriate_abstention": true,
+        "false_abstention": null,
+        "article_recall": null,
+        "all_support_articles_retrieved": null,
+        "exact_match": null,
+        "token_f1": null,
+        "citation_id_legal": []
+      },
+      "run": {
+        "run_id": "8c87f175-2445-48b9-8586-9602b20bf1b8",
+        "question": "What year did the fictional Cedar Meridian Mission 93457 launch?",
+        "query": "What year did the fictional Cedar Meridian Mission 93457 launch?",
+        "status": "insufficient_evidence",
+        "stop_reason": "missing_fact_unresolved",
+        "answer": null,
+        "citations": [],
+        "retrieved_evidence_ids": [
+          "3c500187-af37-524a-b61d-cd37e0204c76",
+          "2c37ceb7-e11e-5d49-a24f-5db52a9f30a7",
+          "1d5e78c5-d05b-507b-8a94-df6fdd1dd182",
+          "8254ac24-3991-581b-906c-925cf02b33cc",
+          "8c910775-9308-5609-a4f4-424ddb06ebd9"
+        ],
+        "calls": {
+          "retrieval": 1,
+          "model": 1
+        },
+        "trace": [
+          {
+            "stage": "plan",
+            "status": "completed",
+            "query": "What year did the fictional Cedar Meridian Mission 93457 launch?",
+            "elapsed_ms": 0.0
+          },
+          {
+            "stage": "retrieve",
+            "status": "completed",
+            "elapsed_ms": 22.751,
+            "round": 1,
+            "query": "What year did the fictional Cedar Meridian Mission 93457 launch?",
+            "evidence_ids": [
+              "3c500187-af37-524a-b61d-cd37e0204c76",
+              "2c37ceb7-e11e-5d49-a24f-5db52a9f30a7",
+              "1d5e78c5-d05b-507b-8a94-df6fdd1dd182",
+              "8254ac24-3991-581b-906c-925cf02b33cc",
+              "8c910775-9308-5609-a4f4-424ddb06ebd9"
+            ],
+            "new_evidence_ids": [
+              "3c500187-af37-524a-b61d-cd37e0204c76",
+              "2c37ceb7-e11e-5d49-a24f-5db52a9f30a7",
+              "1d5e78c5-d05b-507b-8a94-df6fdd1dd182",
+              "8254ac24-3991-581b-906c-925cf02b33cc",
+              "8c910775-9308-5609-a4f4-424ddb06ebd9"
+            ]
+          },
+          {
+            "stage": "plan_next",
+            "status": "completed",
+            "elapsed_ms": 3463.415,
+            "evidence_status": "missing",
+            "missing_fact": "The launch year of the fictional Cedar Meridian Mission 93457",
+            "reason": "missing_fact_unresolved"
+          }
+        ],
+        "elapsed_ms": 3488.021
+      },
+      "llm_calls": [
+        {
+          "requested_model": "group/docscope-free",
+          "actual_model": "trae/deepseek-v4.1-flash",
+          "actual_channel": null,
+          "channel_status": "not_exposed_by_gateway",
+          "billed_cost_cny": null,
+          "usage": {
+            "completion_tokens": 178,
+            "prompt_tokens": 1645,
+            "total_tokens": 1823,
+            "completion_tokens_details": {
+              "accepted_prediction_tokens": null,
+              "audio_tokens": null,
+              "reasoning_tokens": 130,
+              "rejected_prediction_tokens": null
+            },
+            "prompt_tokens_details": {
+              "audio_tokens": null,
+              "cached_tokens": 0,
+              "cache_write_tokens": 0
+            }
+          },
+          "finish_reason": "stop",
+          "seconds": 3.322
+        }
+      ]
+    }
+  ],
+  "dependency": {
+    "sample_id": "docs012-aster-polaris-operator",
+    "question": "Which team operates the service used for audit export by Aster Telemetry Console?",
+    "expected_bridge_offline": "Polaris Relay",
+    "expected_answer_offline": "East Region Operations team",
+    "expected_sources_offline": [
+      "aster-telemetry.md",
+      "polaris-relay.md"
+    ],
+    "first_hop_fact": {
+      "bridge_text": "Polaris Relay",
+      "source_chunk_id": "a5a914d1-0e54-58ff-8d84-0e570fa1a262",
+      "source_filename": "aster-telemetry.md",
+      "source_chunk_text": "The audit export feature of Aster Telemetry Console uses the Polaris Relay service.",
+      "origin": "offline_match_in_first_retrieval",
+      "planner_used_bridge": false
+    },
+    "second_hop_query": null,
+    "second_hop_new_sources": [],
+    "dependency_observed": false,
+    "http_status": 200,
+    "run": {
+      "run_id": "2a1ed1e2-faf9-45e7-acff-12eab544600a",
+      "question": "Which team operates the service used for audit export by Aster Telemetry Console?",
+      "query": "Which team operates the service used for audit export by Aster Telemetry Console?",
+      "status": "answered",
+      "stop_reason": "answered",
+      "answer": "The East Region Operations team operates Polaris Relay, which Aster Telemetry Console uses for audit export.",
+      "citations": [
+        {
+          "document_id": "aeb12d20-943a-4ccc-ad14-36d85e0c2a5c",
+          "chunk_id": "a5a914d1-0e54-58ff-8d84-0e570fa1a262",
+          "document_title": "aster-telemetry.md",
+          "source_path": "documents/aeb12d20-943a-4ccc-ad14-36d85e0c2a5c.md",
+          "page_number": null,
+          "section": "Aster Telemetry Console",
+          "line_start": 3,
+          "chunk_text": "The audit export feature of Aster Telemetry Console uses the Polaris Relay service.",
+          "index_version": 1
+        },
+        {
+          "document_id": "4106a5b4-8139-4da8-aea3-fcaa59adf2ad",
+          "chunk_id": "b678d98a-472f-5450-a23d-613cbb25dd2b",
+          "document_title": "polaris-relay.md",
+          "source_path": "documents/4106a5b4-8139-4da8-aea3-fcaa59adf2ad.md",
+          "page_number": null,
+          "section": "Polaris Relay",
+          "line_start": 3,
+          "chunk_text": "The Polaris Relay service is operated by the East Region Operations team.",
+          "index_version": 1
+        }
+      ],
+      "retrieved_evidence_ids": [
+        "a5a914d1-0e54-58ff-8d84-0e570fa1a262",
+        "56f95bc1-0d52-5644-bdae-241f4c37901d",
+        "018e61ba-b9ba-5f47-9384-74a20068ec42",
+        "b678d98a-472f-5450-a23d-613cbb25dd2b",
+        "cedd2d81-fbaf-57e8-852f-7f0628772aa1"
+      ],
+      "calls": {
+        "retrieval": 1,
+        "model": 2
+      },
+      "trace": [
+        {
+          "stage": "plan",
+          "status": "completed",
+          "query": "Which team operates the service used for audit export by Aster Telemetry Console?",
+          "elapsed_ms": 0.001
+        },
+        {
+          "stage": "retrieve",
+          "status": "completed",
+          "elapsed_ms": 11.939,
+          "round": 1,
+          "query": "Which team operates the service used for audit export by Aster Telemetry Console?",
+          "evidence_ids": [
+            "a5a914d1-0e54-58ff-8d84-0e570fa1a262",
+            "56f95bc1-0d52-5644-bdae-241f4c37901d",
+            "018e61ba-b9ba-5f47-9384-74a20068ec42",
+            "b678d98a-472f-5450-a23d-613cbb25dd2b",
+            "cedd2d81-fbaf-57e8-852f-7f0628772aa1"
+          ],
+          "new_evidence_ids": [
+            "a5a914d1-0e54-58ff-8d84-0e570fa1a262",
+            "56f95bc1-0d52-5644-bdae-241f4c37901d",
+            "018e61ba-b9ba-5f47-9384-74a20068ec42",
+            "b678d98a-472f-5450-a23d-613cbb25dd2b",
+            "cedd2d81-fbaf-57e8-852f-7f0628772aa1"
+          ]
+        },
+        {
+          "stage": "plan_next",
+          "status": "completed",
+          "elapsed_ms": 2622.915,
+          "evidence_status": "sufficient",
+          "missing_fact": null,
+          "reason": "sufficient"
+        },
+        {
+          "stage": "answer",
+          "status": "completed",
+          "elapsed_ms": 2902.423
+        }
+      ],
+      "elapsed_ms": 5540.208
+    },
+    "llm_calls": [
+      {
+        "requested_model": "group/docscope-free",
+        "actual_model": "trae/deepseek-v4.1-flash",
+        "actual_channel": null,
+        "channel_status": "not_exposed_by_gateway",
+        "billed_cost_cny": null,
+        "usage": {
+          "completion_tokens": 105,
+          "prompt_tokens": 657,
+          "total_tokens": 762,
+          "completion_tokens_details": {
+            "accepted_prediction_tokens": null,
+            "audio_tokens": null,
+            "reasoning_tokens": 69,
+            "rejected_prediction_tokens": null
+          },
+          "prompt_tokens_details": {
+            "audio_tokens": null,
+            "cached_tokens": 0,
+            "cache_write_tokens": 0
+          }
+        },
+        "finish_reason": "stop",
+        "seconds": 2.459
+      },
+      {
+        "requested_model": "group/docscope-free",
+        "actual_model": "trae/deepseek-v4.1-flash",
+        "actual_channel": null,
+        "channel_status": "not_exposed_by_gateway",
+        "billed_cost_cny": null,
+        "usage": {
+          "completion_tokens": 128,
+          "prompt_tokens": 570,
+          "total_tokens": 698,
+          "completion_tokens_details": {
+            "accepted_prediction_tokens": null,
+            "audio_tokens": null,
+            "reasoning_tokens": 45,
+            "rejected_prediction_tokens": null
+          },
+          "prompt_tokens_details": {
+            "audio_tokens": null,
+            "cached_tokens": 0,
+            "cache_write_tokens": 0
+          }
+        },
+        "finish_reason": "stop",
+        "seconds": 2.755
+      }
+    ],
+    "human_review": {
+      "bridge_fact": "pending",
+      "second_query": "pending",
+      "support_source": "pending",
+      "reviewer": null,
+      "rationale": null
+    }
+  },
+  "citation_support_review": {
+    "protocol": "Review every cited Chunk against the answer; supported means the cited text directly supports the answer claim. Record reviewer and rationale. Uncertain stays unresolved.",
+    "citations": [
+      {
+        "sample_id": "mhr-q-7e6673c52727a5c37faf",
+        "chunk_id": "7cf9b932-4935-5ee4-8c8f-3bbb031a2a96",
+        "source_document_id": "mhr-doc-50ec9e3acb3b1505befb",
+        "question": "Who is the individual facing a criminal trial for fraud and conspiracy, who previously persuaded a colleague from Jane Street to join his ventures at Alameda and FTX, is accused of misusing a billion dollars of customer funds to settle with Binance, and whose alleged fraudulent activities were aimed at gaining wealth, power, and influence, as reported by TechCrunch, Fortune, The Verge, and again by TechCrunch?",
+        "answer": "Sam Bankman-Fried",
+        "chunk_text": "the start,” diverting customers’ funds to Alameda.\n\nSam Bankman-Fried, the founder of failed cryptocurrency exchange FTX, is on trial for seven counts of wire fraud and conspiracy. FTX was a fraud “from the start,” the Securities and Exchange Commission alleges — with a “multi-billion-dollar deficiency caused by his own misappropriation of customer funds.” Follow along for all the latest news and regular updates from the trial.\n\n“Really just old-fashioned embezzlement.”\n\nWhat’s left of FTX is now being led by John J. Ray III — you may remember him as the guy who cleaned up Enron and who also said FTX is worse than Enron. Just before the trial began, the FTX lawyers filed suit against Bankman-Fried’s parents, saying they should give back millions of dollars they got from their kid. Ray has also referred to Bankman-Fried’s conduct as “really just old-fashioned embezzlement.”\n\nWe have some inkling of what the government will be arguing thanks to the filings prosecutors are making in this",
+        "support": "supported",
+        "reviewer": "project_owner_confirmed_2026-11-01",
+        "rationale": "The cited text identifies Sam Bankman-Fried as the FTX founder on trial for fraud and conspiracy."
+      },
+      {
+        "sample_id": "mhr-q-7e6673c52727a5c37faf",
+        "chunk_id": "79b9d9d8-1af8-5489-9c02-1ab55a6f0f01",
+        "source_document_id": "mhr-doc-5ad152b8fc841a56a2de",
+        "question": "Who is the individual facing a criminal trial for fraud and conspiracy, who previously persuaded a colleague from Jane Street to join his ventures at Alameda and FTX, is accused of misusing a billion dollars of customer funds to settle with Binance, and whose alleged fraudulent activities were aimed at gaining wealth, power, and influence, as reported by TechCrunch, Fortune, The Verge, and again by TechCrunch?",
+        "answer": "Sam Bankman-Fried",
+        "chunk_text": "I’ve got some shitty ex-boyfriends, but none of them made me the CEO of their sin-eater hedge fund while refusing to give me equity and bragging about how there was a 5 percent chance they’d become the president of the United States, you know? Absolutely counting my blessings after Caroline Ellison’s first day on the stand. I wonder how many of the nine women on the jury are doing the same.\n\nEllison was the head of Alameda Research, the aforementioned hedge fund, during the implosion of it and FTX. She’s already pleaded guilty to criminal charges stemming from one of the worst romantic relationships I’ve ever heard of, and her testimony was widely anticipated before the trial. Today, that took the form of discussing a damning spreadsheet — one she prepared for her ex and boss Sam Bankman-Fried, now the defendant in a criminal fraud trial.\n\nSam Bankman-Fried, the founder of failed cryptocurrency exchange FTX, is on trial for seven counts of wire fraud and conspiracy. FTX was a fraud",
+        "support": "supported",
+        "reviewer": "project_owner_confirmed_2026-11-01",
+        "rationale": "The cited text names Sam Bankman-Fried as the defendant in the criminal fraud trial."
+      },
+      {
+        "sample_id": "mhr-q-a70bac4fbd4e8ee99073",
+        "chunk_id": "e97a5eec-1e7f-5a65-8815-22b61909a236",
+        "source_document_id": "mhr-doc-8fe5cc2f428f902c6bad",
+        "question": "What company, according to TechCrunch, claims to have developed a generative AI model with superior architecture while also spending billions to secure its position as the default search engine and is accused of harming news publishers’ revenues through anticompetitive practices?",
+        "answer": "Google",
+        "chunk_text": "This week, Google took the wraps off of Gemini, its new flagship generative AI model meant to power a range of products and services including Bard, Google’s ChatGPT competitor. In blog posts and press materials, Google touted Gemini’s superior architecture and capabilities, claiming that the model meets or exceeds the performance of other leading gen AI models like OpenAI’s GPT-4.\n\nBut the anecdotal evidence suggests otherwise.\n\nA “lite” version of Gemini, Gemini Pro, began rolling out to Bard yesterday, and it didn’t take long before users began voicing their frustrations with it on X (formerly Twitter).\n\nThe model fails to get basic facts right, like 2023 Oscar winners:\n\nI'm extremely disappointed with Gemini Pro on Bard. It still give very, very bad results to questions that shouldn't be hard anymore with RAG. A simple question like this with a simple answer like this, and it still got it WRONG. pic.twitter.com/5GowXtscRU — Vitor de Lucca 🏳️‍🌈 / threads.net/@vitor_dlucca",
+        "support": "supported",
+        "reviewer": "project_owner_confirmed_2026-11-01",
+        "rationale": "The cited text names Google as the company claiming Gemini's superior architecture."
+      },
+      {
+        "sample_id": "mhr-q-a70bac4fbd4e8ee99073",
+        "chunk_id": "5005fcd0-5532-5e37-93b1-ffef1009769a",
+        "source_document_id": "mhr-doc-6e49ee62632cf0af10c9",
+        "question": "What company, according to TechCrunch, claims to have developed a generative AI model with superior architecture while also spending billions to secure its position as the default search engine and is accused of harming news publishers’ revenues through anticompetitive practices?",
+        "answer": "Google",
+        "chunk_text": "A new class action lawsuit filed this week in the U.S. District Court in D.C. accuses Google and parent company Alphabet of anticompetitive behavior in violation of U.S. antitrust law, the Sherman Act, and others, on behalf of news publishers. The case, filed by Arkansas-based publisher Helena World Chronicle, argues that Google “siphons off” news publishers’ content, their readers and ad revenue through anticompetitive means. It also specifically cites new AI technologies like Google’s Search Generative Experience (SGE) and Bard AI chatbot as worsening the problem.\n\nIn the complaint, Helena World Chronicle, which owns and publishes two weekly newspapers in Arkansas, argues that Google is “starving the free press” by sharing publishers’ content on Google, losing them “billions of dollars.”\n\nIn addition to new AI technologies, the suit points to Google’s older question-and-answer technologies, like the “Knowledge Graph” launched in May 2012, as part of the problem.\n\n“When a user",
+        "support": "supported",
+        "reviewer": "project_owner_confirmed_2026-11-01",
+        "rationale": "The cited text names Google in the news publishers' anticompetitive-practices lawsuit."
+      }
+    ],
+    "summary": {
+      "numerator": 4,
+      "denominator": 4,
+      "pending": 0,
+      "rate": 1.0
+    },
+    "dependency": {
+      "sample_id": "docs012-aster-polaris-operator",
+      "question": "Which team operates the service used for audit export by Aster Telemetry Console?",
+      "expected_bridge_offline": "Polaris Relay",
+      "expected_answer_offline": "East Region Operations team",
+      "expected_sources_offline": [
+        "aster-telemetry.md",
+        "polaris-relay.md"
+      ],
+      "first_hop_fact": {
+        "bridge_text": "Polaris Relay",
+        "source_chunk_id": "a5a914d1-0e54-58ff-8d84-0e570fa1a262",
+        "source_filename": "aster-telemetry.md",
+        "source_chunk_text": "The audit export feature of Aster Telemetry Console uses the Polaris Relay service.",
+        "origin": "offline_match_in_first_retrieval",
+        "planner_used_bridge": false
+      },
+      "second_hop_query": null,
+      "second_hop_new_sources": [],
+      "dependency_observed": false,
+      "http_status": 200,
+      "run": {
+        "run_id": "2a1ed1e2-faf9-45e7-acff-12eab544600a",
+        "question": "Which team operates the service used for audit export by Aster Telemetry Console?",
+        "query": "Which team operates the service used for audit export by Aster Telemetry Console?",
+        "status": "answered",
+        "stop_reason": "answered",
+        "answer": "The East Region Operations team operates Polaris Relay, which Aster Telemetry Console uses for audit export.",
+        "citations": [
+          {
+            "document_id": "aeb12d20-943a-4ccc-ad14-36d85e0c2a5c",
+            "chunk_id": "a5a914d1-0e54-58ff-8d84-0e570fa1a262",
+            "document_title": "aster-telemetry.md",
+            "source_path": "documents/aeb12d20-943a-4ccc-ad14-36d85e0c2a5c.md",
+            "page_number": null,
+            "section": "Aster Telemetry Console",
+            "line_start": 3,
+            "chunk_text": "The audit export feature of Aster Telemetry Console uses the Polaris Relay service.",
+            "index_version": 1
+          },
+          {
+            "document_id": "4106a5b4-8139-4da8-aea3-fcaa59adf2ad",
+            "chunk_id": "b678d98a-472f-5450-a23d-613cbb25dd2b",
+            "document_title": "polaris-relay.md",
+            "source_path": "documents/4106a5b4-8139-4da8-aea3-fcaa59adf2ad.md",
+            "page_number": null,
+            "section": "Polaris Relay",
+            "line_start": 3,
+            "chunk_text": "The Polaris Relay service is operated by the East Region Operations team.",
+            "index_version": 1
+          }
+        ],
+        "retrieved_evidence_ids": [
+          "a5a914d1-0e54-58ff-8d84-0e570fa1a262",
+          "56f95bc1-0d52-5644-bdae-241f4c37901d",
+          "018e61ba-b9ba-5f47-9384-74a20068ec42",
+          "b678d98a-472f-5450-a23d-613cbb25dd2b",
+          "cedd2d81-fbaf-57e8-852f-7f0628772aa1"
+        ],
+        "calls": {
+          "retrieval": 1,
+          "model": 2
+        },
+        "trace": [
+          {
+            "stage": "plan",
+            "status": "completed",
+            "query": "Which team operates the service used for audit export by Aster Telemetry Console?",
+            "elapsed_ms": 0.001
+          },
+          {
+            "stage": "retrieve",
+            "status": "completed",
+            "elapsed_ms": 11.939,
+            "round": 1,
+            "query": "Which team operates the service used for audit export by Aster Telemetry Console?",
+            "evidence_ids": [
+              "a5a914d1-0e54-58ff-8d84-0e570fa1a262",
+              "56f95bc1-0d52-5644-bdae-241f4c37901d",
+              "018e61ba-b9ba-5f47-9384-74a20068ec42",
+              "b678d98a-472f-5450-a23d-613cbb25dd2b",
+              "cedd2d81-fbaf-57e8-852f-7f0628772aa1"
+            ],
+            "new_evidence_ids": [
+              "a5a914d1-0e54-58ff-8d84-0e570fa1a262",
+              "56f95bc1-0d52-5644-bdae-241f4c37901d",
+              "018e61ba-b9ba-5f47-9384-74a20068ec42",
+              "b678d98a-472f-5450-a23d-613cbb25dd2b",
+              "cedd2d81-fbaf-57e8-852f-7f0628772aa1"
+            ]
+          },
+          {
+            "stage": "plan_next",
+            "status": "completed",
+            "elapsed_ms": 2622.915,
+            "evidence_status": "sufficient",
+            "missing_fact": null,
+            "reason": "sufficient"
+          },
+          {
+            "stage": "answer",
+            "status": "completed",
+            "elapsed_ms": 2902.423
+          }
+        ],
+        "elapsed_ms": 5540.208
+      },
+      "llm_calls": [
+        {
+          "requested_model": "group/docscope-free",
+          "actual_model": "trae/deepseek-v4.1-flash",
+          "actual_channel": null,
+          "channel_status": "not_exposed_by_gateway",
+          "billed_cost_cny": null,
+          "usage": {
+            "completion_tokens": 105,
+            "prompt_tokens": 657,
+            "total_tokens": 762,
+            "completion_tokens_details": {
+              "accepted_prediction_tokens": null,
+              "audio_tokens": null,
+              "reasoning_tokens": 69,
+              "rejected_prediction_tokens": null
+            },
+            "prompt_tokens_details": {
+              "audio_tokens": null,
+              "cached_tokens": 0,
+              "cache_write_tokens": 0
+            }
+          },
+          "finish_reason": "stop",
+          "seconds": 2.459
+        },
+        {
+          "requested_model": "group/docscope-free",
+          "actual_model": "trae/deepseek-v4.1-flash",
+          "actual_channel": null,
+          "channel_status": "not_exposed_by_gateway",
+          "billed_cost_cny": null,
+          "usage": {
+            "completion_tokens": 128,
+            "prompt_tokens": 570,
+            "total_tokens": 698,
+            "completion_tokens_details": {
+              "accepted_prediction_tokens": null,
+              "audio_tokens": null,
+              "reasoning_tokens": 45,
+              "rejected_prediction_tokens": null
+            },
+            "prompt_tokens_details": {
+              "audio_tokens": null,
+              "cached_tokens": 0,
+              "cache_write_tokens": 0
+            }
+          },
+          "finish_reason": "stop",
+          "seconds": 2.755
+        }
+      ],
+      "human_review": {
+        "bridge_fact": "pending",
+        "second_query": "pending",
+        "support_source": "pending",
+        "reviewer": null,
+        "rationale": null
+      }
+    }
+  }
+}

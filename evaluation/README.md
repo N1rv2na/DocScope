@@ -86,3 +86,25 @@ PYTHONPATH=backend/src QDRANT_URL=http://127.0.0.1:6333 python -m docscope.evalu
 脚本按现有评测合同核对原始文件哈希和 dev 清单，摄取时仅发送文章正文。生成逐题质量/时延和映射失败记录，结束时删除隔离集合；运行失败写 `.failed.json`。Top-20 是本 Issue 的固定候选预算，后续是否使用该配置应依据实际质量与 CPU 代价判断，不能预设提升。
 
 本次授权运行产物：[逐题 JSON](results/rerank_dev_v1.json)、[消融报告](results/rerank_dev_report.md)。在本轮 dev 检索中，C 比 B 更慢且多项指标下降；报告保留改善与退化案例，不能据此宣称 Reranking 带来净增益。
+
+## DOCS-015 Agent 固定子集评测
+
+[固定配置](configs/agent_answer_dev_v1.json)沿用 DOCS-008 在运行前确定的 12 道 `dev` 题 ID（四类各 3 道），另有 2 道自建无证据题；依赖样本独立运行、单独计数。只把 609 篇文章的正文上传到在线索引，Agent 请求只包含问题；参考答案、证据事实、问题类型和评分标签只在离线进程中使用。封存 `test` 不运行。每个 Agent Run 的上限是两轮检索和两次模型调用；超出时评测直接失败，错误响应不计作拒答。
+
+在仓库根目录、Qdrant 1.20.0、本地 Embedding 模型和经授权的 LLM 环境已就绪时运行：
+
+```sh
+PYTHONPATH=backend/src QDRANT_URL=http://127.0.0.1:6333 .venv/bin/python -m docscope.evaluation.run_agent_answer \
+  --config evaluation/configs/agent_answer_dev_v1.json \
+  --output evaluation/results/agent_answer_dev_v1.json
+```
+
+脚本使用独立临时 Qdrant 集合和临时源目录；额外的依赖样本使用第二个隔离集合，以免污染 MultiHop-RAG 子集。执行前复核原始数据哈希、清单、12 道题 ID、模型修订及单次运行预算。异常会写 `.failed.json`，不覆盖成功结果。逐题 JSON 记录响应、检索轨迹、引用、错误、调用次数、实际响应模型、完成原因、Token 与耗时。路由成员列表来自项目所有者提供的配置，仅作为声明记录；若网关没有返回实际渠道或费用，则明确记为 `null` 和未知，不能推断渠道或零费用。正式 A–E 消融仍须另用冻结的单一模型及渠道。
+为保护已完成人工审查的记录，成功结果或审查表已存在时，脚本拒绝覆盖；复跑时请给 `--output` 一个新文件名。
+
+汇总分别给出可回答题错误拒答率、`null_query` 加自建无证据题的适当拒答率、支持文章检出率、引用 ID 合法率，均带分子和分母。`null_query` 和自建无证据题不进入支持文章检出分母。Exact Match 和 token F1 是自动诊断，不能代替引用事实支持性审查；模型错误保留在题目分母中，并单列错误数。依赖样本记录实际首跳桥接事实、来源 Chunk、第二跳查询和第二跳新增来源；如果真实运行没有形成符合样本方向的第二跳，`dependency_observed` 为 `false`，不能把预期路径当作实测。
+
+同名 `.review.json` 是逐条引用的人工审查表。审查者应针对每条引用核对 Chunk 文本是否直接支持回答，并填写 `support`（`supported` / `unsupported` / `uncertain`）、`reviewer` 和 `rationale`；依赖样本另核对桥接事实、第二跳查询和支持来源。所有引用明确核查之前，支持率保持未知。此结果仅代表 14 道固定题和 1 个独立依赖样本，不是全量 Answer Benchmark 成绩。
+
+本次获授权的真实运行产物见[逐题 JSON](results/agent_answer_dev_v1.json)、[人工审查表](results/agent_answer_dev_v1.review.json)和[结果报告](results/agent_answer_dev_report.md)。该次运行的依赖样本在第一跳同时检出两篇来源，因而未发生第二跳；报告明确保留这一未达成项。
+本轮实际生成的四条引用已由项目所有者逐条确认支持对应回答，审查表记录了结论与依据；这不代表未回答问题的引用质量。

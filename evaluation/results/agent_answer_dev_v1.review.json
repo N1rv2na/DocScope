@@ -1,0 +1,222 @@
+{
+  "protocol": "Review every cited Chunk against the answer; supported means the cited text directly supports the answer claim. Record reviewer and rationale. Uncertain stays unresolved.",
+  "citations": [
+    {
+      "sample_id": "mhr-q-7e6673c52727a5c37faf",
+      "chunk_id": "7cf9b932-4935-5ee4-8c8f-3bbb031a2a96",
+      "source_document_id": "mhr-doc-50ec9e3acb3b1505befb",
+      "question": "Who is the individual facing a criminal trial for fraud and conspiracy, who previously persuaded a colleague from Jane Street to join his ventures at Alameda and FTX, is accused of misusing a billion dollars of customer funds to settle with Binance, and whose alleged fraudulent activities were aimed at gaining wealth, power, and influence, as reported by TechCrunch, Fortune, The Verge, and again by TechCrunch?",
+      "answer": "Sam Bankman-Fried",
+      "chunk_text": "the start,” diverting customers’ funds to Alameda.\n\nSam Bankman-Fried, the founder of failed cryptocurrency exchange FTX, is on trial for seven counts of wire fraud and conspiracy. FTX was a fraud “from the start,” the Securities and Exchange Commission alleges — with a “multi-billion-dollar deficiency caused by his own misappropriation of customer funds.” Follow along for all the latest news and regular updates from the trial.\n\n“Really just old-fashioned embezzlement.”\n\nWhat’s left of FTX is now being led by John J. Ray III — you may remember him as the guy who cleaned up Enron and who also said FTX is worse than Enron. Just before the trial began, the FTX lawyers filed suit against Bankman-Fried’s parents, saying they should give back millions of dollars they got from their kid. Ray has also referred to Bankman-Fried’s conduct as “really just old-fashioned embezzlement.”\n\nWe have some inkling of what the government will be arguing thanks to the filings prosecutors are making in this",
+      "support": "supported",
+      "reviewer": "project_owner_confirmed_2026-11-01",
+      "rationale": "The cited text identifies Sam Bankman-Fried as the FTX founder on trial for fraud and conspiracy."
+    },
+    {
+      "sample_id": "mhr-q-7e6673c52727a5c37faf",
+      "chunk_id": "79b9d9d8-1af8-5489-9c02-1ab55a6f0f01",
+      "source_document_id": "mhr-doc-5ad152b8fc841a56a2de",
+      "question": "Who is the individual facing a criminal trial for fraud and conspiracy, who previously persuaded a colleague from Jane Street to join his ventures at Alameda and FTX, is accused of misusing a billion dollars of customer funds to settle with Binance, and whose alleged fraudulent activities were aimed at gaining wealth, power, and influence, as reported by TechCrunch, Fortune, The Verge, and again by TechCrunch?",
+      "answer": "Sam Bankman-Fried",
+      "chunk_text": "I’ve got some shitty ex-boyfriends, but none of them made me the CEO of their sin-eater hedge fund while refusing to give me equity and bragging about how there was a 5 percent chance they’d become the president of the United States, you know? Absolutely counting my blessings after Caroline Ellison’s first day on the stand. I wonder how many of the nine women on the jury are doing the same.\n\nEllison was the head of Alameda Research, the aforementioned hedge fund, during the implosion of it and FTX. She’s already pleaded guilty to criminal charges stemming from one of the worst romantic relationships I’ve ever heard of, and her testimony was widely anticipated before the trial. Today, that took the form of discussing a damning spreadsheet — one she prepared for her ex and boss Sam Bankman-Fried, now the defendant in a criminal fraud trial.\n\nSam Bankman-Fried, the founder of failed cryptocurrency exchange FTX, is on trial for seven counts of wire fraud and conspiracy. FTX was a fraud",
+      "support": "supported",
+      "reviewer": "project_owner_confirmed_2026-11-01",
+      "rationale": "The cited text names Sam Bankman-Fried as the defendant in the criminal fraud trial."
+    },
+    {
+      "sample_id": "mhr-q-a70bac4fbd4e8ee99073",
+      "chunk_id": "e97a5eec-1e7f-5a65-8815-22b61909a236",
+      "source_document_id": "mhr-doc-8fe5cc2f428f902c6bad",
+      "question": "What company, according to TechCrunch, claims to have developed a generative AI model with superior architecture while also spending billions to secure its position as the default search engine and is accused of harming news publishers’ revenues through anticompetitive practices?",
+      "answer": "Google",
+      "chunk_text": "This week, Google took the wraps off of Gemini, its new flagship generative AI model meant to power a range of products and services including Bard, Google’s ChatGPT competitor. In blog posts and press materials, Google touted Gemini’s superior architecture and capabilities, claiming that the model meets or exceeds the performance of other leading gen AI models like OpenAI’s GPT-4.\n\nBut the anecdotal evidence suggests otherwise.\n\nA “lite” version of Gemini, Gemini Pro, began rolling out to Bard yesterday, and it didn’t take long before users began voicing their frustrations with it on X (formerly Twitter).\n\nThe model fails to get basic facts right, like 2023 Oscar winners:\n\nI'm extremely disappointed with Gemini Pro on Bard. It still give very, very bad results to questions that shouldn't be hard anymore with RAG. A simple question like this with a simple answer like this, and it still got it WRONG. pic.twitter.com/5GowXtscRU — Vitor de Lucca 🏳️‍🌈 / threads.net/@vitor_dlucca",
+      "support": "supported",
+      "reviewer": "project_owner_confirmed_2026-11-01",
+      "rationale": "The cited text names Google as the company claiming Gemini's superior architecture."
+    },
+    {
+      "sample_id": "mhr-q-a70bac4fbd4e8ee99073",
+      "chunk_id": "5005fcd0-5532-5e37-93b1-ffef1009769a",
+      "source_document_id": "mhr-doc-6e49ee62632cf0af10c9",
+      "question": "What company, according to TechCrunch, claims to have developed a generative AI model with superior architecture while also spending billions to secure its position as the default search engine and is accused of harming news publishers’ revenues through anticompetitive practices?",
+      "answer": "Google",
+      "chunk_text": "A new class action lawsuit filed this week in the U.S. District Court in D.C. accuses Google and parent company Alphabet of anticompetitive behavior in violation of U.S. antitrust law, the Sherman Act, and others, on behalf of news publishers. The case, filed by Arkansas-based publisher Helena World Chronicle, argues that Google “siphons off” news publishers’ content, their readers and ad revenue through anticompetitive means. It also specifically cites new AI technologies like Google’s Search Generative Experience (SGE) and Bard AI chatbot as worsening the problem.\n\nIn the complaint, Helena World Chronicle, which owns and publishes two weekly newspapers in Arkansas, argues that Google is “starving the free press” by sharing publishers’ content on Google, losing them “billions of dollars.”\n\nIn addition to new AI technologies, the suit points to Google’s older question-and-answer technologies, like the “Knowledge Graph” launched in May 2012, as part of the problem.\n\n“When a user",
+      "support": "supported",
+      "reviewer": "project_owner_confirmed_2026-11-01",
+      "rationale": "The cited text names Google in the news publishers' anticompetitive-practices lawsuit."
+    }
+  ],
+  "summary": {
+    "numerator": 4,
+    "denominator": 4,
+    "pending": 0,
+    "rate": 1.0
+  },
+  "dependency": {
+    "sample_id": "docs012-aster-polaris-operator",
+    "question": "Which team operates the service used for audit export by Aster Telemetry Console?",
+    "expected_bridge_offline": "Polaris Relay",
+    "expected_answer_offline": "East Region Operations team",
+    "expected_sources_offline": [
+      "aster-telemetry.md",
+      "polaris-relay.md"
+    ],
+    "first_hop_fact": {
+      "bridge_text": "Polaris Relay",
+      "source_chunk_id": "a5a914d1-0e54-58ff-8d84-0e570fa1a262",
+      "source_filename": "aster-telemetry.md",
+      "source_chunk_text": "The audit export feature of Aster Telemetry Console uses the Polaris Relay service.",
+      "origin": "offline_match_in_first_retrieval",
+      "planner_used_bridge": false
+    },
+    "second_hop_query": null,
+    "second_hop_new_sources": [],
+    "dependency_observed": false,
+    "http_status": 200,
+    "run": {
+      "run_id": "2a1ed1e2-faf9-45e7-acff-12eab544600a",
+      "question": "Which team operates the service used for audit export by Aster Telemetry Console?",
+      "query": "Which team operates the service used for audit export by Aster Telemetry Console?",
+      "status": "answered",
+      "stop_reason": "answered",
+      "answer": "The East Region Operations team operates Polaris Relay, which Aster Telemetry Console uses for audit export.",
+      "citations": [
+        {
+          "document_id": "aeb12d20-943a-4ccc-ad14-36d85e0c2a5c",
+          "chunk_id": "a5a914d1-0e54-58ff-8d84-0e570fa1a262",
+          "document_title": "aster-telemetry.md",
+          "source_path": "documents/aeb12d20-943a-4ccc-ad14-36d85e0c2a5c.md",
+          "page_number": null,
+          "section": "Aster Telemetry Console",
+          "line_start": 3,
+          "chunk_text": "The audit export feature of Aster Telemetry Console uses the Polaris Relay service.",
+          "index_version": 1
+        },
+        {
+          "document_id": "4106a5b4-8139-4da8-aea3-fcaa59adf2ad",
+          "chunk_id": "b678d98a-472f-5450-a23d-613cbb25dd2b",
+          "document_title": "polaris-relay.md",
+          "source_path": "documents/4106a5b4-8139-4da8-aea3-fcaa59adf2ad.md",
+          "page_number": null,
+          "section": "Polaris Relay",
+          "line_start": 3,
+          "chunk_text": "The Polaris Relay service is operated by the East Region Operations team.",
+          "index_version": 1
+        }
+      ],
+      "retrieved_evidence_ids": [
+        "a5a914d1-0e54-58ff-8d84-0e570fa1a262",
+        "56f95bc1-0d52-5644-bdae-241f4c37901d",
+        "018e61ba-b9ba-5f47-9384-74a20068ec42",
+        "b678d98a-472f-5450-a23d-613cbb25dd2b",
+        "cedd2d81-fbaf-57e8-852f-7f0628772aa1"
+      ],
+      "calls": {
+        "retrieval": 1,
+        "model": 2
+      },
+      "trace": [
+        {
+          "stage": "plan",
+          "status": "completed",
+          "query": "Which team operates the service used for audit export by Aster Telemetry Console?",
+          "elapsed_ms": 0.001
+        },
+        {
+          "stage": "retrieve",
+          "status": "completed",
+          "elapsed_ms": 11.939,
+          "round": 1,
+          "query": "Which team operates the service used for audit export by Aster Telemetry Console?",
+          "evidence_ids": [
+            "a5a914d1-0e54-58ff-8d84-0e570fa1a262",
+            "56f95bc1-0d52-5644-bdae-241f4c37901d",
+            "018e61ba-b9ba-5f47-9384-74a20068ec42",
+            "b678d98a-472f-5450-a23d-613cbb25dd2b",
+            "cedd2d81-fbaf-57e8-852f-7f0628772aa1"
+          ],
+          "new_evidence_ids": [
+            "a5a914d1-0e54-58ff-8d84-0e570fa1a262",
+            "56f95bc1-0d52-5644-bdae-241f4c37901d",
+            "018e61ba-b9ba-5f47-9384-74a20068ec42",
+            "b678d98a-472f-5450-a23d-613cbb25dd2b",
+            "cedd2d81-fbaf-57e8-852f-7f0628772aa1"
+          ]
+        },
+        {
+          "stage": "plan_next",
+          "status": "completed",
+          "elapsed_ms": 2622.915,
+          "evidence_status": "sufficient",
+          "missing_fact": null,
+          "reason": "sufficient"
+        },
+        {
+          "stage": "answer",
+          "status": "completed",
+          "elapsed_ms": 2902.423
+        }
+      ],
+      "elapsed_ms": 5540.208
+    },
+    "llm_calls": [
+      {
+        "requested_model": "group/docscope-free",
+        "actual_model": "trae/deepseek-v4.1-flash",
+        "actual_channel": null,
+        "channel_status": "not_exposed_by_gateway",
+        "billed_cost_cny": null,
+        "usage": {
+          "completion_tokens": 105,
+          "prompt_tokens": 657,
+          "total_tokens": 762,
+          "completion_tokens_details": {
+            "accepted_prediction_tokens": null,
+            "audio_tokens": null,
+            "reasoning_tokens": 69,
+            "rejected_prediction_tokens": null
+          },
+          "prompt_tokens_details": {
+            "audio_tokens": null,
+            "cached_tokens": 0,
+            "cache_write_tokens": 0
+          }
+        },
+        "finish_reason": "stop",
+        "seconds": 2.459
+      },
+      {
+        "requested_model": "group/docscope-free",
+        "actual_model": "trae/deepseek-v4.1-flash",
+        "actual_channel": null,
+        "channel_status": "not_exposed_by_gateway",
+        "billed_cost_cny": null,
+        "usage": {
+          "completion_tokens": 128,
+          "prompt_tokens": 570,
+          "total_tokens": 698,
+          "completion_tokens_details": {
+            "accepted_prediction_tokens": null,
+            "audio_tokens": null,
+            "reasoning_tokens": 45,
+            "rejected_prediction_tokens": null
+          },
+          "prompt_tokens_details": {
+            "audio_tokens": null,
+            "cached_tokens": 0,
+            "cache_write_tokens": 0
+          }
+        },
+        "finish_reason": "stop",
+        "seconds": 2.755
+      }
+    ],
+    "human_review": {
+      "bridge_fact": "pending",
+      "second_query": "pending",
+      "support_source": "pending",
+      "reviewer": null,
+      "rationale": null
+    }
+  }
+}
