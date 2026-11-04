@@ -9,7 +9,7 @@ from fastapi.testclient import TestClient
 from backend.tests.test_markdown_dense_api import FakeEmbedder, FakeIndex, SAMPLE
 from docscope.api import create_app
 from docscope.evaluation.run_hybrid import summarize
-from docscope.reranking import rerank_points
+from docscope.reranking import rank_points, rerank_points
 
 
 class FixedReranker:
@@ -35,6 +35,13 @@ class RerankPointsTest(unittest.TestCase):
         self.assertEqual(scorer.last, ("Which one?", ["First evidence", "Second evidence"]))
         self.assertEqual(self.points[1]["score"], 0.4)
         self.assertNotIn("rerank_score", self.points[1])
+
+    def test_full_ranking_retains_discarded_scores_with_same_top_result(self):
+        scorer = FixedReranker()
+        ranked = rank_points("Which one?", self.points, scorer)
+        self.assertEqual([p["id"] for p in ranked], ["b", "a"])
+        self.assertEqual([p["rerank_score"] for p in ranked], [1.0, 0.0])
+        self.assertEqual(ranked[:1], rerank_points("Which one?", self.points, scorer, 1))
 
     def test_empty_and_invalid_scores_do_not_produce_false_evidence(self):
         scorer = FixedReranker()

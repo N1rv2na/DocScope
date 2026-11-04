@@ -108,3 +108,66 @@ PYTHONPATH=backend/src QDRANT_URL=http://127.0.0.1:6333 .venv/bin/python -m docs
 
 本次获授权的真实运行产物见[逐题 JSON](results/agent_answer_dev_v1.json)、[人工审查表](results/agent_answer_dev_v1.review.json)和[结果报告](results/agent_answer_dev_report.md)。该次运行的依赖样本在第一跳同时检出两篇来源，因而未发生第二跳；报告明确保留这一未达成项。
 本轮实际生成的四条引用已由项目所有者逐条确认支持对应回答，审查表记录了结论与依据；这不代表未回答问题的引用质量。
+
+## DOCS-016 A–E 固定 dev 子集对照
+
+[冻结配置](configs/ablation_dev_v2.json)沿用 DOCS-015 的 12 道 `dev` 题与 2 道自建无证据题、相同数据清单和同一批标准分块。一次导入 609 篇文章正文到隔离 Qdrant 集合，五组交错运行每道题；参考答案、证据标注和题目类型只在离线评分侧使用，封存 `test` 不参与。
+
+- A：Dense Top-5；B：Qdrant BM25 + Dense 的 RRF Top-5；C：Hybrid Top-20 经固定本地 Cross-Encoder 重排至 Top-5。
+- D：在看到任何检索证据之前用同一 LLM 一次规划第二查询；第一查询固定为原问题。两次查询均使用 C 的检索链，最终将去重候选重新排序到最多 5 条证据。
+- E：复用现有有界 LangGraph Agent，但离线注入 C 的检索链；规划器可在首跳证据之后决定是否提出第二查询。最终证据同样最多 5 条。Web Agent 的默认 Hybrid 路径不因本评测改变。
+
+D/E 同享最大两次检索、两次模型调用、每轮最多 20 个待重排候选和最终 5 条证据；实际使用量允许不同，报告分别给出自然运行与实际预算完全匹配的 D/E 子集。无匹配题时不作净增益推断。A–E 使用同一请求模型和路由组配置；实际渠道若网关不返回则记为未知，不宣称严格同渠道控制。报告中的已知 Token 仅累计提供用量的调用，未知费用不当作零费用。质量分母包含失败和拒答，只有整题事实映射成功才进入片段级事实覆盖分母。
+
+首次真实运行使用了[原始 v1 配置](configs/ablation_dev_v1.json)的线上默认输出上限（回答 400、规划 2048 Tokens）。[v1 逐题结果](results/ablation_dev_v1.json)中 85 次模型调用有 33 次以 `finish_reason=length` 结束，D/E 无实际预算匹配且均非错误的题目；[v1 报告](results/ablation_dev_v1.md)保留这次失败诊断。v2 在**离线评测**中将回答/规划上限统一提高至 2048/4096 Tokens，五组同设，线上 API 不变。两版的 LLM 参数不同，不应将跨版本分数差解释成检索策略收益。
+
+已获授权完成的[v2 逐题结果](results/ablation_dev_v2.json)与[v2 报告](results/ablation_dev_v2.md)：70/70 题次、89 次模型调用，7 次输出截断、3 次请求超时。A/B/C/D/E 在 9 道可回答题上的答案 EM 分别为 2/9、1/9、0/9、1/9、0/9；D/E 有 5/14 道实际预算匹配，二者在该子集均为 0/5。五组没有观察到 Agent 对 Dense 的 EM 提升；这不是全量 Benchmark，也不证明动态规划无效。所有模式的已映射事实最终上下文覆盖均为 0/7，且长答案的严格 EM 可能低估语义正确性。网关未提供可识别的实际渠道和账单费用，报告只给出响应模型 ID、可得 Token 与耗时，不宣称严格同渠道控制或零费用。
+
+后续对本轮产物的[回答语义复核](results/ablation_dev_v2.semantic_review.md)和[拒答、错误排查](results/ablation_dev_v2.failure_analysis.md)分开记录核心答案是否正确、标注来源是否覆盖，以及第二跳新增证据是否进入最终上下文；两份审查均未修改原始结果或重新运行模型。
+
+获得真实模型运行授权后，在仓库根目录以 Qdrant 1.20.0、已缓存的 CPU 模型和有效 `LLM_BASE_URL`、`LLM_MODEL`、`LLM_API_KEY` 环境执行 v2：
+
+```sh
+PYTHONPATH=backend/src QDRANT_URL=http://127.0.0.1:6333 .venv/bin/python -m docscope.evaluation.run_ablation \
+  --config evaluation/configs/ablation_dev_v2.json \
+  --output evaluation/results/ablation_dev_v2.json
+```
+
+成功时生成同名 JSON 与 Markdown 报告；已有结果不会被覆盖，复跑须指定新输出文件名。运行失败写 `.failed.json` 并清理隔离集合，不把失败题伪装成漏检或拒答。
+
+### DOCS-016 检索候选与第二跳去向诊断
+
+新运行的逐题 JSON 会在每轮 `retrievals[].candidates` 记录 Qdrant RRF 候选的原始顺序、分数、文章来源、完整 Chunk、Cross-Encoder 分数和是否进入该轮前 5；D/E 的 `final_ranking` 记录两轮合并后的完整重排顺序、来源轮次和是否进入回答上下文。旧版 v1/v2 结果没有这些字段，不能把旧运行中被丢弃候选的正文或分数倒填成事实。
+
+已获授权完成的[检索重放 JSON](results/ablation_dev_v2.retrieval_replay.json)和[定位报告](results/ablation_dev_v2.retrieval_replay.md)记录了两道典型题的 D/E 候选与重排去向。仅重放旧 v2 **已保存的查询**时，脚本会重新索引相同的 609 篇文章，运行 CPU Embedding、Qdrant 和 Cross-Encoder；不调用 Magpie，也不生成新答案。输出是一次**新检索运行**，在线文档和 Chunk UUID 会改变，应按冻结来源 ID、文章与文本比较，不把它冒充原始 v2 轨迹。
+
+```sh
+PYTHONPATH=backend/src QDRANT_URL=http://127.0.0.1:6333 .venv/bin/python -m docscope.evaluation.run_ablation_replay \
+  --source evaluation/results/ablation_dev_v2.json \
+  --output evaluation/results/ablation_dev_v2.retrieval_replay_new.json \
+  --sample-id mhr-q-f4da8c5620114c384e0b \
+  --sample-id mhr-q-62607bbbdf8d4daa782b
+```
+
+逐题 `support_article_path` 区分标注来源未进入融合候选、被单轮重排筛掉、被最终合并重排筛掉或已保留。候选和标注的对照只在离线侧进行；标注不会发送给检索模型。隔离 Qdrant 集合在完成或报错后清理，已有输出文件不会被覆盖。
+
+### DOCS-016 第二跳证据保留实验（离线 v3）
+
+[已确认的实验设计](../docs/superpowers/specs/2026-11-04-docs016-second-hop-evidence-slot-design.md)仅改变离线 D/E 的最终证据选择：两轮各自 Top-5 去重后，用原问题给合并候选打分；若第二轮有相对首轮新增的 Chunk，先为该轮最高名次的新增 Chunk 留一个位置，再按原问题得分填满最多 5 条。无第二轮或无新增时沿用旧规则。A/B/C、线上 Web Agent、检索与模型调用上限不变。新运行用[独立 v3 配置](configs/ablation_dev_v3.json)；v1/v2 配置和结果不覆盖。
+
+在**已保存的同一批检索候选**上、不调用本地模型或 Magpie 的对照命令：
+
+```sh
+PYTHONPATH=backend/src .venv/bin/python -m docscope.evaluation.compare_ablation_selection \
+  --replay evaluation/results/ablation_dev_v2.retrieval_replay.json \
+  --config evaluation/configs/ablation_dev_v3.json \
+  --output evaluation/results/ablation_dev_v3.selection_comparison_new.json
+```
+
+本次[同候选 JSON](results/ablation_dev_v3.selection_comparison.json)及[摘要](results/ablation_dev_v3.selection_comparison.md)只覆盖已获授权重放的两道题、四条 D/E 路径：第二轮新增 Chunk 最终保留数由 0/15 变成 4/15；Canelo 的 D/E 与 Sportsbooks 的 D 恢复了缺失的**文章**，Sportsbooks 的 E 仍缺目标文章。四条路径的标注事实都不能唯一映射到单个标准 Chunk，故片段级覆盖不可计。这是**同一批已保存候选**上的规则对照，不能单独说明回答质量。
+
+另获授权完成的[v3 逐题结果](results/ablation_dev_v3.json)与[v3 报告](results/ablation_dev_v3.md)包含 609 篇文章、14 道固定 dev 题、70/70 个 A–E 题次和 84 次 Magpie 调用。D/E 两轮实际发生于 10/14 与 4/14 道题，其中预留 Chunk 原本在全局前 5 之外的情况分别有 9 与 4 道；Canelo 题的 D 路径预留原全局第 7 位的第二轮 Chunk，最终覆盖两篇支持文章，并回答且引用两篇原文。该题 E 只有一轮，仍拒答。整轮有 24/70 个错误题次，其中请求异常含 15 次 502 和 1 次超时，另有 8/84 次模型输出截断；D/E 实际预算匹配且非错误的仅 3/14 道。实际渠道和账单均不可辨，v3 与 v2 的规划查询、网关返回也不同，**不能把跨轮次 EM 或拒答差异归因于预留规则**，也不能宣称严格同渠道的 Agent 净收益。封存 test 未运行。
+
+项目所有者随后确认上述运行时 Magpie 未启动，并在启动后授权用**同一 v3 配置**完整重跑。新[逐题 JSON](results/ablation_dev_v3_magpie_on_20261104.json)、[自动报告](results/ablation_dev_v3_magpie_on_20261104.md)及[核心答案语义复核](results/ablation_dev_v3_magpie_on_20261104.semantic_review.md)均单独保存，不覆盖首次 v3。预检 `GET /models` 为 HTTP 200，一笔额外的 Chat Completions 预检以 `finish_reason=stop` 完成；正式评测仍只统计其自身 86 次调用。正式运行完成 70/70 个题次，错误由 24/70 降为 14/70，原先 15 次 502 本轮为 0；剩余错误为 12 次输出达到上限、1 次请求超时、1 次规划结构不合格。D/E 全部支持文章覆盖分别为 5/9 与 2/9，但实际预算匹配且两组均非错误的题目仅 2/14。17 个已返回回答的**核心结论**经人工与参考答案比较均一致；其余可回答题仍有拒答或错误，附加断言及引用支持性尚未逐句审查。实际渠道和账单依旧不可辨，不能宣称严格同渠道的净增益或把两次真实运行的差异归因于预留规则。封存 test 未运行。
+
+复现新的完整真实评测需另行取得模型运行授权；使用 `run_ablation --config evaluation/configs/ablation_dev_v3.json --output <新文件>`，不得覆盖现有结果。旧 v2 已保存候选不完整，不能用它倒填新规则的原始运行结果。

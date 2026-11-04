@@ -1,0 +1,301 @@
+{
+  "kind": "retrieval_only_same_candidate_selection_comparison",
+  "source_replay": "evaluation/results/ablation_dev_v2.retrieval_replay.json",
+  "source_replay_sha256": "8ddcd26b1d67443231a0ac42b1151bd455b8c0dfd8b8ada1b534d33bab0a9086",
+  "config": {
+    "dataset_config": "evaluation/configs/multihop_rag_v1.json",
+    "manifest": "evaluation/manifests/multihop_rag_v1.json",
+    "split": "dev",
+    "answer_subset_ids": [
+      "mhr-q-62607bbbdf8d4daa782b",
+      "mhr-q-66a99ee476b80008b802",
+      "mhr-q-692ecf2907b3b65bc418",
+      "mhr-q-71c3f55cd1150d560470",
+      "mhr-q-7e6673c52727a5c37faf",
+      "mhr-q-816c6ee52abe20ca42e6",
+      "mhr-q-9059b74afac51ed7cab5",
+      "mhr-q-9a4d7197bf10c336946a",
+      "mhr-q-a70bac4fbd4e8ee99073",
+      "mhr-q-c81a29ee075e961b2eb0",
+      "mhr-q-d527c115ed7cfd8f14b1",
+      "mhr-q-f4da8c5620114c384e0b"
+    ],
+    "self_no_evidence": [
+      {
+        "sample_id": "docs015-fictional-telescope-93457",
+        "marker": "Quasar Crane Telescope 93457",
+        "question": "Which observatory built the fictional Quasar Crane Telescope 93457?"
+      },
+      {
+        "sample_id": "docs015-fictional-mission-93457",
+        "marker": "Cedar Meridian Mission 93457",
+        "question": "What year did the fictional Cedar Meridian Mission 93457 launch?"
+      }
+    ],
+    "modes": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E"
+    ],
+    "final_merge_policy": "reserve_second_hop_one",
+    "final_evidence_limit": 5,
+    "candidate_limit": 20,
+    "rerank_limit": 20,
+    "max_retrieval_rounds": 2,
+    "max_model_attempts": 2,
+    "qdrant_version": "1.20.0",
+    "bm25_field": "chunk_text",
+    "bm25_tokenizer": "word",
+    "bm25_lowercase": true,
+    "fusion": "qdrant_rrf",
+    "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+    "embedding_revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+    "reranker_model": "cross-encoder/ms-marco-MiniLM-L6-v2",
+    "reranker_revision": "233902d25c440f23af6f7d6e94d2946bac0bee0a",
+    "requested_model": "group/docscope-free",
+    "declared_route_members": [
+      "our-free-model/loomy/DeepSeek-V4.1-Flash",
+      "our-free-model/trae/deepseek-v4.1-flash",
+      "our-free-model/buddy/deepseek-v4.1-flash"
+    ],
+    "route_members_source": "owner_declared_not_runtime_verified",
+    "answer_max_tokens": 2048,
+    "planning_max_tokens": 4096,
+    "llm_response_format": "json_object",
+    "llm_temperature": "provider_default_unset",
+    "llm_max_input_bytes": 12000
+  },
+  "no_llm_calls": true,
+  "summary": {
+    "second_hop_new_count": 15,
+    "old_new_retained": 0,
+    "new_new_retained": 4,
+    "fact_mapping_status_counts": {
+      "unmapped": 4
+    }
+  },
+  "rows": [
+    {
+      "sample_id": "mhr-q-f4da8c5620114c384e0b",
+      "mode": "D",
+      "question": "Does the 'Essentially Sports' article claim that Canelo Alvarez has a specific net worth figure in 2023, while the 'CBSSports.com' article focuses on the fan base's perception of David Benavidez as a successor to Canelo Alvarez, without mentioning any financial figures?",
+      "support_article_count": 2,
+      "fact_mapping_status": "unmapped",
+      "fact_mapping_failures": [
+        {
+          "document_id": "mhr-doc-98e8878ea896ef575a1d",
+          "reason": "no_chunk"
+        }
+      ],
+      "old": {
+        "selected_ids": [
+          "db2e94a6-9669-58f2-af12-ea9d44f3a110",
+          "0355c545-0276-511c-92ab-754da0ecb57a",
+          "18ab6cfb-1e2e-5f0a-8289-885397689185",
+          "129becc2-8b0e-5f48-98b4-29409bd76353",
+          "2481c685-22ee-5d85-8383-74617b1e6ef6"
+        ],
+        "audit": {
+          "policy": "original_query_top_k",
+          "reserved_chunk_id": null,
+          "reserved_round_rank": null,
+          "reserved_global_rank": null,
+          "second_hop_new_count": 2,
+          "second_hop_new_retained_count": 0
+        },
+        "source_articles_found": 1,
+        "all_support_articles": false,
+        "facts_found": null,
+        "facts_total": null
+      },
+      "new": {
+        "selected_ids": [
+          "db2e94a6-9669-58f2-af12-ea9d44f3a110",
+          "0355c545-0276-511c-92ab-754da0ecb57a",
+          "18ab6cfb-1e2e-5f0a-8289-885397689185",
+          "129becc2-8b0e-5f48-98b4-29409bd76353",
+          "c28f39f5-9c1f-5b39-a616-928666f9eac3"
+        ],
+        "audit": {
+          "policy": "reserve_second_hop_one",
+          "reserved_chunk_id": "c28f39f5-9c1f-5b39-a616-928666f9eac3",
+          "reserved_round_rank": 2,
+          "reserved_global_rank": 7,
+          "second_hop_new_count": 2,
+          "second_hop_new_retained_count": 1
+        },
+        "source_articles_found": 2,
+        "all_support_articles": true,
+        "facts_found": null,
+        "facts_total": null
+      }
+    },
+    {
+      "sample_id": "mhr-q-f4da8c5620114c384e0b",
+      "mode": "E",
+      "question": "Does the 'Essentially Sports' article claim that Canelo Alvarez has a specific net worth figure in 2023, while the 'CBSSports.com' article focuses on the fan base's perception of David Benavidez as a successor to Canelo Alvarez, without mentioning any financial figures?",
+      "support_article_count": 2,
+      "fact_mapping_status": "unmapped",
+      "fact_mapping_failures": [
+        {
+          "document_id": "mhr-doc-98e8878ea896ef575a1d",
+          "reason": "no_chunk"
+        }
+      ],
+      "old": {
+        "selected_ids": [
+          "db2e94a6-9669-58f2-af12-ea9d44f3a110",
+          "0355c545-0276-511c-92ab-754da0ecb57a",
+          "18ab6cfb-1e2e-5f0a-8289-885397689185",
+          "129becc2-8b0e-5f48-98b4-29409bd76353",
+          "2481c685-22ee-5d85-8383-74617b1e6ef6"
+        ],
+        "audit": {
+          "policy": "original_query_top_k",
+          "reserved_chunk_id": null,
+          "reserved_round_rank": null,
+          "reserved_global_rank": null,
+          "second_hop_new_count": 5,
+          "second_hop_new_retained_count": 0
+        },
+        "source_articles_found": 1,
+        "all_support_articles": false,
+        "facts_found": null,
+        "facts_total": null
+      },
+      "new": {
+        "selected_ids": [
+          "db2e94a6-9669-58f2-af12-ea9d44f3a110",
+          "0355c545-0276-511c-92ab-754da0ecb57a",
+          "18ab6cfb-1e2e-5f0a-8289-885397689185",
+          "129becc2-8b0e-5f48-98b4-29409bd76353",
+          "c28f39f5-9c1f-5b39-a616-928666f9eac3"
+        ],
+        "audit": {
+          "policy": "reserve_second_hop_one",
+          "reserved_chunk_id": "c28f39f5-9c1f-5b39-a616-928666f9eac3",
+          "reserved_round_rank": 1,
+          "reserved_global_rank": 8,
+          "second_hop_new_count": 5,
+          "second_hop_new_retained_count": 1
+        },
+        "source_articles_found": 2,
+        "all_support_articles": true,
+        "facts_found": null,
+        "facts_total": null
+      }
+    },
+    {
+      "sample_id": "mhr-q-62607bbbdf8d4daa782b",
+      "mode": "D",
+      "question": "What type of establishments, as reported by Sporting News, are known to modify their betting lines and odds in response to team news, player injuries, or roster changes, and can still secure profit irrespective of the wager's result, while also specifically altering NBA Rookie of the Year betting odds based on new information?",
+      "support_article_count": 3,
+      "fact_mapping_status": "unmapped",
+      "fact_mapping_failures": [
+        {
+          "document_id": "mhr-doc-a7af298e15111cfe0335",
+          "reason": "no_chunk"
+        }
+      ],
+      "old": {
+        "selected_ids": [
+          "33156f10-c4d7-5c71-b247-54e75dbb7991",
+          "f531c8c9-5fd9-53be-b472-78e0b12dfca0",
+          "d047713c-00d1-5ade-8d4d-8acd4271ccb5",
+          "167eb755-f9e9-5f3e-bc0b-04a52d4e6db8",
+          "91452d9f-2527-506c-9065-5f95560e82ff"
+        ],
+        "audit": {
+          "policy": "original_query_top_k",
+          "reserved_chunk_id": null,
+          "reserved_round_rank": null,
+          "reserved_global_rank": null,
+          "second_hop_new_count": 3,
+          "second_hop_new_retained_count": 0
+        },
+        "source_articles_found": 2,
+        "all_support_articles": false,
+        "facts_found": null,
+        "facts_total": null
+      },
+      "new": {
+        "selected_ids": [
+          "33156f10-c4d7-5c71-b247-54e75dbb7991",
+          "f531c8c9-5fd9-53be-b472-78e0b12dfca0",
+          "d047713c-00d1-5ade-8d4d-8acd4271ccb5",
+          "167eb755-f9e9-5f3e-bc0b-04a52d4e6db8",
+          "61c9ca37-4368-51ef-95af-9c1795042965"
+        ],
+        "audit": {
+          "policy": "reserve_second_hop_one",
+          "reserved_chunk_id": "61c9ca37-4368-51ef-95af-9c1795042965",
+          "reserved_round_rank": 1,
+          "reserved_global_rank": 6,
+          "second_hop_new_count": 3,
+          "second_hop_new_retained_count": 1
+        },
+        "source_articles_found": 3,
+        "all_support_articles": true,
+        "facts_found": null,
+        "facts_total": null
+      }
+    },
+    {
+      "sample_id": "mhr-q-62607bbbdf8d4daa782b",
+      "mode": "E",
+      "question": "What type of establishments, as reported by Sporting News, are known to modify their betting lines and odds in response to team news, player injuries, or roster changes, and can still secure profit irrespective of the wager's result, while also specifically altering NBA Rookie of the Year betting odds based on new information?",
+      "support_article_count": 3,
+      "fact_mapping_status": "unmapped",
+      "fact_mapping_failures": [
+        {
+          "document_id": "mhr-doc-a7af298e15111cfe0335",
+          "reason": "no_chunk"
+        }
+      ],
+      "old": {
+        "selected_ids": [
+          "33156f10-c4d7-5c71-b247-54e75dbb7991",
+          "f531c8c9-5fd9-53be-b472-78e0b12dfca0",
+          "d047713c-00d1-5ade-8d4d-8acd4271ccb5",
+          "167eb755-f9e9-5f3e-bc0b-04a52d4e6db8",
+          "91452d9f-2527-506c-9065-5f95560e82ff"
+        ],
+        "audit": {
+          "policy": "original_query_top_k",
+          "reserved_chunk_id": null,
+          "reserved_round_rank": null,
+          "reserved_global_rank": null,
+          "second_hop_new_count": 5,
+          "second_hop_new_retained_count": 0
+        },
+        "source_articles_found": 2,
+        "all_support_articles": false,
+        "facts_found": null,
+        "facts_total": null
+      },
+      "new": {
+        "selected_ids": [
+          "33156f10-c4d7-5c71-b247-54e75dbb7991",
+          "f531c8c9-5fd9-53be-b472-78e0b12dfca0",
+          "d047713c-00d1-5ade-8d4d-8acd4271ccb5",
+          "167eb755-f9e9-5f3e-bc0b-04a52d4e6db8",
+          "544c32b6-45c3-50ca-9f79-358d96043af2"
+        ],
+        "audit": {
+          "policy": "reserve_second_hop_one",
+          "reserved_chunk_id": "544c32b6-45c3-50ca-9f79-358d96043af2",
+          "reserved_round_rank": 1,
+          "reserved_global_rank": 9,
+          "second_hop_new_count": 5,
+          "second_hop_new_retained_count": 1
+        },
+        "source_articles_found": 2,
+        "all_support_articles": false,
+        "facts_found": null,
+        "facts_total": null
+      }
+    }
+  ]
+}

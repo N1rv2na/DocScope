@@ -30,7 +30,14 @@ class LocalReranker:
 def rerank_points(question: str, candidates: list[dict], scorer: LocalReranker,
                   limit: int) -> list[dict]:
     """Keep Chunk identity and prior RRF scores separate from Cross-Encoder scores."""
-    if not 1 <= limit <= 10 or len(candidates) > MAX_RERANK_CANDIDATES:
+    if not 1 <= limit <= 10:
+        raise ValueError("invalid rerank candidate or result limit")
+    return rank_points(question, candidates, scorer)[:limit]
+
+
+def rank_points(question: str, candidates: list[dict], scorer: LocalReranker) -> list[dict]:
+    """Return the full scored order so offline audits can inspect dropped candidates."""
+    if len(candidates) > MAX_RERANK_CANDIDATES:
         raise ValueError("invalid rerank candidate or result limit")
     if not candidates:
         return []
@@ -44,4 +51,4 @@ def rerank_points(question: str, candidates: list[dict], scorer: LocalReranker,
             raise ValueError("reranker scores must be finite")
         ranked.append({**point, "rrf_rank": point.get("rrf_rank", prior_rank), "rrf_score": point["score"],
                        "rerank_score": score})
-    return sorted(ranked, key=lambda point: -point["rerank_score"])[:limit]
+    return sorted(ranked, key=lambda point: -point["rerank_score"])
