@@ -1,6 +1,6 @@
 # DocScope Issue 草稿总览
 
-> 21 条本地草稿已发布为 [DocScope GitHub Issues](https://github.com/N1rv2na/DocScope/issues)，并关联 M0–M5 Milestones 和 22 条原生 blocked-by 依赖。GitHub Issue 正文中的直接依赖也已链接到前置 Issue；本地文件继续作为草稿留存。草稿不包含开发职责标注。
+> 26 条本地草稿已发布为 [DocScope GitHub Issues](https://github.com/N1rv2na/DocScope/issues)。原 DOCS-001～021 关联 M0–M5 Milestones；新增 DOCS-022～026 是 P0 回答链路稳定性补充任务，尚未分配里程碑。GitHub Issue 正文中的直接依赖已链接到前置 Issue，并使用原生 blocked-by 关系；本地文件继续作为草稿留存。草稿不包含开发职责标注。
 
 ## Milestones
 
@@ -40,6 +40,11 @@ M1 首条可运行路径为 DOCS-003 检索 API → DOCS-004 问答 API → DOCS
 | [DOCS-019](DOCS-019-rolling-summary-memory-eval.md) | [#19](https://github.com/N1rv2na/DocScope/issues/19) | 实现滚动摘要与长对话独立评测 | M4 | P1 | DOCS-018 |
 | [DOCS-020](DOCS-020-compose-reproducibility.md) | [#20](https://github.com/N1rv2na/DocScope/issues/20) | 用 Docker Compose 复现启动与评测 | M5 | P1 | DOCS-016、DOCS-019 |
 | [DOCS-021](DOCS-021-demo-results-audit.md) | [#21](https://github.com/N1rv2na/DocScope/issues/21) | 完成 README、Demo 与实测结论审计 | M5 | P1 | DOCS-020 |
+| [DOCS-022](DOCS-022-llm-diagnostics-errors.md) | [#22](https://github.com/N1rv2na/DocScope/issues/22) | 建立 LLM 调用诊断与结构化错误分类 | 稳定性补充，未分配 | P0 | DOCS-016 |
+| [DOCS-023](DOCS-023-llm-output-budget-structure.md) | [#23](https://github.com/N1rv2na/DocScope/issues/23) | 优化 LLM 输出预算与结构化输出可靠性 | 稳定性补充，未分配 | P0 | DOCS-022 |
+| [DOCS-024](DOCS-024-bounded-llm-recovery.md) | [#24](https://github.com/N1rv2na/DocScope/issues/24) | 实现有界重试与模型调用异常恢复 | 稳定性补充，未分配 | P0 | DOCS-023、DOCS-025 |
+| [DOCS-025](DOCS-025-agent-stop-abstention.md) | [#25](https://github.com/N1rv2na/DocScope/issues/25) | 修正 Agent 提前拒答与停止条件 | 稳定性补充，未分配 | P0 | DOCS-013、DOCS-022 |
+| [DOCS-026](DOCS-026-answer-stability-regression.md) | [#26](https://github.com/N1rv2na/DocScope/issues/26) | 建立回答稳定性回归评测 | 稳定性补充，未分配 | P0 | DOCS-023、DOCS-024、DOCS-025 |
 
 ## 推荐执行顺序
 
@@ -48,9 +53,10 @@ M1 首条可运行路径为 DOCS-003 检索 API → DOCS-004 问答 API → DOCS
 3. DOCS-009 → 010 完成检索消融；DOCS-011 → 012 → 013 完成 Agent 核心。
 4. DOCS-014 与 015 在 013 后并行；DOCS-016 在 015 后完成 M3 效果报告。M3 到此可投递与展示。
 5. 后续执行 DOCS-017 → 018 → 019，再在 DOCS-016/019 后执行 020 → 021。
+6. 回答稳定性补充任务按 DOCS-022 → DOCS-023 与 DOCS-025 → DOCS-024 → DOCS-026 执行；DOCS-023 和 DOCS-025 可在 DOCS-022 后并行。该顺序不改变原 M4/M5 的既定范围。
 
 ## GitHub 元数据
 
-- 已创建 M0–M5 Milestones，并按本表关联各 Issue。
+- 已创建 M0–M5 Milestones，并关联原 DOCS-001～021；DOCS-022～026 未分配里程碑。
 - 已创建并添加 `ready-for-agent` 与 `priority:P0`/`priority:P1` 标签；优先级也保留在正文中。
-- GitHub Issue 正文中的 Dependencies 段已链接前置 Issue，同时设置了 22 条 GitHub 原生 blocked-by 关系。
+- GitHub Issue 正文中的 Dependencies 段已链接前置 Issue；原 DOCS-001～021 的 22 条原生 blocked-by 关系之外，新任务另设置了 9 条。

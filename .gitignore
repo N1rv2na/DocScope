@@ -227,3 +227,6 @@ __marimo__/
 /frontend/dist/
 /frontend/playwright-report/
 /frontend/test-results/
+
+# Local Superpowers planning documents
+/docs/superpowers/
