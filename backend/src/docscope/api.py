@@ -373,9 +373,13 @@ def create_app(data_dir: Path | None = None, embedder: Any = None, index: Any = 
         with lifecycle_lock:
             return {"evidence": retrieve_current(request)}
 
+    extra_requests = os.getenv("DOCSCOPE_AGENT_EXTRA_MODEL_REQUESTS", "1")
+    if extra_requests not in {"0", "1"}:
+        raise ValueError("DOCSCOPE_AGENT_EXTRA_MODEL_REQUESTS must be 0 or 1")
     agent = AgentRunner(agent_evidence, responder.generate,
                         lambda raw, evidence: validated_answer(ModelAnswer.model_validate(raw), evidence),
-                        sources_current, plan_next=getattr(responder, "plan_next", None))
+                        sources_current, plan_next=getattr(responder, "plan_next", None),
+                        extra_model_requests=int(extra_requests))
     run_store = RunStore(root)
 
     @api.post("/api/agent/run", response_model=None)

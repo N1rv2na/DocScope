@@ -123,7 +123,7 @@ class SufficiencyApiTest(unittest.TestCase):
         self.assertEqual(self.llm.plan_calls, 0)
         self.assertEqual(self.llm.answer_calls, 0)
 
-    def test_inconsistent_assessment_fails_once_without_retrieval_or_answer(self):
+    def test_inconsistent_assessment_is_bounded_without_retrieval_or_answer(self):
         for decision in (
             {"evidence_status": "answered", "missing_fact": None,
              "next_query": None, "bridge_text": None, "source_chunk_id": None},
@@ -142,7 +142,10 @@ class SufficiencyApiTest(unittest.TestCase):
                 self.assertEqual(response.status_code, 502)
                 body = response.json()
                 self.assertEqual(body["error_code"], "plan_output_invalid")
-                self.assertEqual(body["calls"], {"retrieval": 1, "model": 1})
+                expected_requests = 2 if (decision["evidence_status"] == "missing"
+                                          and decision["missing_fact"] is None) else 1
+                self.assertEqual(body["calls"], {"retrieval": 1, "model": expected_requests})
+                self.assertEqual(len(body["trace"][-1]["llm_attempts"]), expected_requests)
                 self.assertEqual(len(self.index.queries), 1)
                 self.assertEqual(self.llm.answer_calls, 0)
 

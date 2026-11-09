@@ -63,6 +63,8 @@ DOCS-022 的持久化 Run Trace 在 Planner/Answer 调用步骤附加 `llm_call`
 
 DOCS-023 为线上 Answer/Planner 分别设置有界的输出上限与请求超时，`llm_call` 追加实际生效的 `timeout_seconds`。基于历史截断分析和固定 dev 复测，线上默认输出上限设为 Answer 2048、Planner 4096 Tokens，默认超时均为 60 秒；可用后端环境变量独立覆盖，范围和变量名见[后端启动说明](../backend/README.md)。3072/5120 的复测组没有显示截断改善，且输出 Token 更多，因此未设为默认。样本过采样、实际渠道未知与单次运行波动限制效果结论；完整结果见[评测报告](../evaluation/results/llm_budget_dev_v1.md)。
 
+DOCS-024 在 Agent 的 Planner/Answer 阶段增加每 Run 最多一次有条件的额外请求，默认实际请求硬上限为 3、逻辑阶段仍最多 2；可设 `DOCSCOPE_AGENT_EXTRA_MODEL_REQUESTS=0` 关闭。每个阶段的 `llm_attempts` 保存尝试序号、重试原因、错误代码和安全调用诊断；Run 记录请求总数、额外请求数、已知 Token 合计及用量缺失次数。重试仍经过原有结构、来源与引用校验。旧版 A–E 评测显式关闭额外请求，避免改变已冻结的比较预算。DOCS-025 的停止分支修正尚未包含在此变更中。
+
 **Assumption**：M4 摘要阈值仍须在对应阶段验证后冻结。
 
 ## 存储、来源与信任边界

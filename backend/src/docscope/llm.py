@@ -9,7 +9,7 @@ import re
 import time
 from urllib.parse import urlsplit
 
-from openai import APITimeoutError
+from openai import APIStatusError, APITimeoutError
 
 
 SYSTEM_INSTRUCTIONS = (
@@ -51,6 +51,10 @@ class ContextLimitError(ValueError):
     """A bounded single-question prompt would exceed the M1 input limit."""
 
 
+class LLMConfigurationError(RuntimeError):
+    """Local configuration failed before a remote model request."""
+
+
 class LLMCallError(ValueError):
     """A classified model failure with only safe, serializable call metadata."""
 
@@ -83,7 +87,7 @@ def _configured_int(name: str, default: int, maximum: int) -> int:
     if raw is None or raw == "":
         return default
     if not raw.isdecimal() or not 1 <= int(raw) <= maximum:
-        raise RuntimeError(f"{name} must be an integer between 1 and {maximum}")
+        raise LLMConfigurationError(f"{name} must be an integer between 1 and {maximum}")
     return int(raw)
 
 
@@ -106,7 +110,7 @@ class OpenAIResponder:
     @staticmethod
     def _complete_json(stage: str, system_message: str, user_message: str, max_tokens: int) -> dict:
         if type(max_tokens) is not int or not 1 <= max_tokens <= MAX_OUTPUT_TOKENS:
-            raise RuntimeError(f"max_tokens must be an integer between 1 and {MAX_OUTPUT_TOKENS}")
+            raise LLMConfigurationError(f"max_tokens must be an integer between 1 and {MAX_OUTPUT_TOKENS}")
         timeout_name = "LLM_ANSWER_TIMEOUT_SECONDS" if stage == "answer" else "LLM_PLANNER_TIMEOUT_SECONDS"
         timeout_default = (DEFAULT_ANSWER_TIMEOUT_SECONDS if stage == "answer"
                            else DEFAULT_PLANNER_TIMEOUT_SECONDS)
@@ -117,7 +121,7 @@ class OpenAIResponder:
         api_key = os.getenv("LLM_API_KEY")
         model = os.getenv("LLM_MODEL")
         if not base_url or not api_key or not model:
-            raise RuntimeError("LLM_BASE_URL, LLM_API_KEY and LLM_MODEL must be configured")
+            raise LLMConfigurationError("LLM_BASE_URL, LLM_API_KEY and LLM_MODEL must be configured")
         try:
             parsed = urlsplit(base_url)
             port = parsed.port
@@ -130,11 +134,15 @@ class OpenAIResponder:
         except ValueError:
             valid_url = False
         if not valid_url:
-            raise RuntimeError("LLM_BASE_URL must use HTTPS except on loopback and contain no credentials")
+            raise LLMConfigurationError("LLM_BASE_URL must use HTTPS except on loopback and contain no credentials")
 
         from openai import OpenAI
 
-        client = OpenAI(base_url=base_url, api_key=api_key, timeout=timeout_seconds, max_retries=0)
+        try:
+            client = OpenAI(base_url=base_url, api_key=api_key, timeout=timeout_seconds, max_retries=0)
+        except Exception:
+            logger.warning("LLM client setup failed stage=%s requested_model=%s", stage, _safe_label(model))
+            raise LLMConfigurationError("LLM client setup failed") from None
         started = time.monotonic()
         try:
             try:
@@ -154,7 +162,16 @@ class OpenAIResponder:
                               "prompt_tokens": None, "completion_tokens": None,
                               "reasoning_tokens": None, "total_tokens": None,
                               "elapsed_ms": round((time.monotonic() - started) * 1000, 3)}
-                code = "request_timeout" if isinstance(exc, (APITimeoutError, TimeoutError)) else "request_failed"
+                if isinstance(exc, (APITimeoutError, TimeoutError)):
+                    code = "request_timeout"
+                elif isinstance(exc, APIStatusError):
+                    diagnostic["http_status"] = exc.status_code
+                    code = ("request_rate_limited" if exc.status_code == 429 else
+                            "request_server_error" if exc.status_code >= 500 else
+                            "request_auth_failed" if exc.status_code in {401, 403} else
+                            "request_failed")
+                else:
+                    code = "request_failed"
                 logger.warning("LLM call failed stage=%s requested_model=%s error_code=%s elapsed_ms=%s",
                                diagnostic["stage"], diagnostic["requested_model"], code,
                                diagnostic["elapsed_ms"])

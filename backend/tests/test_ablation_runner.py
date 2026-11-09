@@ -4,6 +4,7 @@ import unittest
 
 from docscope.evaluation.run_ablation import (EvalRetriever, EvaluationResponder, attach_source_ids,
                                              run_mode, select_final_points)
+from docscope.llm import LLMCallError
 
 
 def point(name, title, text):
@@ -43,6 +44,21 @@ class Responder:
 
 
 class AblationRunTest(unittest.TestCase):
+    def test_frozen_ablation_does_not_inherit_online_retry_budget(self):
+        events = []
+
+        class FailingResponder(Responder):
+            def generate(self, question, evidence):
+                events.append(("answer", [item["chunk_id"] for item in evidence]))
+                raise LLMCallError("request_timeout", {"stage": "answer", "completion_tokens": None})
+
+        result = run_mode("A", QUESTION, self.search(events), FailingResponder(events), Scorer(), 5)
+        self.assertEqual(result["run"]["status"], "error")
+        self.assertEqual(result["run"]["calls"]["model"], 1)
+        self.assertEqual(result["run"]["model_request_budget"], 2)
+        self.assertEqual(result["run"]["retry_requests"], 0)
+        self.assertEqual([item[0] for item in events], ["retrieve", "answer"])
+
     def search(self, events):
         def perform(query, mode):
             events.append(('retrieve', query, mode))

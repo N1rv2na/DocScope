@@ -13,12 +13,23 @@ from typing import Any, Callable, TypedDict
 from langgraph.graph import END, START, StateGraph
 from pydantic import ValidationError
 
-from docscope.llm import ContextLimitError, LLMCallError
+from docscope.llm import ContextLimitError, LLMCallError, LLMConfigurationError
 
 
 logger = logging.getLogger(__name__)
 MAX_RETRIEVAL_ROUNDS = 2
 MAX_MODEL_ATTEMPTS = 2
+MAX_EXTRA_MODEL_REQUESTS = 1
+RETRYABLE_MODEL_ERRORS = {"request_timeout", "request_rate_limited", "request_server_error",
+                          "output_truncated", "json_invalid", "schema_invalid"}
+
+
+class SourceChangedError(Exception):
+    """The evidence changed after retrieval and cannot be reused."""
+
+
+class ProposalSchemaError(ValueError):
+    """A Planner response has a malformed object shape or field type."""
 MAX_FOLLOWUP_QUERY_CHARS = 500
 MAX_BRIDGE_TEXT_CHARS = 120
 MAX_MISSING_FACT_CHARS = 240
@@ -34,6 +45,8 @@ class RunState(TypedDict, total=False):
     followup_ready: bool
     trace: list[dict[str, Any]]
     calls: dict[str, int]
+    retry_requests: int
+    model_request_budget: int
     status: str
     stop_reason: str
     error_code: str
@@ -65,7 +78,11 @@ class AgentRunner:
                  generate: Callable[[str, list[dict]], dict],
                  validate: Callable[[dict, list[dict]], dict],
                  sources_current: Callable[[list[dict]], bool],
-                 plan_next: Callable[[str, list[dict]], dict] | None = None):
+                 plan_next: Callable[[str, list[dict]], dict] | None = None,
+                 extra_model_requests: int = MAX_EXTRA_MODEL_REQUESTS):
+        if type(extra_model_requests) is not int or not 0 <= extra_model_requests <= 1:
+            raise ValueError("extra_model_requests must be 0 or 1")
+        self.extra_model_requests = extra_model_requests
         def plan(state: RunState) -> dict:
             started = time.monotonic()
             query = state["question"]
@@ -120,43 +137,22 @@ class AgentRunner:
 
         def plan_from_evidence(state: RunState) -> dict:
             started = time.monotonic()
-            if state["calls"]["model"] >= MAX_MODEL_ATTEMPTS:
-                return {**self._failure("model_budget_exhausted"),
-                        "trace": state["trace"] + [self._step("plan_next", "failed", started)]}
-            calls = {**state["calls"], "model": state["calls"]["model"] + 1}
-            try:
-                proposal = plan_next(state["question"], state["evidence"])
-            except ContextLimitError:
-                code = "context_limit_exceeded"
-                details = {}
-            except LLMCallError as exc:
-                code = "plan_output_invalid" if exc.code in {
-                    "output_truncated", "json_invalid", "schema_invalid", "response_incomplete"} else "planner_failed"
-                details = {"llm_error_code": exc.code, "llm_call": exc.diagnostic}
-            except ValueError:
-                logger.warning("Invalid next-query output for run %s", state["run_id"])
-                code = "plan_output_invalid"
-                details = {"llm_error_code": "output_invalid"}
-            except Exception:
-                logger.error("Next-query planning failed for run %s", state["run_id"])
-                code = "planner_failed"
-                details = {"llm_error_code": "request_failed"}
-            else:
-                code = None
-                details = {"llm_call": proposal.diagnostic} if hasattr(proposal, "diagnostic") else {}
-            if code:
+            result = self._invoke_model(
+                state, "plan_next", lambda: plan_next(state["question"], state["evidence"]),
+                lambda proposal: self._validate_proposal(
+                    proposal, state["question"], state["query"], state["evidence"]),
+                "proposal_invalid", lambda: sources_current(state["evidence"]))
+            calls = result["calls"]
+            details = result["details"]
+            if result["code"]:
+                code = self._public_model_error("plan_next", result["code"])
                 return {**self._failure(code), "calls": calls,
+                        "retry_requests": result["retry_requests"],
                         "trace": state["trace"] + [self._step("plan_next", "failed", started, **details)]}
-            try:
-                assessment, missing_fact, next_query, bridge_text, source_chunk_id, stop_reason = self._validate_proposal(
-                    proposal, state["question"], state["query"], state["evidence"])
-            except ValueError:
-                logger.warning("Rejected next-query proposal for run %s", state["run_id"])
-                return {**self._failure("plan_output_invalid"), "calls": calls,
-                        "trace": state["trace"] + [self._step("plan_next", "failed", started,
-                                                             llm_error_code="schema_invalid", **details)]}
+            assessment, missing_fact, next_query, bridge_text, source_chunk_id, stop_reason = result["value"]
             if next_query is None:
-                update = {"calls": calls, "followup_ready": False,
+                update = {"calls": calls, "retry_requests": result["retry_requests"],
+                          "followup_ready": False,
                           "trace": state["trace"] + [self._step("plan_next", "completed", started,
                                                                evidence_status=assessment,
                                                                missing_fact=missing_fact, reason=stop_reason,
@@ -165,7 +161,8 @@ class AgentRunner:
                     update.update(status="insufficient_evidence", stop_reason=stop_reason,
                                   answer=None, citations=[])
                 return update
-            return {"query": next_query, "calls": calls, "followup_ready": True,
+            return {"query": next_query, "calls": calls,
+                    "retry_requests": result["retry_requests"], "followup_ready": True,
                     "trace": state["trace"] + [self._step("plan_next", "completed", started,
                                                          evidence_status=assessment,
                                                          missing_fact=missing_fact,
@@ -179,42 +176,23 @@ class AgentRunner:
 
         def answer_once(state: RunState) -> dict:
             started = time.monotonic()
-            if state["calls"]["model"] >= MAX_MODEL_ATTEMPTS:
-                return self._answer_failure(state, state["calls"], "model_budget_exhausted", started)
-            calls = {**state["calls"], "model": state["calls"]["model"] + 1}
-            try:
-                raw = generate(state["question"], state["evidence"])
-            except ContextLimitError:
-                return self._answer_failure(state, calls, "context_limit_exceeded", started)
-            except LLMCallError as exc:
-                code = "model_output_invalid" if exc.code in {
-                    "output_truncated", "json_invalid", "schema_invalid", "response_incomplete"} else "model_failed"
-                return self._answer_failure(state, calls, code, started,
-                                            llm_error_code=exc.code, llm_call=exc.diagnostic)
-            except ValueError:
-                logger.warning("Invalid model output for run %s", state["run_id"])
-                return self._answer_failure(state, calls, "model_output_invalid", started,
-                                            llm_error_code="output_invalid")
-            except Exception:
-                logger.error("Agent model call failed for run %s", state["run_id"])
-                return self._answer_failure(state, calls, "model_failed", started,
-                                            llm_error_code="request_failed")
-            details = {"llm_call": raw.diagnostic} if hasattr(raw, "diagnostic") else {}
-            try:
+            def validate_answer(raw: dict) -> dict:
                 if not sources_current(state["evidence"]):
-                    return self._answer_failure(state, calls, "source_changed", started, **details)
-                outcome = validate(raw, state["evidence"])
-            except ValidationError:
-                logger.warning("Rejected model answer schema for run %s", state["run_id"])
-                return self._answer_failure(state, calls, "model_output_invalid", started,
-                                            llm_error_code="schema_invalid", **details)
-            except (ValueError, KeyError):
-                logger.warning("Rejected model answer for run %s", state["run_id"])
-                return self._answer_failure(state, calls, "model_output_invalid", started,
-                                            llm_error_code="answer_invalid", **details)
-            except Exception:
-                logger.error("Agent source check failed for run %s", state["run_id"])
-                return self._answer_failure(state, calls, "source_check_failed", started, **details)
+                    raise SourceChangedError()
+                return validate(raw, state["evidence"])
+
+            result = self._invoke_model(state, "answer",
+                                        lambda: generate(state["question"], state["evidence"]),
+                                        validate_answer, "answer_invalid",
+                                        lambda: sources_current(state["evidence"]))
+            calls = result["calls"]
+            details = result["details"]
+            if result["code"]:
+                return {**self._answer_failure(state, calls,
+                                               self._public_model_error("answer", result["code"]),
+                                               started, **details),
+                        "retry_requests": result["retry_requests"]}
+            outcome = result["value"]
             if outcome["status"] == "answered":
                 stop_reason = "answered"
             elif plan_next is not None and state["retrieval_round"] >= MAX_RETRIEVAL_ROUNDS:
@@ -222,6 +200,7 @@ class AgentRunner:
             else:
                 stop_reason = "model_abstained"
             return {**outcome, "stop_reason": stop_reason, "calls": calls,
+                    "retry_requests": result["retry_requests"],
                     "trace": state["trace"] + [self._step("answer", "completed", started, **details)]}
 
         graph = StateGraph(RunState)
@@ -242,7 +221,7 @@ class AgentRunner:
                                                          str | None, str | None, str | None]:
         required = {"evidence_status", "missing_fact", "next_query", "bridge_text", "source_chunk_id"}
         if not isinstance(proposal, dict) or set(proposal) != required:
-            raise ValueError("evidence assessment must contain exactly five fields")
+            raise ProposalSchemaError("evidence assessment must contain exactly five fields")
         assessment = proposal["evidence_status"]
         missing_fact = proposal["missing_fact"]
         query, bridge, source_id = (proposal[key] for key in ("next_query", "bridge_text", "source_chunk_id"))
@@ -250,16 +229,21 @@ class AgentRunner:
             if any(value is not None for value in (missing_fact, query, bridge, source_id)):
                 raise ValueError("sufficient assessment cannot request another retrieval")
             return assessment, None, None, None, None, "sufficient"
-        if assessment != "missing" or not isinstance(missing_fact, str) or not missing_fact.strip() or len(missing_fact) > MAX_MISSING_FACT_CHARS:
+        if assessment != "missing":
+            raise ValueError("evidence assessment status is inconsistent")
+        if not isinstance(missing_fact, str):
+            raise ProposalSchemaError("missing fact must be text")
+        if not missing_fact.strip() or len(missing_fact) > MAX_MISSING_FACT_CHARS:
             raise ValueError("missing assessment requires a bounded missing fact")
         missing_fact = missing_fact.strip()
         if query is None:
             if bridge is not None or source_id is not None:
                 raise ValueError("a missing query cannot cite a bridge")
             return assessment, missing_fact, None, None, None, "missing_fact_unresolved"
-        if (not isinstance(query, str) or not query.strip() or len(query) > MAX_FOLLOWUP_QUERY_CHARS
-                or not isinstance(bridge, str) or not bridge.strip() or len(bridge) > MAX_BRIDGE_TEXT_CHARS
-                or not isinstance(source_id, str)):
+        if not isinstance(query, str) or not isinstance(bridge, str) or not isinstance(source_id, str):
+            raise ProposalSchemaError("next-query fields have invalid types")
+        if (not query.strip() or len(query) > MAX_FOLLOWUP_QUERY_CHARS
+                or not bridge.strip() or len(bridge) > MAX_BRIDGE_TEXT_CHARS):
             raise ValueError("invalid next-query fields")
         source = next((item for item in evidence if item["chunk_id"] == source_id), None)
         normalized = lambda value: " ".join(value.casefold().split())
@@ -272,6 +256,103 @@ class AgentRunner:
         if normalized(bridge) not in normalized(query):
             raise ValueError("next query does not use the discovered bridge")
         return assessment, missing_fact, query.strip(), bridge.strip(), source_id, None
+
+    def _invoke_model(self, state: RunState, stage: str, request: Callable[[], dict],
+                      check: Callable[[dict], Any], invalid_code: str,
+                      can_retry_source: Callable[[], bool]) -> dict:
+        """Run one logical stage with at most one extra request across the whole Run."""
+        calls = dict(state["calls"])
+        retries = state["retry_requests"]
+        budget = state["model_request_budget"]
+        attempts = []
+        value = None
+        code = None
+        previous_error = None
+        last_diagnostic = None
+        for local_attempt in range(2):
+            if calls["model"] >= budget:
+                code = "model_budget_exhausted"
+                break
+            if local_attempt:
+                try:
+                    if not can_retry_source():
+                        code = "source_changed"
+                        break
+                except Exception:
+                    code = "source_check_failed"
+                    break
+            attempted = True
+            diagnostic = None
+            try:
+                raw = request()
+            except ContextLimitError:
+                code, attempted = "context_limit_exceeded", False
+            except LLMConfigurationError:
+                code, attempted = "configuration_invalid", False
+            except LLMCallError as exc:
+                code, diagnostic = exc.code, exc.diagnostic
+            except TimeoutError:
+                code = "request_timeout"
+            except ValueError:
+                code = "output_invalid"
+            except Exception:
+                code = "request_failed"
+            else:
+                diagnostic = getattr(raw, "diagnostic", None)
+                try:
+                    value = check(raw)
+                except SourceChangedError:
+                    code = "source_changed"
+                except ValidationError:
+                    code = "schema_invalid"
+                    logger.warning("Rejected %s model schema for run %s", stage, state["run_id"])
+                except ProposalSchemaError:
+                    code = "schema_invalid"
+                    logger.warning("Rejected %s model schema for run %s", stage, state["run_id"])
+                except (ValueError, KeyError):
+                    code = invalid_code
+                    logger.warning("Rejected %s model output for run %s", stage, state["run_id"])
+                except Exception:
+                    code = "source_check_failed" if stage == "answer" else "request_failed"
+                else:
+                    code = None
+            if not attempted:
+                break
+            calls["model"] += 1
+            if local_attempt:
+                retries += 1
+            attempts.append({"attempt": local_attempt + 1, "retry_reason": previous_error,
+                             "error_code": code, "llm_call": diagnostic})
+            last_diagnostic = diagnostic
+            if code is None:
+                break
+            remaining = budget - calls["model"]
+            reserve_answer = 1 if stage == "plan_next" else 0
+            if (code in RETRYABLE_MODEL_ERRORS and local_attempt == 0
+                    and retries < self.extra_model_requests and remaining > reserve_answer):
+                previous_error = code
+                continue
+            break
+        details = {"llm_attempts": attempts}
+        if last_diagnostic is not None:
+            details["llm_call"] = last_diagnostic
+        if code is not None:
+            details["llm_error_code"] = code
+            if code in RETRYABLE_MODEL_ERRORS:
+                details["recovery_stop_reason"] = ("request_budget_exhausted" if calls["model"] >= budget
+                                                   else "retry_limit_reached")
+        return {"value": value, "code": code, "calls": calls,
+                "retry_requests": retries, "details": details}
+
+    @staticmethod
+    def _public_model_error(stage: str, code: str) -> str:
+        if code in {"context_limit_exceeded", "source_changed", "model_budget_exhausted",
+                    "source_check_failed"}:
+            return code
+        if code in {"output_truncated", "json_invalid", "schema_invalid", "response_incomplete",
+                    "output_invalid", "answer_invalid", "proposal_invalid"}:
+            return "plan_output_invalid" if stage == "plan_next" else "model_output_invalid"
+        return "planner_failed" if stage == "plan_next" else "model_failed"
 
     @staticmethod
     def _step(stage: str, status: str, started: float, **details: Any) -> dict:
@@ -322,20 +403,29 @@ class AgentRunner:
             yield "stage", {"stage": "graph", "status": "failed"}
         yield "result", self._record(state, started)
 
-    @staticmethod
-    def _initial_state(question: str, run_id: str | None = None) -> RunState:
+    def _initial_state(self, question: str, run_id: str | None = None) -> RunState:
         return {"run_id": run_id or str(uuid.uuid4()), "question": question,
                 "trace": [], "calls": {"retrieval": 0, "model": 0},
+                "retry_requests": 0,
+                "model_request_budget": MAX_MODEL_ATTEMPTS + self.extra_model_requests,
                 "retrieved_evidence_ids": [], "retrieval_round": 0,
                 "followup_ready": False}
 
     @staticmethod
     def _record(state: RunState, started: float) -> dict[str, Any]:
+        attempts = [attempt for step in state["trace"] for attempt in step.get("llm_attempts", [])]
+        usage = {}
+        for key in ("prompt_tokens", "completion_tokens", "reasoning_tokens", "total_tokens"):
+            values = [(attempt.get("llm_call") or {}).get(key) for attempt in attempts]
+            usage[f"known_{key}"] = sum(value for value in values if type(value) is int and value >= 0)
+            usage[f"unknown_{key}_calls"] = sum(value is None for value in values)
         return {"run_id": state["run_id"], "question": state["question"],
                 "query": state.get("query", state["question"]),
                 "status": state["status"], "stop_reason": state["stop_reason"],
                 "answer": state["answer"], "citations": state["citations"],
                 "retrieved_evidence_ids": state["retrieved_evidence_ids"],
                 "calls": state["calls"], "trace": state["trace"],
+                "model_request_budget": state["model_request_budget"],
+                "retry_requests": state["retry_requests"], "model_usage": usage,
                 "elapsed_ms": round((time.monotonic() - started) * 1000, 3),
                 **({"error_code": state["error_code"]} if state.get("error_code") else {})}

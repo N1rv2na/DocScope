@@ -113,7 +113,7 @@ class AgentRunApiTest(unittest.TestCase):
         self.assertEqual(self.llm.calls, [])
         self.assertEqual(self.saved(body), body)
 
-    def test_model_failure_and_fabricated_citation_are_recorded_without_retry(self):
+    def test_timeout_has_one_bounded_retry_but_fabricated_citation_does_not(self):
         self.upload()
         for llm_result, expected_code, http_status in [
             (TimeoutError("model unavailable"), "model_failed", 503),
@@ -130,11 +130,12 @@ class AgentRunApiTest(unittest.TestCase):
                 self.assertEqual(body["status"], "error")
                 self.assertEqual(body["error_code"], expected_code)
                 self.assertEqual(body["stop_reason"], expected_code)
-                self.assertEqual(body["calls"], {"retrieval": 1, "model": 1})
+                expected_calls = 2 if isinstance(llm_result, TimeoutError) else 1
+                self.assertEqual(body["calls"], {"retrieval": 1, "model": expected_calls})
                 self.assertEqual(body["trace"][-1]["status"], "failed")
                 self.assertIsNone(body["answer"])
                 self.assertEqual(body["citations"], [])
-                self.assertEqual(len(self.llm.calls), 1)
+                self.assertEqual(len(self.llm.calls), expected_calls)
                 self.assertEqual(self.saved(body), body)
 
     def test_source_replacement_during_model_call_rejects_answer(self):

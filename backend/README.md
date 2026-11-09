@@ -141,7 +141,7 @@ one grounded second query. Missing facts without a grounded query, repeated
 queries, and second retrievals with no new Chunks stop with an explicit
 `insufficient_evidence` result. If the answerer still refuses after the second
 retrieval, the stop reason is `retrieval_budget_exhausted`. The graph caps retrieval at two rounds and planner
-plus answerer at two model invocation attempts; each retrieval returns at most
+plus answerer at two logical model stages; each retrieval returns at most
 five Chunks. The legacy `/api/chat` endpoint remains Dense-only. The Agent path uses Hybrid
 without Cross-Encoder because the DOCS-010 dev ablation found that this fixed
 reranker configuration reduced evidence coverage; M3's eventual default
@@ -150,13 +150,25 @@ retrieval path remains an open evaluation decision.
 The response includes `run_id`, the original `question`, `query`,
 `retrieved_evidence_ids`, ordered `trace` stages with round numbers,
 source Chunk IDs, new Evidence IDs and elapsed times,
-`calls` for retrieval and responder invocation attempts, `stop_reason`,
+`calls` for retrieval and attempted model requests, `stop_reason`,
 and the existing answer/refusal and citation fields. Captured failures use
 `status: error`, a failed trace stage, and `error_code`, with no success answer
 or citations. Final Run records are written atomically under
 `$DOCSCOPE_DATA_DIR/runs/<run_id>.json`; this local directory is ignored by
-Git. A local context check can fail before a remote model request, so
-`calls.model` is not a remote HTTP request or Token count. If Run storage
+Git. DOCS-024 adds `DOCSCOPE_AGENT_EXTRA_MODEL_REQUESTS=0|1` (default `1`),
+read at API startup; invalid values fail startup. The Agent still has at most
+two logical model stages (Planner and Answer), with at most one retry across the
+Run. Its hard request budget is 2 or 3 according to this setting. Timeout,
+HTTP 429/5xx, truncated output, invalid JSON, and recoverable Schema failures
+may use the extra request; authentication, local configuration/context errors,
+source changes, and invalid citation IDs do not. The Answer request is reserved
+when a Planner retry is considered. OpenAI SDK automatic retries remain disabled.
+`calls.model` counts actual attempted requests on the OpenAI path; local
+preflight failures do not increment it. `model_request_budget`, `retry_requests`,
+per-stage `llm_attempts` and `model_usage` distinguish the logical stage from
+requests and sum only known Token counts, with missing usage counted separately.
+HTTP and SSE use the same Agent Run and final error semantics; browser-level SSE
+reconnection is not a model retry. If Run storage
 fails, the API returns a failed persistence stage and existing trace but
 cannot write a local file. These records contain the question and returned
 citation text, so they must not be published without review. The fixed

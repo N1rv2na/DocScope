@@ -170,7 +170,8 @@ def run_mode(mode: str, question: str, search, responder, scorer, final_limit: i
 
     if mode != 'D':
         agent = AgentRunner(fetch, generate, validate, lambda evidence: True,
-                            plan_next=responder.plan_next if mode == 'E' else None)
+                            plan_next=responder.plan_next if mode == 'E' else None,
+                            extra_model_requests=0)
         run = agent.run(question)
     else:
         trace = []
