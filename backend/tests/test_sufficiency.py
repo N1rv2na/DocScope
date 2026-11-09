@@ -83,19 +83,21 @@ class SufficiencyApiTest(unittest.TestCase):
         self.assertEqual(body["trace"][2]["missing_fact"], "the operator of Polaris Relay")
         self.assertEqual(len(self.index.queries), 2)
 
-    def test_missing_fact_without_grounded_query_abstains_before_answer(self):
+    def test_missing_fact_without_grounded_query_lets_answerer_refuse(self):
         self.llm.decision = lambda question, evidence: {
             "evidence_status": "missing", "missing_fact": "the operator of Polaris Relay",
             "next_query": None, "bridge_text": None, "source_chunk_id": None}
-        self.llm.answer = lambda question, evidence: self.fail("must not generate unsupported answer")
+        self.llm.answer = lambda question, evidence: {
+            "status": "insufficient_evidence", "answer": None, "citation_ids": []}
         response = self.ask()
         self.assertEqual(response.status_code, 200)
         body = response.json()
         self.assertEqual(body["status"], "insufficient_evidence")
-        self.assertEqual(body["stop_reason"], "missing_fact_unresolved")
-        self.assertEqual(body["calls"], {"retrieval": 1, "model": 1})
+        self.assertEqual(body["stop_reason"], "model_abstained")
+        self.assertEqual(body["retrieval_stop_reason"], "missing_fact_unresolved")
+        self.assertEqual(body["calls"], {"retrieval": 1, "model": 2})
         self.assertEqual(body["trace"][2]["missing_fact"], "the operator of Polaris Relay")
-        self.assertEqual(self.llm.answer_calls, 0)
+        self.assertEqual(self.llm.answer_calls, 1)
 
     def test_answerer_can_refuse_even_after_planner_calls_first_hop_sufficient(self):
         self.llm.decision = lambda question, evidence: {
@@ -119,6 +121,7 @@ class SufficiencyApiTest(unittest.TestCase):
         body = response.json()
         self.assertEqual(body["status"], "insufficient_evidence")
         self.assertEqual(body["stop_reason"], "no_evidence")
+        self.assertEqual(body["retrieval_stop_reason"], "no_evidence")
         self.assertEqual(body["calls"], {"retrieval": 1, "model": 0})
         self.assertEqual(self.llm.plan_calls, 0)
         self.assertEqual(self.llm.answer_calls, 0)

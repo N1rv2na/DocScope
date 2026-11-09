@@ -49,6 +49,7 @@ class RunState(TypedDict, total=False):
     model_request_budget: int
     status: str
     stop_reason: str
+    retrieval_stop_reason: str
     error_code: str
     answer: str | None
     citations: list[dict[str, Any]]
@@ -122,10 +123,12 @@ class AgentRunner:
                                                            new_evidence_ids=[item["chunk_id"] for item in new_evidence])]}
             if not combined:
                 update.update(status="insufficient_evidence", stop_reason="no_evidence",
-                              answer=None, citations=[])
+                              retrieval_stop_reason="no_evidence", answer=None, citations=[])
             elif round_number > 1 and not new_evidence:
-                update.update(status="insufficient_evidence", stop_reason="no_new_evidence",
-                              answer=None, citations=[])
+                update["retrieval_stop_reason"] = "no_new_evidence"
+                update["trace"][-1]["reason"] = "no_new_evidence"
+            elif round_number >= MAX_RETRIEVAL_ROUNDS:
+                update["retrieval_stop_reason"] = "retrieval_budget_exhausted"
             return update
 
         def next_stage(state: RunState) -> str:
@@ -152,14 +155,11 @@ class AgentRunner:
             assessment, missing_fact, next_query, bridge_text, source_chunk_id, stop_reason = result["value"]
             if next_query is None:
                 update = {"calls": calls, "retry_requests": result["retry_requests"],
-                          "followup_ready": False,
+                          "followup_ready": False, "retrieval_stop_reason": stop_reason,
                           "trace": state["trace"] + [self._step("plan_next", "completed", started,
                                                                evidence_status=assessment,
                                                                missing_fact=missing_fact, reason=stop_reason,
                                                                **details)]}
-                if assessment == "missing":
-                    update.update(status="insufficient_evidence", stop_reason=stop_reason,
-                                  answer=None, citations=[])
                 return update
             return {"query": next_query, "calls": calls,
                     "retry_requests": result["retry_requests"], "followup_ready": True,
@@ -422,6 +422,7 @@ class AgentRunner:
         return {"run_id": state["run_id"], "question": state["question"],
                 "query": state.get("query", state["question"]),
                 "status": state["status"], "stop_reason": state["stop_reason"],
+                "retrieval_stop_reason": state.get("retrieval_stop_reason"),
                 "answer": state["answer"], "citations": state["citations"],
                 "retrieved_evidence_ids": state["retrieved_evidence_ids"],
                 "calls": state["calls"], "trace": state["trace"],

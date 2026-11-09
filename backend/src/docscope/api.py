@@ -430,6 +430,7 @@ def create_app(data_dir: Path | None = None, embedder: Any = None, index: Any = 
                             yield encode("citation", {"citation": citation})
                     yield encode("done", {"status": payload["status"],
                                           "stop_reason": payload["stop_reason"],
+                                          "retrieval_stop_reason": payload["retrieval_stop_reason"],
                                           "answer": payload["answer"],
                                           "citation_ids": [item["chunk_id"] for item in payload["citations"]]})
                     return

@@ -95,6 +95,23 @@ class AgentStreamTest(unittest.TestCase):
         self.assertIsNone(wire[-1][1]['answer'])
         self.assertEqual(wire[-1][1]['citation_ids'], [])
 
+    def test_stopped_retrieval_stream_keeps_final_abstention_separate(self):
+        self.llm.proposal = lambda question, evidence: {
+            'evidence_status': 'missing', 'missing_fact': 'operator unknown',
+            'next_query': None, 'bridge_text': None, 'source_chunk_id': None}
+        self.llm.forced_answer = {
+            'status': 'insufficient_evidence', 'answer': None, 'citation_ids': []}
+        wire = events(self.client.post('/api/agent/run/stream', json={'question': SAMPLE['question']}))
+        self.assertEqual([kind for kind, _ in wire],
+                         ['stage', 'stage', 'stage', 'stage', 'done'])
+        self.assertEqual(wire[2][1]['reason'], 'missing_fact_unresolved')
+        done = wire[-1][1]
+        self.assertEqual(done['status'], 'insufficient_evidence')
+        self.assertEqual(done['stop_reason'], 'model_abstained')
+        self.assertEqual(done['retrieval_stop_reason'], 'missing_fact_unresolved')
+        self.assertIsNone(done['answer'])
+        self.assertEqual(done['citation_ids'], [])
+
     def test_stage_is_yielded_before_answer_generation(self):
         generated = []
 

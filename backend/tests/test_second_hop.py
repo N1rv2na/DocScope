@@ -39,6 +39,7 @@ class EvidencePlanner:
         self.plan_calls = []
         self.answer_calls = []
         self.proposal = None
+        self.answer_override = None
 
     def plan_next(self, question, evidence):
         self.plan_calls.append((question, evidence))
@@ -51,6 +52,8 @@ class EvidencePlanner:
 
     def generate(self, question, evidence):
         self.answer_calls.append((question, evidence))
+        if self.answer_override is not None:
+            return self.answer_override(question, evidence)
         sources = {item["document_title"]: item for item in evidence}
         if SAMPLE["second_source"] not in sources:
             return {"status": "insufficient_evidence", "answer": None, "citation_ids": []}
@@ -111,10 +114,11 @@ class SecondHopApiTest(unittest.TestCase):
         body = self.run_sample().json()
         self.assertEqual(body["status"], "insufficient_evidence")
         self.assertEqual(self.index.queries, [SAMPLE["question"]])
-        self.assertEqual(body["calls"], {"retrieval": 1, "model": 1})
-        self.assertEqual(body["stop_reason"], "repeated_query")
+        self.assertEqual(body["calls"], {"retrieval": 1, "model": 2})
+        self.assertEqual(body["stop_reason"], "model_abstained")
+        self.assertEqual(body["retrieval_stop_reason"], "repeated_query")
         self.assertEqual(body["trace"][2]["reason"], "repeated_query")
-        self.assertEqual(self.llm.answer_calls, [])
+        self.assertEqual(len(self.llm.answer_calls), 1)
 
     def test_planner_can_stop_after_first_hop_without_second_query(self):
         self.llm.proposal = lambda question, evidence: {
@@ -125,10 +129,60 @@ class SecondHopApiTest(unittest.TestCase):
         body = response.json()
         self.assertEqual(body["status"], "insufficient_evidence")
         self.assertEqual(self.index.queries, [SAMPLE["question"]])
-        self.assertEqual(body["calls"], {"retrieval": 1, "model": 1})
-        self.assertEqual(body["stop_reason"], "missing_fact_unresolved")
+        self.assertEqual(body["calls"], {"retrieval": 1, "model": 2})
+        self.assertEqual(body["stop_reason"], "model_abstained")
+        self.assertEqual(body["retrieval_stop_reason"], "missing_fact_unresolved")
         self.assertEqual(body["trace"][2]["reason"], "missing_fact_unresolved")
-        self.assertEqual(self.llm.answer_calls, [])
+        self.assertEqual(len(self.llm.answer_calls), 1)
+
+    def test_stopped_retrieval_can_answer_from_valid_first_hop_evidence(self):
+        question = "Which service does Aster Telemetry Console use for audit export?"
+        original = self.index.query_hybrid
+
+        def repeated_evidence(vector, text, ready_ids, limit, candidate_limit):
+            if text == "Polaris Relay operator team":
+                self.index.queries.append(text)
+                return original(vector, question, ready_ids, limit, candidate_limit)
+            return original(vector, text, ready_ids, limit, candidate_limit)
+
+        self.index.query_hybrid = repeated_evidence
+        self.llm.answer_override = lambda _, evidence: {
+            "status": "answered", "answer": "Polaris Relay.",
+            "citation_ids": [evidence[0]["chunk_id"]]}
+        for stop, next_query in (("missing_fact_unresolved", None),
+                                 ("repeated_query", question),
+                                 ("no_new_evidence", "Polaris Relay operator team")):
+            with self.subTest(stop=stop):
+                self.index.queries.clear()
+                self.llm.proposal = lambda _, evidence, next_query=next_query: {
+                    "evidence_status": "missing", "missing_fact": "the operator of Polaris Relay",
+                    "next_query": next_query,
+                    "bridge_text": SAMPLE["bridge_text"] if next_query else None,
+                    "source_chunk_id": evidence[0]["chunk_id"] if next_query else None}
+                response = self.client.post("/api/agent/run", json={"question": question})
+                self.assertEqual(response.status_code, 200)
+                body = response.json()
+                self.assertEqual(body["status"], "answered")
+                self.assertEqual(body["stop_reason"], "answered")
+                self.assertEqual(body["retrieval_stop_reason"], stop)
+                self.assertEqual(body["calls"], {"retrieval": 2 if stop == "no_new_evidence" else 1,
+                                                 "model": 2})
+                self.assertEqual(len(body["citations"]), 1)
+                self.assertEqual(body["citations"][0]["chunk_id"], body["retrieved_evidence_ids"][0])
+                self.assertEqual(body["trace"][-1]["stage"], "answer")
+
+    def test_stopped_retrieval_keeps_citation_validation(self):
+        self.llm.proposal = lambda _, evidence: {
+            "evidence_status": "missing", "missing_fact": "unknown operator",
+            "next_query": None, "bridge_text": None, "source_chunk_id": None}
+        self.llm.answer_override = lambda _, evidence: {
+            "status": "answered", "answer": "Unsupported.", "citation_ids": ["fabricated"]}
+        response = self.run_sample()
+        self.assertEqual(response.status_code, 502)
+        body = response.json()
+        self.assertEqual(body["error_code"], "model_output_invalid")
+        self.assertEqual(body["retrieval_stop_reason"], "missing_fact_unresolved")
+        self.assertEqual(body["citations"], [])
 
     def test_second_retrieval_failure_is_recorded_without_answer(self):
         original = self.index.query_hybrid
@@ -190,10 +244,11 @@ class SecondHopApiTest(unittest.TestCase):
         self.index.query_hybrid = repeated_evidence
         body = self.run_sample().json()
         self.assertEqual(body["status"], "insufficient_evidence")
-        self.assertEqual(body["calls"], {"retrieval": 2, "model": 1})
-        self.assertEqual(body["stop_reason"], "no_new_evidence")
+        self.assertEqual(body["calls"], {"retrieval": 2, "model": 2})
+        self.assertEqual(body["stop_reason"], "retrieval_budget_exhausted")
+        self.assertEqual(body["retrieval_stop_reason"], "no_new_evidence")
         self.assertEqual(len(self.llm.plan_calls), 1)
-        self.assertEqual(len(self.llm.answer_calls), 0)
+        self.assertEqual(len(self.llm.answer_calls), 1)
         self.assertEqual(len(body["retrieved_evidence_ids"]), 1)
         self.assertEqual(body["trace"][3]["new_evidence_ids"], [])
 

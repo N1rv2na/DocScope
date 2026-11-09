@@ -137,10 +137,13 @@ in the cited first-hop Chunk and the second query, and must be absent from
 the original question. DOCS-013 makes that same planning call report
 `evidence_status` (`sufficient` or `missing`) and a bounded `missing_fact`.
 Sufficient evidence goes directly to the answerer; missing evidence may start
-one grounded second query. Missing facts without a grounded query, repeated
-queries, and second retrievals with no new Chunks stop with an explicit
-`insufficient_evidence` result. If the answerer still refuses after the second
-retrieval, the stop reason is `retrieval_budget_exhausted`. The graph caps retrieval at two rounds and planner
+one grounded second query. If the Planner cannot produce a grounded next query,
+repeats the query, or the second retrieval adds no new Chunks, retrieval stops.
+When existing Evidence remains and a model request is available, the answerer
+then decides whether to answer or refuse under the same citation and source
+checks. With no Evidence, the graph refuses without a model call. If the
+answerer still refuses after the second retrieval, the final `stop_reason` is
+`retrieval_budget_exhausted`. The graph caps retrieval at two rounds and planner
 plus answerer at two logical model stages; each retrieval returns at most
 five Chunks. The legacy `/api/chat` endpoint remains Dense-only. The Agent path uses Hybrid
 without Cross-Encoder because the DOCS-010 dev ablation found that this fixed
@@ -150,7 +153,9 @@ retrieval path remains an open evaluation decision.
 The response includes `run_id`, the original `question`, `query`,
 `retrieved_evidence_ids`, ordered `trace` stages with round numbers,
 source Chunk IDs, new Evidence IDs and elapsed times,
-`calls` for retrieval and attempted model requests, `stop_reason`,
+`calls` for retrieval and attempted model requests, final `stop_reason`,
+and separate `retrieval_stop_reason` (null when there was no distinct retrieval
+stop),
 and the existing answer/refusal and citation fields. Captured failures use
 `status: error`, a failed trace stage, and `error_code`, with no success answer
 or citations. Final Run records are written atomically under
