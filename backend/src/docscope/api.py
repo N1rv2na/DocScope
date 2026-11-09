@@ -19,7 +19,7 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 from docscope.agent_run import AgentRunner, RunStore
 from docscope.document_store import DocumentStore
 from docscope.embedding import LocalEmbedder
-from docscope.llm import ContextLimitError, OpenAIResponder
+from docscope.llm import ContextLimitError, LLMCallError, OpenAIResponder
 from docscope.markdown import markdown_chunks
 from docscope.pdf import pdf_chunks
 from docscope.qdrant_index import QdrantIndex
@@ -454,14 +454,20 @@ def create_app(data_dir: Path | None = None, embedder: Any = None, index: Any = 
                 "run_id": run_id, "status": "error", "error_code": "context_limit_exceeded",
                 "answer": None, "citations": [],
             })
+        except LLMCallError as exc:
+            code = "model_failed" if exc.code in {"request_timeout", "request_failed"} else "model_output_invalid"
+            return JSONResponse(status_code=503 if code == "model_failed" else 502, content={
+                "run_id": run_id, "status": "error", "error_code": code,
+                "answer": None, "citations": [],
+            })
         except ValueError:
-            logger.exception("Invalid LLM output for run %s", run_id)
+            logger.warning("Invalid LLM output for run %s", run_id)
             return JSONResponse(status_code=502, content={
                 "run_id": run_id, "status": "error", "error_code": "model_output_invalid",
                 "answer": None, "citations": [],
             })
         except Exception:
-            logger.exception("LLM call failed for run %s", run_id)
+            logger.error("LLM call failed for run %s", run_id)
             return JSONResponse(status_code=503, content={
                 "run_id": run_id, "status": "error", "error_code": "model_failed",
                 "answer": None, "citations": [],
@@ -477,7 +483,7 @@ def create_app(data_dir: Path | None = None, embedder: Any = None, index: Any = 
                 })
             return {"run_id": run_id, **validated_answer(answer, evidence)}
         except (ValueError, KeyError):
-            logger.warning("Rejected invalid model answer for run %s", run_id, exc_info=True)
+            logger.warning("Rejected invalid model answer for run %s", run_id)
             return JSONResponse(status_code=502, content={
                 "run_id": run_id, "status": "error", "error_code": "model_output_invalid",
                 "answer": None, "citations": [],

@@ -59,6 +59,8 @@ DOCS-007 已冻结文档状态的 SQLite 持久化、替换可见性、Chunk 身
 
 DOCS-014 冻结单次 POST SSE 事件：`stage`、`token`、`citation` 为过程事件；连接可写时以唯一的 `done` 或 `error` 结束，每项均有 `run_id` 与 `message_id`。`token` 是已校验回答的文本片段，不是模型原生逐 Token 输出；`stage` 随 LangGraph 节点完成发送。Web 在未收到终态时丢弃临时回答，不自动重试；重新提交会产生新 Run，不提供恢复或幂等保证。
 
+DOCS-022 的持久化 Run Trace 在 Planner/Answer 调用步骤附加 `llm_call`：调用阶段、请求/响应模型、`finish_reason`、输出上限、可获得的 Token 用量及耗时；网关未返回的字段为 `null`。失败步骤另有 `llm_error_code`，区分 `output_truncated`、`json_invalid`、`schema_invalid`、`request_timeout`、`request_failed` 等原因。HTTP/SSE 对外的顶层 `error_code` 仍使用既有错误合同；Trace 不保存原始模型响应、Prompt、异常消息或凭据。DOCS-022 不改变调用预算、重试或停止决策。
+
 **Assumption**：M4 摘要阈值仍须在对应阶段验证后冻结。
 
 ## 存储、来源与信任边界
