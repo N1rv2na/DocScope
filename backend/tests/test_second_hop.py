@@ -225,7 +225,8 @@ class OpenAIPlannerTest(unittest.TestCase):
         evidence = [{"chunk_id": "first", "document_title": "notes.md", "section": "Notes",
                      "page_number": None, "chunk_text": "A relevant fact."}]
         env = {"LLM_BASE_URL": "http://127.0.0.1:3425/v1", "LLM_API_KEY": "local-test-key",
-               "LLM_MODEL": "group/docscope-free"}
+               "LLM_MODEL": "group/docscope-free", "LLM_PLANNER_MAX_TOKENS": "2048",
+               "LLM_ANSWER_MAX_TOKENS": "400"}
         with patch.dict(os.environ, env), patch.dict(sys.modules, {"openai": SimpleNamespace(OpenAI=fake_openai)}):
             with self.assertLogs("uvicorn.error", level="INFO") as captured:
                 proposal = OpenAIResponder().plan_next("Which team?", evidence)

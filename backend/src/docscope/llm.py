@@ -21,7 +21,8 @@ SYSTEM_INSTRUCTIONS = (
     "Return only a JSON object with keys status, answer, citation_ids. "
     "status must be answered or insufficient_evidence. "
     "For insufficient_evidence use answer null and citation_ids []. "
-    "For answered use a nonempty answer and at least one citation ID copied exactly from evidence."
+    "For answered use a nonempty answer and at least one citation ID copied exactly from evidence. "
+    "Output one JSON object immediately, without Markdown, reasoning text, or extra keys."
 )
 PLANNER_INSTRUCTIONS = (
     "Assess whether the supplied evidence covers every fact needed to answer the question. "
@@ -33,9 +34,16 @@ PLANNER_INSTRUCTIONS = (
     "If a useful follow-up is possible, choose a short exact entity or fact span found in one supplied Chunk "
     "and absent from the original question; put it in bridge_text and next_query, and copy that Chunk's ID "
     "to source_chunk_id. If no grounded follow-up is possible, set those three fields to null. "
-    "Do not give the final answer, plan multiple queries, or use information outside the supplied question and evidence."
+    "Do not give the final answer, plan multiple queries, or use information outside the supplied question and evidence. "
+    "Output one JSON object immediately, without Markdown, reasoning text, or extra keys."
 )
 MAX_MODEL_INPUT_BYTES = 12_000
+DEFAULT_ANSWER_MAX_TOKENS = 2048
+DEFAULT_PLANNER_MAX_TOKENS = 4096
+DEFAULT_ANSWER_TIMEOUT_SECONDS = 60
+DEFAULT_PLANNER_TIMEOUT_SECONDS = 60
+MAX_OUTPUT_TOKENS = 8192
+MAX_TIMEOUT_SECONDS = 120
 logger = logging.getLogger("uvicorn.error")
 
 
@@ -70,6 +78,15 @@ def _token_count(value: object) -> int | None:
     return value if type(value) is int and value >= 0 else None
 
 
+def _configured_int(name: str, default: int, maximum: int) -> int:
+    raw = os.getenv(name)
+    if raw is None or raw == "":
+        return default
+    if not raw.isdecimal() or not 1 <= int(raw) <= maximum:
+        raise RuntimeError(f"{name} must be an integer between 1 and {maximum}")
+    return int(raw)
+
+
 class OpenAIResponder:
     @staticmethod
     def _user_message(question: str, evidence: list[dict]) -> str:
@@ -88,6 +105,12 @@ class OpenAIResponder:
 
     @staticmethod
     def _complete_json(stage: str, system_message: str, user_message: str, max_tokens: int) -> dict:
+        if type(max_tokens) is not int or not 1 <= max_tokens <= MAX_OUTPUT_TOKENS:
+            raise RuntimeError(f"max_tokens must be an integer between 1 and {MAX_OUTPUT_TOKENS}")
+        timeout_name = "LLM_ANSWER_TIMEOUT_SECONDS" if stage == "answer" else "LLM_PLANNER_TIMEOUT_SECONDS"
+        timeout_default = (DEFAULT_ANSWER_TIMEOUT_SECONDS if stage == "answer"
+                           else DEFAULT_PLANNER_TIMEOUT_SECONDS)
+        timeout_seconds = _configured_int(timeout_name, timeout_default, MAX_TIMEOUT_SECONDS)
         if len((system_message + user_message).encode("utf-8")) > MAX_MODEL_INPUT_BYTES:
             raise ContextLimitError("system instructions and evidence exceed 12000 UTF-8 bytes")
         base_url = os.getenv("LLM_BASE_URL")
@@ -111,7 +134,7 @@ class OpenAIResponder:
 
         from openai import OpenAI
 
-        client = OpenAI(base_url=base_url, api_key=api_key, timeout=30, max_retries=0)
+        client = OpenAI(base_url=base_url, api_key=api_key, timeout=timeout_seconds, max_retries=0)
         started = time.monotonic()
         try:
             try:
@@ -127,6 +150,7 @@ class OpenAIResponder:
             except Exception as exc:
                 diagnostic = {"stage": stage, "requested_model": _safe_label(model),
                               "response_model": None, "finish_reason": None, "max_tokens": max_tokens,
+                              "timeout_seconds": timeout_seconds,
                               "prompt_tokens": None, "completion_tokens": None,
                               "reasoning_tokens": None, "total_tokens": None,
                               "elapsed_ms": round((time.monotonic() - started) * 1000, 3)}
@@ -145,6 +169,7 @@ class OpenAIResponder:
                       "response_model": _safe_label(getattr(response, "model", None)),
                       "finish_reason": _safe_label(getattr(choice, "finish_reason", None)),
                       "max_tokens": max_tokens,
+                      "timeout_seconds": timeout_seconds,
                       "prompt_tokens": _token_count(getattr(usage, "prompt_tokens", None)),
                       "completion_tokens": _token_count(getattr(usage, "completion_tokens", None)),
                       "reasoning_tokens": _token_count(getattr(completion_details, "reasoning_tokens", None)),
@@ -152,9 +177,9 @@ class OpenAIResponder:
                       "elapsed_ms": round((time.monotonic() - started) * 1000, 3)}
         logger.info(
             "LLM response stage=%s requested_model=%s response_model=%s finish_reason=%s "
-            "max_tokens=%s prompt_tokens=%s completion_tokens=%s reasoning_tokens=%s total_tokens=%s elapsed_ms=%s",
+            "max_tokens=%s timeout_seconds=%s prompt_tokens=%s completion_tokens=%s reasoning_tokens=%s total_tokens=%s elapsed_ms=%s",
             *(diagnostic[key] for key in ("stage", "requested_model", "response_model", "finish_reason",
-                                          "max_tokens", "prompt_tokens", "completion_tokens",
+                                          "max_tokens", "timeout_seconds", "prompt_tokens", "completion_tokens",
                                           "reasoning_tokens", "total_tokens", "elapsed_ms")),
         )
         if choice is None or choice.finish_reason != "stop":
@@ -172,8 +197,10 @@ class OpenAIResponder:
         return LLMJsonResult(result, diagnostic)
 
     def generate(self, question: str, evidence: list[dict]) -> dict:
-        return self._complete_json("answer", SYSTEM_INSTRUCTIONS, self._user_message(question, evidence), 400)
+        max_tokens = _configured_int("LLM_ANSWER_MAX_TOKENS", DEFAULT_ANSWER_MAX_TOKENS, MAX_OUTPUT_TOKENS)
+        return self._complete_json("answer", SYSTEM_INSTRUCTIONS, self._user_message(question, evidence), max_tokens)
 
     def plan_next(self, question: str, evidence: list[dict]) -> dict:
+        max_tokens = _configured_int("LLM_PLANNER_MAX_TOKENS", DEFAULT_PLANNER_MAX_TOKENS, MAX_OUTPUT_TOKENS)
         return self._complete_json("plan_next", PLANNER_INSTRUCTIONS,
-                                   self._user_message(question, evidence), 2048)
+                                   self._user_message(question, evidence), max_tokens)

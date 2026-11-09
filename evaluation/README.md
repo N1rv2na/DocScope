@@ -171,3 +171,39 @@ PYTHONPATH=backend/src .venv/bin/python -m docscope.evaluation.compare_ablation_
 项目所有者随后确认上述运行时 Magpie 未启动，并在启动后授权用**同一 v3 配置**完整重跑。新[逐题 JSON](results/ablation_dev_v3_magpie_on_20261104.json)、[自动报告](results/ablation_dev_v3_magpie_on_20261104.md)及[核心答案语义复核](results/ablation_dev_v3_magpie_on_20261104.semantic_review.md)均单独保存，不覆盖首次 v3。预检 `GET /models` 为 HTTP 200，一笔额外的 Chat Completions 预检以 `finish_reason=stop` 完成；正式评测仍只统计其自身 86 次调用。正式运行完成 70/70 个题次，错误由 24/70 降为 14/70，原先 15 次 502 本轮为 0；剩余错误为 12 次输出达到上限、1 次请求超时、1 次规划结构不合格。D/E 全部支持文章覆盖分别为 5/9 与 2/9，但实际预算匹配且两组均非错误的题目仅 2/14。17 个已返回回答的**核心结论**经人工与参考答案比较均一致；其余可回答题仍有拒答或错误，附加断言及引用支持性尚未逐句审查。实际渠道和账单依旧不可辨，不能宣称严格同渠道的净增益或把两次真实运行的差异归因于预留规则。封存 test 未运行。
 
 复现新的完整真实评测需另行取得模型运行授权；使用 `run_ablation --config evaluation/configs/ablation_dev_v3.json --output <新文件>`，不得覆盖现有结果。旧 v2 已保存候选不完整，不能用它倒填新规则的原始运行结果。
+
+## DOCS-023 LLM 输出预算诊断与固定提示输入对照
+
+[历史分析](results/llm_budget_dev_v1.history.md)复算已保存的 DOCS-016 v3 Magpie-on 结果：86 次调用中 12 次截断，Answer 9/58、证据驱动 Planner 3/14；12 次均报告输出达到上限，Reasoning Token 占据了几乎全部 Completion。历史数据不能确定提高上限后是否改善。
+
+[冻结复测配置](configs/llm_budget_dev_v1.json)从上述结果中预先选出全部 12 条截断调用和 12 条完成调用，覆盖固定 dev 子集的 14 道题。每条输入在三组各运行一次：历史指令与 2048/4096 上限、相同指令与 3072/5120 上限、新增简短 JSON 输出约束与 3072/5120 上限。各组的 Answer/Planner 请求超时统一为 60 秒，便于分别观察预算和指令的变化。`source_sha256` 防止静默改动历史输入。复测只调用 LLM，不重建 Qdrant，也不发送参考答案、支持 `fact` 标注或封存 test；只验证结构、引用 ID 和规划字段，不把结构成功当作语义正确。
+
+在仓库根目录先只读复算历史数据：
+
+```sh
+PYTHONPATH=backend/src .venv/bin/python -m docscope.evaluation.llm_budget --history-only
+```
+
+复现真实复测须重新取得模型运行授权，并先配置有效的 `LLM_BASE_URL`、`LLM_API_KEY` 与 `LLM_MODEL=group/docscope-free`。授权后运行：
+
+```sh
+PYTHONPATH=backend/src .venv/bin/python -m docscope.evaluation.llm_budget \
+  --config evaluation/configs/llm_budget_dev_v1.json \
+  --output evaluation/results/llm_budget_dev_v1.json
+```
+
+程序拒绝覆盖已有输出，运行前检查不超过 72 次请求；生成逐调用 JSON 与同名 Markdown 报告。实际渠道和账单若网关不返回，一律记为未知。12 条历史失败被刻意过采样，不能把该子集的截断率推广为完整 A–E 的总体截断率；E 组首跳元数据由已保存候选重建，不保证与历史 Prompt 字节级一致。不同运行时间窗口及无法辨识的渠道也限制因果解释。
+
+经项目所有者单独授权，已完成[本轮逐调用 JSON](results/llm_budget_dev_v1.json)与[预算对照报告](results/llm_budget_dev_v1.md)：三组各 24 次，历史预算组结构成功 23/24（1 次请求超时），较高预算两组各 24/24；三组均无截断。23 条两组均成功且用量可得的配对输入，原预算与较高预算分别消耗 16,057 和 27,051 Completion Tokens。提高到 3072/5120 没有观察到截断收益，输出 Token 却更多；新增简短 JSON 指令也没有观察到结构成功率提升。线上默认因此选用已在历史离线评测使用的 Answer 2048、Planner 4096 Tokens，并将两阶段请求超时设为本次对照使用的 60 秒；不是保证零截断，且较 v1 的低上限增加了潜在用量和等待时间。当前复测只检验结构、来源 ID 和规划字段，不评判答案语义，也不能从一次未知渠道运行推断严格的因果收益。
+
+项目所有者再次授权后，使用同一批 24 条固定输入补跑**当前线上默认组合**（新版指令、Answer 2048、Planner 4096、两阶段 60 秒超时），每条只调用一次，无自动重试。运行前检查默认值、dev 来源、样本数和输出文件不存在；`--online-default-only` 将请求数锁定为 24。结果见[逐调用 JSON](results/llm_budget_online_default_dev_v1.json)与[单组报告](results/llm_budget_online_default_dev_v1.md)：结构成功 **23/24**，其中 Answer 18/18、Planner 5/6；1 次 Planner 请求在约 60 秒超时；**0 次截断**。成功调用已知 Completion 共 22,542 Tokens、Reasoning 共 21,240 Tokens；超时调用用量未知。24 条与先前运行的输入 ID 完全一致；新版指令的 Prompt 哈希与先前较高预算新版指令组 24/24 一致。跨运行配对的 22 条共同成功输入，历史指令同预算与新版指令同预算分别消耗 15,426、20,532 Completion Tokens；但运行时间不同、实际 Magpie 渠道未知，**不能将差异归因于指令**。本次结果证实默认组合能在多数固定输入上完成结构化输出，也显示 60 秒内仍可能超时；它不代表完整 Agent 成功率或答案语义正确率。
+
+已获授权的默认组合补跑命令如下；重新执行必须指定未使用的新输出路径并重新取得模型运行授权：
+
+```sh
+PYTHONPATH=backend/src .venv/bin/python -m docscope.evaluation.llm_budget \
+  --online-default-only --config evaluation/configs/llm_budget_dev_v1.json \
+  --output evaluation/results/llm_budget_online_default_dev_v1.json
+```
+
+在本轮正式复测前，测试隔离缺陷曾在受限环境发起 75 次本地网关请求尝试，均返回 `request_failed`，未取得可用模型响应；它们不计入上述正式 72 次结果，网关是否接收或计费不可核。随后修复了测试隔离，增加执行前 72 次硬上限，并在重新授权后运行正式对照。

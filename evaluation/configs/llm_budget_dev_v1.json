@@ -1,0 +1,38 @@
+{
+  "source_result": "evaluation/results/ablation_dev_v3_magpie_on_20261104.json",
+  "source_sha256": "1dc496c29619daa1060b9a615e12a5158bce114146dc5833412520df8cc2fcc6",
+  "split": "dev",
+  "requested_model": "group/docscope-free",
+  "timeout_seconds": 60,
+  "arms": [
+    {"name": "historical_budget_prompt", "answer_max_tokens": 2048, "planning_max_tokens": 4096, "prompt": "historical"},
+    {"name": "larger_budget_same_prompt", "answer_max_tokens": 3072, "planning_max_tokens": 5120, "prompt": "historical"},
+    {"name": "larger_budget_revised_prompt", "answer_max_tokens": 3072, "planning_max_tokens": 5120, "prompt": "revised"}
+  ],
+  "samples": [
+    {"sample_id": "mhr-q-62607bbbdf8d4daa782b", "mode": "D", "stage": "answer", "historical_finish_reason": "length"},
+    {"sample_id": "mhr-q-692ecf2907b3b65bc418", "mode": "B", "stage": "answer", "historical_finish_reason": "length"},
+    {"sample_id": "mhr-q-692ecf2907b3b65bc418", "mode": "C", "stage": "answer", "historical_finish_reason": "length"},
+    {"sample_id": "mhr-q-692ecf2907b3b65bc418", "mode": "E", "stage": "plan_next", "historical_finish_reason": "length"},
+    {"sample_id": "mhr-q-71c3f55cd1150d560470", "mode": "B", "stage": "answer", "historical_finish_reason": "length"},
+    {"sample_id": "mhr-q-71c3f55cd1150d560470", "mode": "D", "stage": "answer", "historical_finish_reason": "length"},
+    {"sample_id": "mhr-q-816c6ee52abe20ca42e6", "mode": "D", "stage": "answer", "historical_finish_reason": "length"},
+    {"sample_id": "mhr-q-816c6ee52abe20ca42e6", "mode": "E", "stage": "plan_next", "historical_finish_reason": "length"},
+    {"sample_id": "mhr-q-9059b74afac51ed7cab5", "mode": "E", "stage": "plan_next", "historical_finish_reason": "length"},
+    {"sample_id": "mhr-q-d527c115ed7cfd8f14b1", "mode": "A", "stage": "answer", "historical_finish_reason": "length"},
+    {"sample_id": "mhr-q-d527c115ed7cfd8f14b1", "mode": "B", "stage": "answer", "historical_finish_reason": "length"},
+    {"sample_id": "mhr-q-d527c115ed7cfd8f14b1", "mode": "C", "stage": "answer", "historical_finish_reason": "length"},
+    {"sample_id": "mhr-q-62607bbbdf8d4daa782b", "mode": "A", "stage": "answer", "historical_finish_reason": "stop"},
+    {"sample_id": "mhr-q-66a99ee476b80008b802", "mode": "A", "stage": "answer", "historical_finish_reason": "stop"},
+    {"sample_id": "mhr-q-7e6673c52727a5c37faf", "mode": "A", "stage": "answer", "historical_finish_reason": "stop"},
+    {"sample_id": "mhr-q-9a4d7197bf10c336946a", "mode": "A", "stage": "answer", "historical_finish_reason": "stop"},
+    {"sample_id": "mhr-q-a70bac4fbd4e8ee99073", "mode": "A", "stage": "answer", "historical_finish_reason": "stop"},
+    {"sample_id": "mhr-q-c81a29ee075e961b2eb0", "mode": "A", "stage": "answer", "historical_finish_reason": "stop"},
+    {"sample_id": "mhr-q-f4da8c5620114c384e0b", "mode": "A", "stage": "answer", "historical_finish_reason": "stop"},
+    {"sample_id": "docs015-fictional-telescope-93457", "mode": "A", "stage": "answer", "historical_finish_reason": "stop"},
+    {"sample_id": "docs015-fictional-mission-93457", "mode": "A", "stage": "answer", "historical_finish_reason": "stop"},
+    {"sample_id": "mhr-q-62607bbbdf8d4daa782b", "mode": "E", "stage": "plan_next", "historical_finish_reason": "stop"},
+    {"sample_id": "mhr-q-a70bac4fbd4e8ee99073", "mode": "E", "stage": "plan_next", "historical_finish_reason": "stop"},
+    {"sample_id": "docs015-fictional-mission-93457", "mode": "E", "stage": "plan_next", "historical_finish_reason": "stop"}
+  ]
+}

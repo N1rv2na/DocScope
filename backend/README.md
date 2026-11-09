@@ -33,6 +33,20 @@ export LLM_MODEL=group/docscope-free
 python -m uvicorn docscope.api:app --host 127.0.0.1 --port 8000
 ```
 
+Planner and Answer have independent optional settings: `LLM_PLANNER_MAX_TOKENS`
+(default 4096), `LLM_ANSWER_MAX_TOKENS` (default 2048),
+`LLM_PLANNER_TIMEOUT_SECONDS` and `LLM_ANSWER_TIMEOUT_SECONDS` (both default
+60). Output caps must be integers from 1 to 8192; timeouts must be integers
+from 1 to 120 seconds. Invalid settings fail before a model request. The
+persisted Agent Run Trace records the effective output cap and timeout for
+each attempted LLM call. Previous online limits were 2048 Planner, 400 Answer,
+and 30-second timeouts. The frozen dev replay found no truncation at either
+2048/4096 or 3072/5120; the larger caps were not selected. This does not
+guarantee that future calls will avoid truncation or timeout. A separate real
+replay of the exact current default prompt and budget combination completed
+23/24 structured calls; one Planner request timed out at 60 seconds. See
+`evaluation/results/llm_budget_online_default_dev_v1.md` for scope and limits.
+
 Run one Uvicorn worker for each data directory/Qdrant collection. Lifecycle
 operations are serialized within that process. Do not share the same store
 between multiple API processes.

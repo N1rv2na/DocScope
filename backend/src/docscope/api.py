@@ -14,7 +14,7 @@ from typing import Any, Literal
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from docscope.agent_run import AgentRunner, RunStore
 from docscope.document_store import DocumentStore
@@ -70,6 +70,8 @@ class ChatQuestion(BaseModel):
 
 
 class ModelAnswer(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     status: Literal["answered", "insufficient_evidence"]
     answer: str | None
     citation_ids: list[str]

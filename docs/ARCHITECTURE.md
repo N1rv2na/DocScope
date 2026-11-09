@@ -61,6 +61,8 @@ DOCS-014 冻结单次 POST SSE 事件：`stage`、`token`、`citation` 为过程
 
 DOCS-022 的持久化 Run Trace 在 Planner/Answer 调用步骤附加 `llm_call`：调用阶段、请求/响应模型、`finish_reason`、输出上限、可获得的 Token 用量及耗时；网关未返回的字段为 `null`。失败步骤另有 `llm_error_code`，区分 `output_truncated`、`json_invalid`、`schema_invalid`、`request_timeout`、`request_failed` 等原因。HTTP/SSE 对外的顶层 `error_code` 仍使用既有错误合同；Trace 不保存原始模型响应、Prompt、异常消息或凭据。DOCS-022 不改变调用预算、重试或停止决策。
 
+DOCS-023 为线上 Answer/Planner 分别设置有界的输出上限与请求超时，`llm_call` 追加实际生效的 `timeout_seconds`。基于历史截断分析和固定 dev 复测，线上默认输出上限设为 Answer 2048、Planner 4096 Tokens，默认超时均为 60 秒；可用后端环境变量独立覆盖，范围和变量名见[后端启动说明](../backend/README.md)。3072/5120 的复测组没有显示截断改善，且输出 Token 更多，因此未设为默认。样本过采样、实际渠道未知与单次运行波动限制效果结论；完整结果见[评测报告](../evaluation/results/llm_budget_dev_v1.md)。
+
 **Assumption**：M4 摘要阈值仍须在对应阶段验证后冻结。
 
 ## 存储、来源与信任边界
