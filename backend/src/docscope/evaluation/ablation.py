@@ -22,6 +22,10 @@ ONE_SHOT_INSTRUCTIONS = (
 )
 
 
+class OneShotSchemaError(ValueError):
+    """The one-shot planner did not return its required JSON fields."""
+
+
 def validate_config(settings: dict, answer_settings: dict, rerank_settings: dict) -> None:
     if (settings.get('split') != 'dev' or settings.get('answer_subset_ids') != answer_settings['answer_subset_ids']
             or settings.get('self_no_evidence') != answer_settings['self_no_evidence']
@@ -47,6 +51,8 @@ def validate_config(settings: dict, answer_settings: dict, rerank_settings: dict
         raise ValueError('D/E retrieval budget differs from the Agent')
     if settings.get('max_model_attempts') != MAX_MODEL_ATTEMPTS:
         raise ValueError('D/E model budget differs from the Agent')
+    if type(settings.get('extra_model_requests', 0)) is not int or settings.get('extra_model_requests', 0) not in (0, 1):
+        raise ValueError('extra model requests must be 0 or 1')
     if (settings.get('requested_model') != answer_settings['requested_model']
             or settings.get('declared_route_members') != answer_settings['declared_route_members']
             or settings.get('route_members_source') != answer_settings['route_members_source']):
@@ -62,8 +68,13 @@ def plan_queries(question: str, complete_json, max_tokens: int = 2048) -> list[s
     """D plans once from the original question; no retrieval has happened yet."""
     proposal = complete_json('plan_once', ONE_SHOT_INSTRUCTIONS,
                              json.dumps({'question': question}), max_tokens)
+    return validate_one_shot_proposal(question, proposal)
+
+
+def validate_one_shot_proposal(question: str, proposal: dict) -> list[str]:
+    """Keep D's shape validation separate so recovery sees model diagnostics."""
     if not isinstance(proposal, dict) or set(proposal) != {'second_query'}:
-        raise ValueError('one-shot planner must return exactly second_query')
+        raise OneShotSchemaError('one-shot planner must return exactly second_query')
     second = proposal['second_query']
     if (not isinstance(second, str) or not second.strip() or len(second) > 500
             or ' '.join(second.casefold().split()) == ' '.join(question.casefold().split())):
@@ -180,6 +191,7 @@ def render_report(result: dict) -> str:
     actual = summary['actual']
     matched = summary['matched_de']
     rows = result['rows']
+    extra_requests = result['config'].get('extra_model_requests', 0)
 
     def fraction(metric: dict) -> str:
         return f"{metric['numerator']}/{metric['denominator']}"
@@ -204,7 +216,10 @@ def render_report(result: dict) -> str:
         '',
         'A=Dense；B=Hybrid RRF；C=Hybrid+Cross-Encoder；D=C+问题阶段一次规划；E=C+证据驱动迭代。',
         '所有组使用同一文章切分、Embedding、LLM 请求配置及最终最多 5 条证据。'
-        'D/E 各最多两轮检索、两次模型调用，单轮检索最多 20 个待重排候选。',
+        + ('D/E 各最多两轮检索、两次模型调用，单轮检索最多 20 个待重排候选。'
+           if not extra_requests else
+           'D/E 各最多两轮检索、两个逻辑模型阶段；五组每 Run 最多一次额外请求，'
+           'A/B/C 最多 2 次、D/E 最多 3 次实际模型请求，单轮检索最多 20 个待重排候选。'),
         '',
         '| 组 | 题数 | 答案 EM/可回答题 | 适当拒答 | 错误拒答 | 全部支持文章 | 全部映射事实 | 引用 ID 合法 | 错误 | 检索/LLM 调用 | 平均延迟 s | 已知输入/输出 Token | 账单 CNY |',
         '| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |',
@@ -229,7 +244,7 @@ def render_report(result: dict) -> str:
         '## D/E 相近预算对照',
         '',
         f"两组采用相同**最大**预算：每题最多 {result['config']['max_retrieval_rounds']} 轮检索、"
-        f"{result['config']['max_model_attempts']} 次模型调用，"
+        f"{result['config']['max_model_attempts'] + extra_requests} 次实际模型请求，"
         f"每轮最多 {result['config']['candidate_limit']} 个重排候选，"
         f"最终最多 {result['config']['final_evidence_limit']} 条证据。",
         f"实际预算完全匹配且两组均非错误的题目：{matched['pair_count']}/{result['sample_count']}。"
@@ -256,6 +271,10 @@ def render_report(result: dict) -> str:
         lines.append(f"- {mode}：实际响应模型 {json.dumps(data['actual_models'], ensure_ascii=False)}；"
                      f"实际渠道 {json.dumps(data['actual_channels'], ensure_ascii=False)}；"
                      f"用量可得 {data['usage_available_calls']}/{data['llm_call_count']} 次。")
+        if extra_requests:
+            mode_rows = [row for row in rows if row['mode'] == mode]
+            lines.append(f"- {mode}：触发重试 {sum(row['run'].get('retry_requests', 0) for row in mode_rows)} 次；"
+                         f"发生重试的题次 {sum(row['run'].get('retry_requests', 0) > 0 for row in mode_rows)}/{len(mode_rows)}。")
     if not summary['strict_same_channel_control']:
         lines.append('- 渠道未知或实际模型/渠道未全程一致，**不能宣称严格同渠道控制的质量差异**。')
     else:

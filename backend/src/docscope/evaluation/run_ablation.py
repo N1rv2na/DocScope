@@ -14,17 +14,20 @@ from pathlib import Path
 from unittest.mock import patch
 
 from fastapi.testclient import TestClient
+from pydantic import ValidationError
 
-from docscope.agent_run import AgentRunner
+from docscope.agent_run import AgentRunner, RETRYABLE_MODEL_ERRORS
 from docscope.api import ModelAnswer, create_app, validated_answer
 from docscope.embedding import LocalEmbedder
-from docscope.evaluation.ablation import (MODE_NAMES, choose_final_ids, plan_queries, rank_final_context, render_report,
-                                          summarize_comparison, validate_config)
+from docscope.evaluation.ablation import (MODE_NAMES, ONE_SHOT_INSTRUCTIONS, OneShotSchemaError,
+                                          choose_final_ids, rank_final_context, render_report,
+                                          summarize_comparison, validate_config, validate_one_shot_proposal)
 from docscope.evaluation.agent_answer import score_case
 from docscope.evaluation.dense_baseline import map_facts
 from docscope.evaluation.run_agent_answer import _observed_client, _upload, validate_subset
 from docscope.evaluation.run_dense import EvaluationIndex, load_inputs, scroll_chunks
-from docscope.llm import OpenAIResponder, PLANNER_INSTRUCTIONS, SYSTEM_INSTRUCTIONS
+from docscope.llm import (ContextLimitError, LLMCallError, LLMConfigurationError,
+                          OpenAIResponder, PLANNER_INSTRUCTIONS, SYSTEM_INSTRUCTIONS)
 from docscope.reranking import LocalReranker, rank_points
 
 
@@ -134,10 +137,69 @@ def select_final_points(question: str, retrievals: list[dict], scorer, limit: in
     return selected, ranking, audit
 
 
+def _call_d_stage(stage: str, request, check, calls: dict[str, int],
+                  retry_requests: int, extra_model_requests: int) -> dict:
+    """Apply the Agent's one-extra-request policy to D's upfront plan and answer."""
+    budget = 2 + extra_model_requests
+    attempts = []
+    value = None
+    code = None
+    previous_error = None
+    for local_attempt in range(2):
+        if calls['model'] >= budget:
+            code = 'model_budget_exhausted'
+            break
+        attempted = True
+        diagnostic = None
+        try:
+            raw = request()
+        except ContextLimitError:
+            code, attempted = 'context_limit_exceeded', False
+        except LLMConfigurationError:
+            code, attempted = 'configuration_invalid', False
+        except LLMCallError as error:
+            code, diagnostic = error.code, error.diagnostic
+        except TimeoutError:
+            code = 'request_timeout'
+        except Exception:
+            code = 'request_failed'
+        else:
+            diagnostic = getattr(raw, 'diagnostic', None)
+            try:
+                value = check(raw)
+            except (ValidationError, OneShotSchemaError):
+                code = 'schema_invalid'
+            except (ValueError, KeyError):
+                code = 'proposal_invalid' if stage == 'plan_once' else 'answer_invalid'
+            except Exception:
+                code = 'request_failed'
+            else:
+                code = None
+        if not attempted:
+            break
+        calls['model'] += 1
+        if local_attempt:
+            retry_requests += 1
+        attempts.append({'attempt': local_attempt + 1, 'retry_reason': previous_error,
+                         'error_code': code, 'llm_call': diagnostic})
+        if code is None:
+            break
+        remaining = budget - calls['model']
+        reserve_answer = 1 if stage == 'plan_once' else 0
+        if (code in RETRYABLE_MODEL_ERRORS and local_attempt == 0
+                and retry_requests < extra_model_requests and remaining > reserve_answer):
+            previous_error = code
+            continue
+        break
+    return {'value': value, 'code': code, 'attempts': attempts,
+            'retry_requests': retry_requests}
+
+
 def run_mode(mode: str, question: str, search, responder, scorer, final_limit: int,
-             policy: str = 'original_query_top_k') -> dict:
+             policy: str = 'original_query_top_k', extra_model_requests: int = 0) -> dict:
     """Execute one mode without access to answer or supporting-fact labels."""
-    if mode not in MODE_NAMES or not 1 <= final_limit <= 5:
+    if (mode not in MODE_NAMES or not 1 <= final_limit <= 5
+            or type(extra_model_requests) is not int or extra_model_requests not in (0, 1)):
         raise ValueError('invalid mode or evidence limit')
     started = time.monotonic()
     retrievals = []
@@ -171,25 +233,29 @@ def run_mode(mode: str, question: str, search, responder, scorer, final_limit: i
     if mode != 'D':
         agent = AgentRunner(fetch, generate, validate, lambda evidence: True,
                             plan_next=responder.plan_next if mode == 'E' else None,
-                            extra_model_requests=0)
+                            extra_model_requests=extra_model_requests)
         run = agent.run(question)
     else:
         trace = []
-        calls = {'retrieval': 0, 'model': 1}
+        calls = {'retrieval': 0, 'model': 0}
+        retry_requests = 0
         status, stop_reason, error_code = None, None, None
         answer, citations = None, []
-        try:
-            queries = plan_queries(question, responder._complete_json,
-                                   getattr(responder, 'planning_max_tokens', 2048))
-            trace.append({'stage': 'plan_once', 'status': 'completed', 'queries': queries})
-        except ValueError:
-            queries = []
-            error_code = 'plan_output_invalid'
-            trace.append({'stage': 'plan_once', 'status': 'failed'})
-        except Exception:
-            queries = []
-            error_code = 'planner_failed'
-            trace.append({'stage': 'plan_once', 'status': 'failed'})
+        planned = _call_d_stage(
+            'plan_once',
+            lambda: responder._complete_json('plan_once', ONE_SHOT_INSTRUCTIONS,
+                                             json.dumps({'question': question}),
+                                             getattr(responder, 'planning_max_tokens', 2048)),
+            lambda proposal: validate_one_shot_proposal(question, proposal),
+            calls, retry_requests, extra_model_requests)
+        retry_requests = planned['retry_requests']
+        queries = planned['value'] if planned['code'] is None else []
+        if planned['code'] is not None:
+            error_code = AgentRunner._public_model_error('plan_next', planned['code'])
+        trace.append({'stage': 'plan_once', 'status': 'completed' if error_code is None else 'failed',
+                      'llm_attempts': planned['attempts'],
+                      **({'queries': queries} if error_code is None else
+                         {'llm_error_code': planned['code']})})
         if error_code is None:
             for query in queries:
                 calls['retrieval'] += 1
@@ -204,21 +270,27 @@ def run_mode(mode: str, question: str, search, responder, scorer, final_limit: i
         if error_code is None:
             try:
                 final_evidence = [_evidence(point, mode, rank) for rank, point in enumerate(selected_points(), 1)]
-                if final_evidence:
-                    calls['model'] += 1
-                    outcome = validated_answer(ModelAnswer.model_validate(
-                        responder.generate(question, final_evidence)), final_evidence)
-                    status, answer, citations = outcome['status'], outcome['answer'], outcome['citations']
-                    stop_reason = 'answered' if status == 'answered' else 'model_abstained'
-                    trace.append({'stage': 'answer', 'status': 'completed'})
-                else:
-                    status, stop_reason = 'insufficient_evidence', 'no_evidence'
-            except ValueError:
-                error_code = 'model_output_invalid'
-                trace.append({'stage': 'answer', 'status': 'failed'})
             except Exception:
                 error_code = 'model_failed'
                 trace.append({'stage': 'answer', 'status': 'failed'})
+            else:
+                if final_evidence:
+                    answered = _call_d_stage(
+                        'answer', lambda: responder.generate(question, final_evidence),
+                        lambda raw: validated_answer(ModelAnswer.model_validate(raw), final_evidence),
+                        calls, retry_requests, extra_model_requests)
+                    retry_requests = answered['retry_requests']
+                    if answered['code'] is not None:
+                        error_code = AgentRunner._public_model_error('answer', answered['code'])
+                    else:
+                        outcome = answered['value']
+                        status, answer, citations = outcome['status'], outcome['answer'], outcome['citations']
+                        stop_reason = 'answered' if status == 'answered' else 'model_abstained'
+                    trace.append({'stage': 'answer', 'status': 'completed' if error_code is None else 'failed',
+                                  'llm_attempts': answered['attempts'],
+                                  **({'llm_error_code': answered['code']} if error_code else {})})
+                else:
+                    status, stop_reason = 'insufficient_evidence', 'no_evidence'
         if error_code is not None:
             status, stop_reason, answer, citations = 'error', error_code, None, []
         run = {'run_id': str(uuid.uuid4()), 'question': question, 'status': status,
@@ -226,6 +298,8 @@ def run_mode(mode: str, question: str, search, responder, scorer, final_limit: i
                'retrieved_evidence_ids': list(dict.fromkeys(
                    point['payload']['chunk_id'] for item in retrievals for point in item['points'])),
                'calls': calls, 'trace': trace,
+               'model_request_budget': 2 + extra_model_requests,
+               'retry_requests': retry_requests,
                'elapsed_ms': round((time.monotonic() - started) * 1000, 3)}
         if error_code is not None:
             run['error_code'] = error_code
@@ -273,10 +347,11 @@ def _evaluate_rows(root: Path, settings: dict, articles: list[dict], cases: list
                 outcome = run_mode(mode, case['query'], retrieval.search, responder, reranker,
                                    settings['final_evidence_limit'],
                                    policy=(settings.get('final_merge_policy', 'original_query_top_k')
-                                           if mode in {'D', 'E'} else 'original_query_top_k'))
+                                           if mode in {'D', 'E'} else 'original_query_top_k'),
+                                   extra_model_requests=settings.get('extra_model_requests', 0))
                 run = outcome['run']
                 actual_calls = calls[before:]
-                max_calls = 2 if mode in {'D', 'E'} else 1
+                max_calls = (2 if mode in {'D', 'E'} else 1) + settings.get('extra_model_requests', 0)
                 max_retrieval = 2 if mode in {'D', 'E'} else 1
                 if (run['calls']['model'] > max_calls or len(actual_calls) > max_calls
                         or run['calls']['retrieval'] > max_retrieval
@@ -340,7 +415,8 @@ def run(root: Path, settings: dict, output: Path) -> dict:
     try:
         embedder, reranker = LocalEmbedder(), LocalReranker()
         reranker.score('warmup', ['warmup'])
-        with patch('openai.OpenAI', _observed_client(calls)):
+        max_total_calls = len(cases) * (7 + 5 * settings.get('extra_model_requests', 0))
+        with patch('openai.OpenAI', _observed_client(calls, max_calls=max_total_calls)):
             _evaluate_rows(root, settings, articles, cases, embedder, reranker, index, calls, rows)
     except Exception as error:
         failure = error

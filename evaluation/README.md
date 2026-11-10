@@ -117,7 +117,7 @@ PYTHONPATH=backend/src QDRANT_URL=http://127.0.0.1:6333 .venv/bin/python -m docs
 - D：在看到任何检索证据之前用同一 LLM 一次规划第二查询；第一查询固定为原问题。两次查询均使用 C 的检索链，最终将去重候选重新排序到最多 5 条证据。
 - E：复用现有有界 LangGraph Agent，但离线注入 C 的检索链；规划器可在首跳证据之后决定是否提出第二查询。最终证据同样最多 5 条。Web Agent 的默认 Hybrid 路径不因本评测改变。
 
-D/E 同享最大两次检索、两次模型调用、每轮最多 20 个待重排候选和最终 5 条证据；实际使用量允许不同，报告分别给出自然运行与实际预算完全匹配的 D/E 子集。无匹配题时不作净增益推断。A–E 使用同一请求模型和路由组配置；实际渠道若网关不返回则记为未知，不宣称严格同渠道控制。报告中的已知 Token 仅累计提供用量的调用，未知费用不当作零费用。质量分母包含失败和拒答，只有整题事实映射成功才进入片段级事实覆盖分母。DOCS-024 的在线 Agent 默认可额外重试一次；此处既有 A–E runner 显式设置 `extra_model_requests=0`，因此历史结果与原两次请求预算保持一致。后续若评测启用恢复，须冻结新配置、重跑并单独报告额外请求、Token 与渠道差异，不能与旧结果直接称为同预算对照。
+D/E 同享最大两次检索、两次模型调用、每轮最多 20 个待重排候选和最终 5 条证据；实际使用量允许不同，报告分别给出自然运行与实际预算完全匹配的 D/E 子集。无匹配题时不作净增益推断。A–E 使用同一请求模型和路由组配置；实际渠道若网关不返回则记为未知，不宣称严格同渠道控制。报告中的已知 Token 仅累计提供用量的调用，未知费用不当作零费用。质量分母包含失败和拒答，只有整题事实映射成功才进入片段级事实覆盖分母。DOCS-024 的在线 Agent 默认可额外重试一次；历史 A–E v1–v3 显式设置 `extra_model_requests=0`，因此其结果与原两次请求预算保持一致。已冻结的 v4 允许每 Run 一次额外请求，须单独报告实际请求、Token 与渠道差异，不能与旧结果直接称为同预算对照。
 
 首次真实运行使用了[原始 v1 配置](configs/ablation_dev_v1.json)的线上默认输出上限（回答 400、规划 2048 Tokens）。[v1 逐题结果](results/ablation_dev_v1.json)中 85 次模型调用有 33 次以 `finish_reason=length` 结束，D/E 无实际预算匹配且均非错误的题目；[v1 报告](results/ablation_dev_v1.md)保留这次失败诊断。v2 在**离线评测**中将回答/规划上限统一提高至 2048/4096 Tokens，五组同设，线上 API 不变。两版的 LLM 参数不同，不应将跨版本分数差解释成检索策略收益。
 
@@ -171,6 +171,24 @@ PYTHONPATH=backend/src .venv/bin/python -m docscope.evaluation.compare_ablation_
 项目所有者随后确认上述运行时 Magpie 未启动，并在启动后授权用**同一 v3 配置**完整重跑。新[逐题 JSON](results/ablation_dev_v3_magpie_on_20261104.json)、[自动报告](results/ablation_dev_v3_magpie_on_20261104.md)及[核心答案语义复核](results/ablation_dev_v3_magpie_on_20261104.semantic_review.md)均单独保存，不覆盖首次 v3。预检 `GET /models` 为 HTTP 200，一笔额外的 Chat Completions 预检以 `finish_reason=stop` 完成；正式评测仍只统计其自身 86 次调用。正式运行完成 70/70 个题次，错误由 24/70 降为 14/70，原先 15 次 502 本轮为 0；剩余错误为 12 次输出达到上限、1 次请求超时、1 次规划结构不合格。D/E 全部支持文章覆盖分别为 5/9 与 2/9，但实际预算匹配且两组均非错误的题目仅 2/14。17 个已返回回答的**核心结论**经人工与参考答案比较均一致；其余可回答题仍有拒答或错误，附加断言及引用支持性尚未逐句审查。实际渠道和账单依旧不可辨，不能宣称严格同渠道的净增益或把两次真实运行的差异归因于预留规则。封存 test 未运行。
 
 复现新的完整真实评测需另行取得模型运行授权；使用 `run_ablation --config evaluation/configs/ablation_dev_v3.json --output <新文件>`，不得覆盖现有结果。旧 v2 已保存候选不完整，不能用它倒填新规则的原始运行结果。
+
+## A–E 有界重试回归（v4）
+
+[v4 配置](configs/ablation_dev_v4.json)保留 v3 的 609 篇文章、14 道冻结 dev 题、Embedding/Reranker 修订、D/E 证据合并规则及 Answer 2048 / Planner 4096 Token 上限；只增加 `extra_model_requests: 1`。A/B/C 每题最多 2 次实际模型请求，D/E 每题最多 3 次，整轮 168 次请求为执行前硬上限。五组只在超时、HTTP 429/5xx、输出截断、非法 JSON 或结构格式失败时，按每 Run 最多一次额外请求恢复；D 的一次性规划仍只看原问题，并为 Answer 预留一次请求。无证据、认证、配置、上下文或引用错误不触发额外请求。v3 结果不覆盖，v4 与 v3 的请求预算不同，不能称为严格同预算的策略改善。实际渠道不可识别时只报告路由组，不把组内变化归因于检索策略。
+
+本次已授权的完整真实运行生成[逐题 JSON](results/ablation_dev_v4_retry_20261110.json)、[自动报告](results/ablation_dev_v4_retry_20261110.md)及[历史对照与核心答案复核](results/ablation_dev_v4_retry_20261110.comparison.md)。70/70 个题次、99 次正式模型请求；0 个运行错误，1 次输出截断经额外请求恢复。22 条已回答的核心结论中 21 条与冻结参考一致，另 1 条不一致；可回答题错误拒答仍有 23/45。D/E 实际预算匹配的 7 对核心结论各 4/7 一致，尚无 E 优于 D 的证据。实际成员渠道和账单未知；历史 v3 与本轮的调用预算、运行窗口不同，不能把差异直接归因于重试。
+
+在已取得本轮真实模型授权、Qdrant 1.20.0 和本地模型可用后，从仓库根目录执行；指定全新的输出文件名：
+
+```sh
+NO_PROXY=127.0.0.1,localhost no_proxy=127.0.0.1,localhost \
+  LLM_ANSWER_TIMEOUT_SECONDS=60 LLM_PLANNER_TIMEOUT_SECONDS=60 PYTHONPATH=backend/src \
+  .venv/bin/python -m docscope.evaluation.run_ablation \
+  --config evaluation/configs/ablation_dev_v4.json \
+  --output evaluation/results/ablation_dev_v4_retry_20261110.json
+```
+
+脚本在隔离 Qdrant 集合完成索引、问答和清理。新 JSON 保存逐题结果及实际调用记录，同名 Markdown 报告汇总 A–E；失败时生成 `.failed.json`，不得当作完整结果。核心答案语义、引用支持性和历史对照须人工复核，不以 EM 代替。
 
 ## DOCS-023 LLM 输出预算诊断与固定提示输入对照
 

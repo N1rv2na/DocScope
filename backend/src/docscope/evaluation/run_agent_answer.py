@@ -102,7 +102,7 @@ def review_template(rows: list[dict], dependency: dict | None) -> dict:
             'dependency': dependency}
 
 
-def _observed_client(calls: list[dict]):
+def _observed_client(calls: list[dict], max_calls: int | None = None):
     import openai
     original = openai.OpenAI
 
@@ -111,6 +111,8 @@ def _observed_client(calls: list[dict]):
         create_original = client.chat.completions.create
 
         def create(**request):
+            if max_calls is not None and len(calls) >= max_calls:
+                raise RuntimeError('evaluation model request cap exhausted')
             record = {'requested_model': request.get('model'), 'actual_model': None,
                       'actual_channel': None, 'channel_status': 'not_exposed_by_gateway',
                       'billed_cost_cny': None, 'usage': None, 'finish_reason': None}
