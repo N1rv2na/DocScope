@@ -31,6 +31,9 @@ from docscope.llm import (ContextLimitError, LLMCallError, LLMConfigurationError
 from docscope.reranking import LocalReranker, rank_points
 
 
+DEFAULT_PER_ROUND_KEEP_K = 5
+
+
 def _evidence(point: dict, stage: str, rank: int) -> dict:
     payload = point['payload']
     return {key: payload.get(key) for key in (
@@ -73,7 +76,7 @@ class EvalRetriever:
         elif mode in {'C', 'D', 'E'}:
             candidates = self.index.query_hybrid(vector, query, None, self.candidate_limit, self.candidate_limit)
             ranked = rank_points(query, candidates, self.reranker)
-            selected = ranked[:self.final_limit]
+            selected = ranked[:DEFAULT_PER_ROUND_KEEP_K if mode in {'D', 'E'} else self.final_limit]
         else:
             raise ValueError('invalid ablation mode')
         selected_rank = {point['payload']['chunk_id']: rank for rank, point in enumerate(selected, 1)}

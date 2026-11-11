@@ -225,3 +225,18 @@ PYTHONPATH=backend/src .venv/bin/python -m docscope.evaluation.llm_budget \
 ```
 
 在本轮正式复测前，测试隔离缺陷曾在受限环境发起 75 次本地网关请求尝试，均返回 `request_failed`，未取得可用模型响应；它们不计入上述正式 72 次结果，网关是否接收或计费不可核。随后修复了测试隔离，增加执行前 72 次硬上限，并在重新授权后运行正式对照。
+
+## D/E 逐轮候选保留深度离线配对实验
+
+[独立配置](configs/ablation_depth_dev_v1.json)通过 SHA-256 固定 [v4 逐题结果](results/ablation_dev_v4_retry_20261110.json)。本实验只读取其中 28 条 D/E 路径已经保存的查询、每轮 RRF Top-20 候选文本及单轮 Cross-Encoder 分数；逐轮分别保留 Top-5、Top-8、Top-10，按 Chunk ID 去重后用同一修订的本地 Cross-Encoder 按原问题重新评分，并固定 `reserve_second_hop_one` 和最终最多 5 条证据。逐题 Top-5 选择必须与 v4 原结果完全一致，否则拒绝生成成功产物。既有 A–E 执行器的 D/E 单轮默认保留值明确为 5，与最终证据上限分离；本实验不把更深候选接入实时 Agent。E 的历史 Planner 输入和第二跳是否发生均不改变；本实验不访问 Qdrant、Magpie 或封存 test。
+
+在仓库根目录且固定本地 Reranker 模型已缓存时复现；输出必须使用未存在的新路径：
+
+```sh
+HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 PYTHONPATH=backend/src \
+  .venv/bin/python -m docscope.evaluation.compare_ablation_depth \
+  --config evaluation/configs/ablation_depth_dev_v1.json \
+  --output evaluation/results/ablation_depth_dev_v1.json
+```
+
+本次 [逐题 JSON](results/ablation_depth_dev_v1.json)和[报告](results/ablation_depth_dev_v1.md)覆盖同一 14 题的 D/E 各 14 条路径。D 的 Top-8 相对 Top-5 在文章与可映射事实覆盖上均无变化；Top-10 有文章 Recall 改善 1 题、退化 1 题，事实覆盖改善 1 题、退化 2 题，平均值下降。E 的三种深度最终 Evidence ID 完全相同；Top-8/10 让部分事实进入逐轮保留池，但仍被最终合并筛掉。这些结果只反映冻结 dev 小子集的离线证据选择，不代表完整 Benchmark 或答案质量。当前保持默认 Top-5；若再评估更大候选池，需单独进行真实 Answer 对照，并继续固定 Planner 输入与最终证据预算。

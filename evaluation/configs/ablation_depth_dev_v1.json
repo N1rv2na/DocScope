@@ -1,0 +1,12 @@
+{
+  "source_result": "evaluation/results/ablation_dev_v4_retry_20261110.json",
+  "source_result_sha256": "b4009a53c2adbbe9de2c7edca8c6937fb205fd1521eb8d6f6f0eae82a2990739",
+  "split": "dev",
+  "modes": ["D", "E"],
+  "per_round_keep_k_values": [5, 8, 10],
+  "candidate_limit": 20,
+  "final_evidence_limit": 5,
+  "final_merge_policy": "reserve_second_hop_one",
+  "reranker_model": "cross-encoder/ms-marco-MiniLM-L6-v2",
+  "reranker_revision": "233902d25c440f23af6f7d6e94d2946bac0bee0a"
+}

@@ -146,8 +146,8 @@ class AblationRunTest(unittest.TestCase):
         self.assertEqual([x['chunk_id'] for x in result['candidates']], ['first', 'second'])
         self.assertEqual([x['qdrant_rank'] for x in result['candidates']], [1, 2])
         self.assertEqual([x['rerank_score'] for x in result['candidates']], [1.0, 2.0])
-        self.assertEqual([x['selected_rank'] for x in result['candidates']], [None, 1])
-        self.assertEqual([x['payload']['chunk_id'] for x in result['points']], ['second'])
+        self.assertEqual([x['selected_rank'] for x in result['candidates']], [2, 1])
+        self.assertEqual([x['payload']['chunk_id'] for x in result['points']], ['second', 'first'])
 
     def test_final_audit_shows_second_hop_dropped_after_per_round_selection(self):
         weaker_second = point('second', 'polaris.md', 'Polaris Relay is operated by East team. score-0')
