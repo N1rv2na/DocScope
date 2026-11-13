@@ -1,0 +1,30 @@
+{
+  "sample_id": "docs019-telescope-memory-v1",
+  "source_file": "backend/tests/fixtures/telescopes.md",
+  "status": "synthetic_public_fixture",
+  "dialogues": [
+    {
+      "id": "long_first_entity",
+      "turns": [
+        {"question": "For this long conversation, please check the uploaded telescope notes every time, and remember the order in which we discuss subjects rather than assuming an answer from chat: which observatory built the Orion telescope?", "expected_fact": "North Observatory", "expected_section": "Orion"},
+        {"question": "For this long conversation, please check the uploaded telescope notes every time, and remember the order in which we discuss subjects rather than assuming an answer from chat: which observatory built the Vega telescope?", "expected_fact": "South Observatory", "expected_section": "Vega"},
+        {"question": "For this long conversation, please check the uploaded telescope notes every time, and remember the order in which we discuss subjects rather than assuming an answer from chat: when was the Vega telescope built?", "expected_fact": "2020", "expected_section": "Vega"},
+        {"question": "For this long conversation, please check the uploaded telescope notes every time, and remember the order in which we discuss subjects rather than assuming an answer from chat: which observatory built the Vega telescope?", "expected_fact": "South Observatory", "expected_section": "Vega"},
+        {"question": "For this long conversation, please check the uploaded telescope notes every time, and remember the order in which we discuss subjects rather than assuming an answer from chat: when was the Vega telescope built?", "expected_fact": "2020", "expected_section": "Vega"},
+        {"question": "For this long conversation, please check the uploaded telescope notes every time, and remember the order in which we discuss subjects rather than assuming an answer from chat: which observatory built the Vega telescope?", "expected_fact": "South Observatory", "expected_section": "Vega"},
+        {"question": "For this long conversation, please check the uploaded telescope notes every time, and remember the order in which we discuss subjects rather than assuming an answer from chat: when was the Vega telescope built?", "expected_fact": "2020", "expected_section": "Vega"},
+        {"question": "For this long conversation, please check the uploaded telescope notes every time, and remember the order in which we discuss subjects rather than assuming an answer from chat: which observatory built the Vega telescope?", "expected_fact": "South Observatory", "expected_section": "Vega"},
+        {"question": "When was the first telescope we discussed built?", "expected_query_entity": "Orion", "expected_fact": "2022", "expected_section": "Orion", "forbidden_query_entity": "Vega"}
+      ]
+    },
+    {
+      "id": "topic_switch",
+      "turns": [
+        {"question": "Which observatory built the Orion telescope?", "expected_fact": "North Observatory", "expected_section": "Orion"},
+        {"question": "When was the Orion telescope built?", "expected_fact": "2022", "expected_section": "Orion"},
+        {"question": "Which observatory built the Vega telescope?", "expected_fact": "South Observatory", "expected_section": "Vega", "forbidden_query_entity": "Orion"},
+        {"question": "When was it built?", "expected_query_entity": "Vega", "expected_fact": "2020", "expected_section": "Vega", "forbidden_query_entity": "Orion"}
+      ]
+    }
+  ]
+}

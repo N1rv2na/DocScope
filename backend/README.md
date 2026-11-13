@@ -63,6 +63,15 @@ Planner/Answer budget. `LLM_REWRITE_MAX_TOKENS` defaults to 4096 and
 the corresponding Planner settings. See
 [conversation state](../docs/conversation-state.md).
 
+DOCS-019 summarizes only older user questions outside the four-turn window,
+once their estimated token count reaches 200 (`ceil(UTF-8 bytes / 3)`). The
+single-call input is at most 6000 bytes and the persisted summary at most 1200
+bytes. It is stored in `conversation_summaries` and deleted with its session.
+Failed summarization falls back to the prior summary and recent window.
+`LLM_SUMMARY_MAX_TOKENS` defaults to 2048; `LLM_SUMMARY_TIMEOUT_SECONDS`
+defaults to 60. These are bounded like the Planner settings. See the fixed
+memory comparison config in `evaluation/configs/memory_dev_v1.json`.
+
 PDF text is extracted with pinned `pypdf`; chunks stay within one PDF page and
 carry a one-based `page_number`. Markdown chunks retain their heading section
 and source line. PDF scans without extractable text, and damaged PDFs, remain

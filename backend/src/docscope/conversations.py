@@ -38,6 +38,12 @@ class ConversationStore:
                 );
                 CREATE INDEX IF NOT EXISTS messages_by_thread
                     ON messages(thread_id, created_at);
+                CREATE TABLE IF NOT EXISTS conversation_summaries (
+                    thread_id TEXT PRIMARY KEY REFERENCES conversations(thread_id) ON DELETE CASCADE,
+                    summary_text TEXT NOT NULL,
+                    summarized_turns INTEGER NOT NULL CHECK(summarized_turns >= 0),
+                    updated_at TEXT NOT NULL
+                );
             """)
 
     @contextmanager
@@ -88,6 +94,26 @@ class ConversationStore:
                  json.dumps(result["citations"], ensure_ascii=False), now),
             ])
             db.execute("UPDATE conversations SET updated_at = ? WHERE thread_id = ?", (now, thread_id))
+
+    def get_summary(self, thread_id: str) -> dict | None:
+        with self._connect() as db:
+            row = db.execute("SELECT summary_text, summarized_turns, s.updated_at "
+                             "FROM conversation_summaries s JOIN conversations c USING(thread_id) "
+                             "WHERE s.thread_id = ? AND c.status = 'active'", (thread_id,)).fetchone()
+        return dict(row) if row else None
+
+    def save_summary(self, thread_id: str, text: str, summarized_turns: int) -> None:
+        with self._connect() as db:
+            row = db.execute("SELECT status FROM conversations WHERE thread_id = ?", (thread_id,)).fetchone()
+            if row is None or row["status"] != "active":
+                raise LookupError("conversation not found")
+            db.execute("INSERT INTO conversation_summaries VALUES (?, ?, ?, ?) "
+                       "ON CONFLICT(thread_id) DO UPDATE SET "
+                       "summary_text = excluded.summary_text, "
+                       "summarized_turns = excluded.summarized_turns, "
+                       "updated_at = excluded.updated_at "
+                       "WHERE excluded.summarized_turns > conversation_summaries.summarized_turns",
+                       (thread_id, text, summarized_turns, _now()))
 
     def mark_deleting(self, thread_id: str) -> bool:
         with self._connect() as db:

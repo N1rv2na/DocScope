@@ -1,0 +1,23 @@
+{
+  "prior_remote_requests": 101,
+  "authorized_total_cap": 112,
+  "new_requests": 1,
+  "question": "When was the first telescope we discussed built?",
+  "memory_summary": "The first discussed subject was the Orion telescope. Later questions discussed the Vega telescope.",
+  "requested_model": "group/docscope-free",
+  "query": "When was the Orion telescope built?",
+  "diagnostic": {
+    "stage": "rewrite",
+    "requested_model": "group/docscope-free",
+    "response_model": "group/docscope-free",
+    "finish_reason": "stop",
+    "max_tokens": 4096,
+    "timeout_seconds": 60,
+    "prompt_tokens": 288,
+    "completion_tokens": 224,
+    "reasoning_tokens": 208,
+    "total_tokens": 512,
+    "elapsed_ms": 4338.048
+  },
+  "orion_entity_present": true
+}

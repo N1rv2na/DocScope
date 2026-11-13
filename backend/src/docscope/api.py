@@ -23,7 +23,7 @@ from docscope.conversations import ConversationStore
 from docscope.document_store import DocumentStore
 from docscope.embedding import LocalEmbedder
 from docscope.llm import ContextLimitError, LLMCallError, OpenAIResponder
-from docscope.memory import recent_turns, standalone_question
+from docscope.memory import recent_turns, standalone_question, summary_batch, validated_summary
 from docscope.markdown import markdown_chunks
 from docscope.pdf import pdf_chunks
 from docscope.qdrant_index import QdrantIndex
@@ -452,10 +452,38 @@ def create_app(data_dir: Path | None = None, embedder: Any = None, index: Any = 
                         yield encode("error", {"error_code": "conversation_not_found"})
                         return
                     window = recent_turns(current_conversation["messages"])
-                    effective_question = request.question
-                    if window and callable(getattr(responder, "rewrite_question", None)):
+                    stored_summary = conversations().get_summary(thread_id)
+                    memory_summary = stored_summary["summary_text"] if stored_summary else None
+                    summarized_turns = stored_summary["summarized_turns"] if stored_summary else 0
+                    batch = summary_batch(current_conversation["messages"], summarized_turns,
+                                          memory_summary)
+                    if batch and callable(getattr(responder, "summarize", None)):
                         try:
-                            raw = responder.rewrite_question(request.question, window)
+                            raw_summary = responder.summarize(memory_summary, batch)
+                            updated_summary = validated_summary(raw_summary)
+                            conversations().save_summary(thread_id, updated_summary,
+                                                         summarized_turns + len(batch))
+                            memory_summary = updated_summary
+                        except Exception as error:
+                            logger.warning("Conversation summary failed for run %s: %s",
+                                           run_id, type(error).__name__)
+                            stage = {"stage": "summary", "status": "failed",
+                                     "reason": (error.code if isinstance(error, LLMCallError)
+                                                else "summary_invalid_or_unavailable")}
+                            if isinstance(error, LLMCallError):
+                                stage["llm_call"] = error.diagnostic
+                        else:
+                            stage = {"stage": "summary", "status": "completed",
+                                     "summarized_turns": summarized_turns + len(batch)}
+                            diagnostic = getattr(raw_summary, "diagnostic", None)
+                            if diagnostic is not None:
+                                stage["llm_call"] = diagnostic
+                        yield encode("stage", stage)
+                    effective_question = request.question
+                    if (window or memory_summary) and callable(getattr(responder, "rewrite_question", None)):
+                        try:
+                            raw = (responder.rewrite_question(request.question, window, memory_summary)
+                                   if memory_summary else responder.rewrite_question(request.question, window))
                             effective_question = standalone_question(raw)
                         except Exception as error:
                             logger.warning("Conversation query rewrite failed for run %s: %s",

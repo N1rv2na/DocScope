@@ -1,0 +1,1569 @@
+{
+  "config": {
+    "sample_file": "evaluation/memory_samples/docs019_v1.json",
+    "arms": [
+      "question_only",
+      "window_rewrite",
+      "window_summary_rewrite"
+    ],
+    "summary_trigger_estimated_tokens": 200,
+    "token_estimator": "ceil(UTF-8 bytes / 3); gateway tokenizer unknown",
+    "recent_turns": 4,
+    "summary_max_bytes": 1200,
+    "extra_model_requests": 0,
+    "max_remote_requests": 112,
+    "model": "group/docscope-free",
+    "split": "synthetic_dev_only",
+    "sealed_test_used": false
+  },
+  "sample_id": "docs019-telescope-memory-v1",
+  "collection": "docscope_memory_4d682d9ae05c",
+  "actual_channel": "unknown",
+  "rows": [
+    {
+      "arm": "question_only",
+      "dialogue_id": "long_first_entity",
+      "turn": 1,
+      "question": "For this long conversation, please check the uploaded telescope notes every time, and remember the order in which we discuss subjects rather than assuming an answer from chat: which observatory built the Orion telescope?",
+      "expected_fact": "North Observatory",
+      "expected_section": "Orion",
+      "expected_query_entity": null,
+      "forbidden_query_entity": null,
+      "query": "For this long conversation, please check the uploaded telescope notes every time, and remember the order in which we discuss subjects rather than assuming an answer from chat: which observatory built the Orion telescope?",
+      "terminal_event": "done",
+      "status": "answered",
+      "error_code": null,
+      "answer": "North Observatory",
+      "citation_ids": [
+        "10063265-9085-5870-9668-f4aeec7cf557"
+      ],
+      "citation_sections": [
+        "Telescope Notes > Orion"
+      ],
+      "summary_stage": null,
+      "llm_calls": [],
+      "request_count": 2,
+      "answer_correct": true,
+      "citation_correct": true,
+      "query_entity_correct": null,
+      "history_polluted": null,
+      "answer_history_polluted": null
+    },
+    {
+      "arm": "question_only",
+      "dialogue_id": "long_first_entity",
+      "turn": 2,
+      "question": "For this long conversation, please check the uploaded telescope notes every time, and remember the order in which we discuss subjects rather than assuming an answer from chat: which observatory built the Vega telescope?",
+      "expected_fact": "South Observatory",
+      "expected_section": "Vega",
+      "expected_query_entity": null,
+      "forbidden_query_entity": null,
+      "query": "For this long conversation, please check the uploaded telescope notes every time, and remember the order in which we discuss subjects rather than assuming an answer from chat: which observatory built the Vega telescope?",
+      "terminal_event": "done",
+      "status": "answered",
+      "error_code": null,
+      "answer": "The South Observatory built the Vega telescope.",
+      "citation_ids": [
+        "49c31d1e-fe76-5915-a2e4-a5c840585d71"
+      ],
+      "citation_sections": [
+        "Telescope Notes > Vega"
+      ],
+      "summary_stage": null,
+      "llm_calls": [],
+      "request_count": 2,
+      "answer_correct": true,
+      "citation_correct": true,
+      "query_entity_correct": null,
+      "history_polluted": null,
+      "answer_history_polluted": null
+    },
+    {
+      "arm": "question_only",
+      "dialogue_id": "long_first_entity",
+      "turn": 3,
+      "question": "For this long conversation, please check the uploaded telescope notes every time, and remember the order in which we discuss subjects rather than assuming an answer from chat: when was the Vega telescope built?",
+      "expected_fact": "2020",
+      "expected_section": "Vega",
+      "expected_query_entity": null,
+      "forbidden_query_entity": null,
+      "query": "For this long conversation, please check the uploaded telescope notes every time, and remember the order in which we discuss subjects rather than assuming an answer from chat: when was the Vega telescope built?",
+      "terminal_event": "done",
+      "status": "answered",
+      "error_code": null,
+      "answer": "The Vega telescope was built in 2020 by the South Observatory.",
+      "citation_ids": [
+        "49c31d1e-fe76-5915-a2e4-a5c840585d71"
+      ],
+      "citation_sections": [
+        "Telescope Notes > Vega"
+      ],
+      "summary_stage": null,
+      "llm_calls": [],
+      "request_count": 2,
+      "answer_correct": true,
+      "citation_correct": true,
+      "query_entity_correct": null,
+      "history_polluted": null,
+      "answer_history_polluted": null
+    },
+    {
+      "arm": "question_only",
+      "dialogue_id": "long_first_entity",
+      "turn": 4,
+      "question": "For this long conversation, please check the uploaded telescope notes every time, and remember the order in which we discuss subjects rather than assuming an answer from chat: which observatory built the Vega telescope?",
+      "expected_fact": "South Observatory",
+      "expected_section": "Vega",
+      "expected_query_entity": null,
+      "forbidden_query_entity": null,
+      "query": "For this long conversation, please check the uploaded telescope notes every time, and remember the order in which we discuss subjects rather than assuming an answer from chat: which observatory built the Vega telescope?",
+      "terminal_event": "done",
+      "status": "answered",
+      "error_code": null,
+      "answer": "The South Observatory built the Vega telescope (in 2020).",
+      "citation_ids": [
+        "49c31d1e-fe76-5915-a2e4-a5c840585d71"
+      ],
+      "citation_sections": [
+        "Telescope Notes > Vega"
+      ],
+      "summary_stage": null,
+      "llm_calls": [],
+      "request_count": 2,
+      "answer_correct": true,
+      "citation_correct": true,
+      "query_entity_correct": null,
+      "history_polluted": null,
+      "answer_history_polluted": null
+    },
+    {
+      "arm": "question_only",
+      "dialogue_id": "long_first_entity",
+      "turn": 5,
+      "question": "For this long conversation, please check the uploaded telescope notes every time, and remember the order in which we discuss subjects rather than assuming an answer from chat: when was the Vega telescope built?",
+      "expected_fact": "2020",
+      "expected_section": "Vega",
+      "expected_query_entity": null,
+      "forbidden_query_entity": null,
+      "query": "For this long conversation, please check the uploaded telescope notes every time, and remember the order in which we discuss subjects rather than assuming an answer from chat: when was the Vega telescope built?",
+      "terminal_event": "done",
+      "status": "answered",
+      "error_code": null,
+      "answer": "The Vega telescope was built in 2020.",
+      "citation_ids": [
+        "49c31d1e-fe76-5915-a2e4-a5c840585d71"
+      ],
+      "citation_sections": [
+        "Telescope Notes > Vega"
+      ],
+      "summary_stage": null,
+      "llm_calls": [],
+      "request_count": 2,
+      "answer_correct": true,
+      "citation_correct": true,
+      "query_entity_correct": null,
+      "history_polluted": null,
+      "answer_history_polluted": null
+    },
+    {
+      "arm": "question_only",
+      "dialogue_id": "long_first_entity",
+      "turn": 6,
+      "question": "For this long conversation, please check the uploaded telescope notes every time, and remember the order in which we discuss subjects rather than assuming an answer from chat: which observatory built the Vega telescope?",
+      "expected_fact": "South Observatory",
+      "expected_section": "Vega",
+      "expected_query_entity": null,
+      "forbidden_query_entity": null,
+      "query": "For this long conversation, please check the uploaded telescope notes every time, and remember the order in which we discuss subjects rather than assuming an answer from chat: which observatory built the Vega telescope?",
+      "terminal_event": "done",
+      "status": "answered",
+      "error_code": null,
+      "answer": "The South Observatory built the Vega telescope.",
+      "citation_ids": [
+        "49c31d1e-fe76-5915-a2e4-a5c840585d71"
+      ],
+      "citation_sections": [
+        "Telescope Notes > Vega"
+      ],
+      "summary_stage": null,
+      "llm_calls": [],
+      "request_count": 2,
+      "answer_correct": true,
+      "citation_correct": true,
+      "query_entity_correct": null,
+      "history_polluted": null,
+      "answer_history_polluted": null
+    },
+    {
+      "arm": "question_only",
+      "dialogue_id": "long_first_entity",
+      "turn": 7,
+      "question": "For this long conversation, please check the uploaded telescope notes every time, and remember the order in which we discuss subjects rather than assuming an answer from chat: when was the Vega telescope built?",
+      "expected_fact": "2020",
+      "expected_section": "Vega",
+      "expected_query_entity": null,
+      "forbidden_query_entity": null,
+      "query": "For this long conversation, please check the uploaded telescope notes every time, and remember the order in which we discuss subjects rather than assuming an answer from chat: when was the Vega telescope built?",
+      "terminal_event": "done",
+      "status": "answered",
+      "error_code": null,
+      "answer": "The Vega telescope was built in 2020.",
+      "citation_ids": [
+        "49c31d1e-fe76-5915-a2e4-a5c840585d71"
+      ],
+      "citation_sections": [
+        "Telescope Notes > Vega"
+      ],
+      "summary_stage": null,
+      "llm_calls": [],
+      "request_count": 2,
+      "answer_correct": true,
+      "citation_correct": true,
+      "query_entity_correct": null,
+      "history_polluted": null,
+      "answer_history_polluted": null
+    },
+    {
+      "arm": "question_only",
+      "dialogue_id": "long_first_entity",
+      "turn": 8,
+      "question": "For this long conversation, please check the uploaded telescope notes every time, and remember the order in which we discuss subjects rather than assuming an answer from chat: which observatory built the Vega telescope?",
+      "expected_fact": "South Observatory",
+      "expected_section": "Vega",
+      "expected_query_entity": null,
+      "forbidden_query_entity": null,
+      "query": "For this long conversation, please check the uploaded telescope notes every time, and remember the order in which we discuss subjects rather than assuming an answer from chat: which observatory built the Vega telescope?",
+      "terminal_event": "done",
+      "status": "answered",
+      "error_code": null,
+      "answer": "The South Observatory built the Vega telescope (in 2020).",
+      "citation_ids": [
+        "49c31d1e-fe76-5915-a2e4-a5c840585d71"
+      ],
+      "citation_sections": [
+        "Telescope Notes > Vega"
+      ],
+      "summary_stage": null,
+      "llm_calls": [],
+      "request_count": 2,
+      "answer_correct": true,
+      "citation_correct": true,
+      "query_entity_correct": null,
+      "history_polluted": null,
+      "answer_history_polluted": null
+    },
+    {
+      "arm": "question_only",
+      "dialogue_id": "long_first_entity",
+      "turn": 9,
+      "question": "When was the first telescope we discussed built?",
+      "expected_fact": "2022",
+      "expected_section": "Orion",
+      "expected_query_entity": "Orion",
+      "forbidden_query_entity": "Vega",
+      "query": "When was the first telescope we discussed built?",
+      "terminal_event": "done",
+      "status": "insufficient_evidence",
+      "error_code": null,
+      "answer": null,
+      "citation_ids": [],
+      "citation_sections": [],
+      "summary_stage": null,
+      "llm_calls": [],
+      "request_count": 2,
+      "answer_correct": false,
+      "citation_correct": false,
+      "query_entity_correct": false,
+      "history_polluted": false,
+      "answer_history_polluted": false
+    },
+    {
+      "arm": "question_only",
+      "dialogue_id": "topic_switch",
+      "turn": 1,
+      "question": "Which observatory built the Orion telescope?",
+      "expected_fact": "North Observatory",
+      "expected_section": "Orion",
+      "expected_query_entity": null,
+      "forbidden_query_entity": null,
+      "query": "Which observatory built the Orion telescope?",
+      "terminal_event": "done",
+      "status": "answered",
+      "error_code": null,
+      "answer": "The North Observatory built the Orion telescope.",
+      "citation_ids": [
+        "10063265-9085-5870-9668-f4aeec7cf557"
+      ],
+      "citation_sections": [
+        "Telescope Notes > Orion"
+      ],
+      "summary_stage": null,
+      "llm_calls": [],
+      "request_count": 2,
+      "answer_correct": true,
+      "citation_correct": true,
+      "query_entity_correct": null,
+      "history_polluted": null,
+      "answer_history_polluted": null
+    },
+    {
+      "arm": "question_only",
+      "dialogue_id": "topic_switch",
+      "turn": 2,
+      "question": "When was the Orion telescope built?",
+      "expected_fact": "2022",
+      "expected_section": "Orion",
+      "expected_query_entity": null,
+      "forbidden_query_entity": null,
+      "query": "When was the Orion telescope built?",
+      "terminal_event": "done",
+      "status": "answered",
+      "error_code": null,
+      "answer": "The Orion telescope was built in 2022 by the North Observatory.",
+      "citation_ids": [
+        "10063265-9085-5870-9668-f4aeec7cf557"
+      ],
+      "citation_sections": [
+        "Telescope Notes > Orion"
+      ],
+      "summary_stage": null,
+      "llm_calls": [],
+      "request_count": 2,
+      "answer_correct": true,
+      "citation_correct": true,
+      "query_entity_correct": null,
+      "history_polluted": null,
+      "answer_history_polluted": null
+    },
+    {
+      "arm": "question_only",
+      "dialogue_id": "topic_switch",
+      "turn": 3,
+      "question": "Which observatory built the Vega telescope?",
+      "expected_fact": "South Observatory",
+      "expected_section": "Vega",
+      "expected_query_entity": null,
+      "forbidden_query_entity": "Orion",
+      "query": "Which observatory built the Vega telescope?",
+      "terminal_event": "done",
+      "status": "answered",
+      "error_code": null,
+      "answer": "The South Observatory built the Vega telescope.",
+      "citation_ids": [
+        "49c31d1e-fe76-5915-a2e4-a5c840585d71"
+      ],
+      "citation_sections": [
+        "Telescope Notes > Vega"
+      ],
+      "summary_stage": null,
+      "llm_calls": [],
+      "request_count": 2,
+      "answer_correct": true,
+      "citation_correct": true,
+      "query_entity_correct": null,
+      "history_polluted": false,
+      "answer_history_polluted": false
+    },
+    {
+      "arm": "question_only",
+      "dialogue_id": "topic_switch",
+      "turn": 4,
+      "question": "When was it built?",
+      "expected_fact": "2020",
+      "expected_section": "Vega",
+      "expected_query_entity": "Vega",
+      "forbidden_query_entity": "Orion",
+      "query": "When was it built?",
+      "terminal_event": "done",
+      "status": "insufficient_evidence",
+      "error_code": null,
+      "answer": null,
+      "citation_ids": [],
+      "citation_sections": [],
+      "summary_stage": null,
+      "llm_calls": [],
+      "request_count": 2,
+      "answer_correct": false,
+      "citation_correct": false,
+      "query_entity_correct": false,
+      "history_polluted": false,
+      "answer_history_polluted": false
+    },
+    {
+      "arm": "window_rewrite",
+      "dialogue_id": "long_first_entity",
+      "turn": 1,
+      "question": "For this long conversation, please check the uploaded telescope notes every time, and remember the order in which we discuss subjects rather than assuming an answer from chat: which observatory built the Orion telescope?",
+      "expected_fact": "North Observatory",
+      "expected_section": "Orion",
+      "expected_query_entity": null,
+      "forbidden_query_entity": null,
+      "query": "For this long conversation, please check the uploaded telescope notes every time, and remember the order in which we discuss subjects rather than assuming an answer from chat: which observatory built the Orion telescope?",
+      "terminal_event": "done",
+      "status": "answered",
+      "error_code": null,
+      "answer": "The North Observatory built the Orion telescope.",
+      "citation_ids": [
+        "10063265-9085-5870-9668-f4aeec7cf557"
+      ],
+      "citation_sections": [
+        "Telescope Notes > Orion"
+      ],
+      "summary_stage": null,
+      "llm_calls": [],
+      "request_count": 2,
+      "answer_correct": true,
+      "citation_correct": true,
+      "query_entity_correct": null,
+      "history_polluted": null,
+      "answer_history_polluted": null
+    },
+    {
+      "arm": "window_rewrite",
+      "dialogue_id": "long_first_entity",
+      "turn": 2,
+      "question": "For this long conversation, please check the uploaded telescope notes every time, and remember the order in which we discuss subjects rather than assuming an answer from chat: which observatory built the Vega telescope?",
+      "expected_fact": "South Observatory",
+      "expected_section": "Vega",
+      "expected_query_entity": null,
+      "forbidden_query_entity": null,
+      "query": "For this long conversation, please check the uploaded telescope notes every time, and remember the order in which we discuss subjects rather than assuming an answer from chat: which observatory built the Vega telescope?",
+      "terminal_event": "done",
+      "status": "answered",
+      "error_code": null,
+      "answer": "The South Observatory built the Vega telescope.",
+      "citation_ids": [
+        "49c31d1e-fe76-5915-a2e4-a5c840585d71"
+      ],
+      "citation_sections": [
+        "Telescope Notes > Vega"
+      ],
+      "summary_stage": null,
+      "llm_calls": [
+        {
+          "stage": "rewrite",
+          "requested_model": "group/docscope-free",
+          "response_model": "group/docscope-free",
+          "finish_reason": "stop",
+          "max_tokens": 4096,
+          "timeout_seconds": 60,
+          "prompt_tokens": 272,
+          "completion_tokens": 623,
+          "reasoning_tokens": 577,
+          "total_tokens": 895,
+          "elapsed_ms": 4835.441
+        }
+      ],
+      "request_count": 3,
+      "answer_correct": true,
+      "citation_correct": true,
+      "query_entity_correct": null,
+      "history_polluted": null,
+      "answer_history_polluted": null
+    },
+    {
+      "arm": "window_rewrite",
+      "dialogue_id": "long_first_entity",
+      "turn": 3,
+      "question": "For this long conversation, please check the uploaded telescope notes every time, and remember the order in which we discuss subjects rather than assuming an answer from chat: when was the Vega telescope built?",
+      "expected_fact": "2020",
+      "expected_section": "Vega",
+      "expected_query_entity": null,
+      "forbidden_query_entity": null,
+      "query": "When was the Vega telescope built?",
+      "terminal_event": "done",
+      "status": "answered",
+      "error_code": null,
+      "answer": "The Vega telescope was built in 2020.",
+      "citation_ids": [
+        "49c31d1e-fe76-5915-a2e4-a5c840585d71"
+      ],
+      "citation_sections": [
+        "Telescope Notes > Vega"
+      ],
+      "summary_stage": null,
+      "llm_calls": [
+        {
+          "stage": "rewrite",
+          "requested_model": "group/docscope-free",
+          "response_model": "group/docscope-free",
+          "finish_reason": "stop",
+          "max_tokens": 4096,
+          "timeout_seconds": 60,
+          "prompt_tokens": 327,
+          "completion_tokens": 460,
+          "reasoning_tokens": 444,
+          "total_tokens": 787,
+          "elapsed_ms": 3310.051
+        }
+      ],
+      "request_count": 3,
+      "answer_correct": true,
+      "citation_correct": true,
+      "query_entity_correct": null,
+      "history_polluted": null,
+      "answer_history_polluted": null
+    },
+    {
+      "arm": "window_rewrite",
+      "dialogue_id": "long_first_entity",
+      "turn": 4,
+      "question": "For this long conversation, please check the uploaded telescope notes every time, and remember the order in which we discuss subjects rather than assuming an answer from chat: which observatory built the Vega telescope?",
+      "expected_fact": "South Observatory",
+      "expected_section": "Vega",
+      "expected_query_entity": null,
+      "forbidden_query_entity": null,
+      "query": "Which observatory built the Vega telescope?",
+      "terminal_event": "done",
+      "status": "answered",
+      "error_code": null,
+      "answer": "The Vega telescope was built by the South Observatory.",
+      "citation_ids": [
+        "49c31d1e-fe76-5915-a2e4-a5c840585d71"
+      ],
+      "citation_sections": [
+        "Telescope Notes > Vega"
+      ],
+      "summary_stage": null,
+      "llm_calls": [
+        {
+          "stage": "rewrite",
+          "requested_model": "group/docscope-free",
+          "response_model": "group/docscope-free",
+          "finish_reason": "stop",
+          "max_tokens": 4096,
+          "timeout_seconds": 60,
+          "prompt_tokens": 385,
+          "completion_tokens": 669,
+          "reasoning_tokens": 652,
+          "total_tokens": 1054,
+          "elapsed_ms": 5387.904
+        }
+      ],
+      "request_count": 3,
+      "answer_correct": true,
+      "citation_correct": true,
+      "query_entity_correct": null,
+      "history_polluted": null,
+      "answer_history_polluted": null
+    },
+    {
+      "arm": "window_rewrite",
+      "dialogue_id": "long_first_entity",
+      "turn": 5,
+      "question": "For this long conversation, please check the uploaded telescope notes every time, and remember the order in which we discuss subjects rather than assuming an answer from chat: when was the Vega telescope built?",
+      "expected_fact": "2020",
+      "expected_section": "Vega",
+      "expected_query_entity": null,
+      "forbidden_query_entity": null,
+      "query": "For this long conversation, please check the uploaded telescope notes every time, and remember the order in which we discuss subjects rather than assuming an answer from chat: when was the Vega telescope built?",
+      "terminal_event": "done",
+      "status": "answered",
+      "error_code": null,
+      "answer": "The Vega telescope was built in 2020 by the South Observatory.",
+      "citation_ids": [
+        "49c31d1e-fe76-5915-a2e4-a5c840585d71"
+      ],
+      "citation_sections": [
+        "Telescope Notes > Vega"
+      ],
+      "summary_stage": null,
+      "llm_calls": [
+        {
+          "stage": "rewrite",
+          "requested_model": "group/docscope-free",
+          "response_model": "group/docscope-free",
+          "finish_reason": "stop",
+          "max_tokens": 4096,
+          "timeout_seconds": 60,
+          "prompt_tokens": 442,
+          "completion_tokens": 2303,
+          "reasoning_tokens": 2257,
+          "total_tokens": 2745,
+          "elapsed_ms": 13760.693
+        }
+      ],
+      "request_count": 3,
+      "answer_correct": true,
+      "citation_correct": true,
+      "query_entity_correct": null,
+      "history_polluted": null,
+      "answer_history_polluted": null
+    },
+    {
+      "arm": "window_rewrite",
+      "dialogue_id": "long_first_entity",
+      "turn": 6,
+      "question": "For this long conversation, please check the uploaded telescope notes every time, and remember the order in which we discuss subjects rather than assuming an answer from chat: which observatory built the Vega telescope?",
+      "expected_fact": "South Observatory",
+      "expected_section": "Vega",
+      "expected_query_entity": null,
+      "forbidden_query_entity": null,
+      "query": "Which observatory built the Vega telescope?",
+      "terminal_event": "done",
+      "status": "answered",
+      "error_code": null,
+      "answer": "The Vega telescope was built by the South Observatory.",
+      "citation_ids": [
+        "49c31d1e-fe76-5915-a2e4-a5c840585d71"
+      ],
+      "citation_sections": [
+        "Telescope Notes > Vega"
+      ],
+      "summary_stage": null,
+      "llm_calls": [
+        {
+          "stage": "rewrite",
+          "requested_model": "group/docscope-free",
+          "response_model": "group/docscope-free",
+          "finish_reason": "stop",
+          "max_tokens": 4096,
+          "timeout_seconds": 60,
+          "prompt_tokens": 448,
+          "completion_tokens": 1447,
+          "reasoning_tokens": 1430,
+          "total_tokens": 1895,
+          "elapsed_ms": 10083.281
+        }
+      ],
+      "request_count": 3,
+      "answer_correct": true,
+      "citation_correct": true,
+      "query_entity_correct": null,
+      "history_polluted": null,
+      "answer_history_polluted": null
+    },
+    {
+      "arm": "window_rewrite",
+      "dialogue_id": "long_first_entity",
+      "turn": 7,
+      "question": "For this long conversation, please check the uploaded telescope notes every time, and remember the order in which we discuss subjects rather than assuming an answer from chat: when was the Vega telescope built?",
+      "expected_fact": "2020",
+      "expected_section": "Vega",
+      "expected_query_entity": null,
+      "forbidden_query_entity": null,
+      "query": "When was the Vega telescope built?",
+      "terminal_event": "done",
+      "status": "answered",
+      "error_code": null,
+      "answer": "The Vega telescope was built in 2020 by the South Observatory.",
+      "citation_ids": [
+        "49c31d1e-fe76-5915-a2e4-a5c840585d71"
+      ],
+      "citation_sections": [
+        "Telescope Notes > Vega"
+      ],
+      "summary_stage": null,
+      "llm_calls": [
+        {
+          "stage": "rewrite",
+          "requested_model": "group/docscope-free",
+          "response_model": "group/docscope-free",
+          "finish_reason": "stop",
+          "max_tokens": 4096,
+          "timeout_seconds": 60,
+          "prompt_tokens": 449,
+          "completion_tokens": 3242,
+          "reasoning_tokens": 3227,
+          "total_tokens": 3691,
+          "elapsed_ms": 23039.763
+        }
+      ],
+      "request_count": 3,
+      "answer_correct": true,
+      "citation_correct": true,
+      "query_entity_correct": null,
+      "history_polluted": null,
+      "answer_history_polluted": null
+    },
+    {
+      "arm": "window_rewrite",
+      "dialogue_id": "long_first_entity",
+      "turn": 8,
+      "question": "For this long conversation, please check the uploaded telescope notes every time, and remember the order in which we discuss subjects rather than assuming an answer from chat: which observatory built the Vega telescope?",
+      "expected_fact": "South Observatory",
+      "expected_section": "Vega",
+      "expected_query_entity": null,
+      "forbidden_query_entity": null,
+      "query": "For this long conversation, please check the uploaded telescope notes every time, and remember the order in which we discuss subjects rather than assuming an answer from chat: which observatory built the Vega telescope?",
+      "terminal_event": "done",
+      "status": "answered",
+      "error_code": null,
+      "answer": "South Observatory",
+      "citation_ids": [
+        "49c31d1e-fe76-5915-a2e4-a5c840585d71"
+      ],
+      "citation_sections": [
+        "Telescope Notes > Vega"
+      ],
+      "summary_stage": null,
+      "llm_calls": [
+        {
+          "stage": "rewrite",
+          "requested_model": "group/docscope-free",
+          "response_model": "group/docscope-free",
+          "finish_reason": "stop",
+          "max_tokens": 4096,
+          "timeout_seconds": 60,
+          "prompt_tokens": 454,
+          "completion_tokens": 999,
+          "reasoning_tokens": 952,
+          "total_tokens": 1453,
+          "elapsed_ms": 6345.606
+        }
+      ],
+      "request_count": 3,
+      "answer_correct": true,
+      "citation_correct": true,
+      "query_entity_correct": null,
+      "history_polluted": null,
+      "answer_history_polluted": null
+    },
+    {
+      "arm": "window_rewrite",
+      "dialogue_id": "long_first_entity",
+      "turn": 9,
+      "question": "When was the first telescope we discussed built?",
+      "expected_fact": "2022",
+      "expected_section": "Orion",
+      "expected_query_entity": "Orion",
+      "forbidden_query_entity": "Vega",
+      "query": "When was the Vega telescope built?",
+      "terminal_event": "done",
+      "status": "answered",
+      "error_code": null,
+      "answer": "The Vega telescope was built in 2020 by the South Observatory.",
+      "citation_ids": [
+        "49c31d1e-fe76-5915-a2e4-a5c840585d71"
+      ],
+      "citation_sections": [
+        "Telescope Notes > Vega"
+      ],
+      "summary_stage": null,
+      "llm_calls": [
+        {
+          "stage": "rewrite",
+          "requested_model": "group/docscope-free",
+          "response_model": "group/docscope-free",
+          "finish_reason": "stop",
+          "max_tokens": 4096,
+          "timeout_seconds": 60,
+          "prompt_tokens": 417,
+          "completion_tokens": 209,
+          "reasoning_tokens": 194,
+          "total_tokens": 626,
+          "elapsed_ms": 2029.423
+        }
+      ],
+      "request_count": 3,
+      "answer_correct": false,
+      "citation_correct": false,
+      "query_entity_correct": false,
+      "history_polluted": true,
+      "answer_history_polluted": true
+    },
+    {
+      "arm": "window_rewrite",
+      "dialogue_id": "topic_switch",
+      "turn": 1,
+      "question": "Which observatory built the Orion telescope?",
+      "expected_fact": "North Observatory",
+      "expected_section": "Orion",
+      "expected_query_entity": null,
+      "forbidden_query_entity": null,
+      "query": "Which observatory built the Orion telescope?",
+      "terminal_event": "done",
+      "status": "answered",
+      "error_code": null,
+      "answer": "North Observatory",
+      "citation_ids": [
+        "10063265-9085-5870-9668-f4aeec7cf557"
+      ],
+      "citation_sections": [
+        "Telescope Notes > Orion"
+      ],
+      "summary_stage": null,
+      "llm_calls": [],
+      "request_count": 2,
+      "answer_correct": true,
+      "citation_correct": true,
+      "query_entity_correct": null,
+      "history_polluted": null,
+      "answer_history_polluted": null
+    },
+    {
+      "arm": "window_rewrite",
+      "dialogue_id": "topic_switch",
+      "turn": 2,
+      "question": "When was the Orion telescope built?",
+      "expected_fact": "2022",
+      "expected_section": "Orion",
+      "expected_query_entity": null,
+      "forbidden_query_entity": null,
+      "query": "When was the Orion telescope built?",
+      "terminal_event": "done",
+      "status": "answered",
+      "error_code": null,
+      "answer": "The Orion telescope was built in 2022.",
+      "citation_ids": [
+        "10063265-9085-5870-9668-f4aeec7cf557"
+      ],
+      "citation_sections": [
+        "Telescope Notes > Orion"
+      ],
+      "summary_stage": null,
+      "llm_calls": [
+        {
+          "stage": "rewrite",
+          "requested_model": "group/docscope-free",
+          "response_model": "group/docscope-free",
+          "finish_reason": "stop",
+          "max_tokens": 4096,
+          "timeout_seconds": 60,
+          "prompt_tokens": 204,
+          "completion_tokens": 179,
+          "reasoning_tokens": 164,
+          "total_tokens": 383,
+          "elapsed_ms": 1899.172
+        }
+      ],
+      "request_count": 3,
+      "answer_correct": true,
+      "citation_correct": true,
+      "query_entity_correct": null,
+      "history_polluted": null,
+      "answer_history_polluted": null
+    },
+    {
+      "arm": "window_rewrite",
+      "dialogue_id": "topic_switch",
+      "turn": 3,
+      "question": "Which observatory built the Vega telescope?",
+      "expected_fact": "South Observatory",
+      "expected_section": "Vega",
+      "expected_query_entity": null,
+      "forbidden_query_entity": "Orion",
+      "query": "Which observatory built the Vega telescope?",
+      "terminal_event": "done",
+      "status": "answered",
+      "error_code": null,
+      "answer": "The South Observatory built the Vega telescope.",
+      "citation_ids": [
+        "49c31d1e-fe76-5915-a2e4-a5c840585d71"
+      ],
+      "citation_sections": [
+        "Telescope Notes > Vega"
+      ],
+      "summary_stage": null,
+      "llm_calls": [
+        {
+          "stage": "rewrite",
+          "requested_model": "group/docscope-free",
+          "response_model": "group/docscope-free",
+          "finish_reason": "stop",
+          "max_tokens": 4096,
+          "timeout_seconds": 60,
+          "prompt_tokens": 230,
+          "completion_tokens": 88,
+          "reasoning_tokens": 72,
+          "total_tokens": 318,
+          "elapsed_ms": 1141.413
+        }
+      ],
+      "request_count": 3,
+      "answer_correct": true,
+      "citation_correct": true,
+      "query_entity_correct": null,
+      "history_polluted": false,
+      "answer_history_polluted": false
+    },
+    {
+      "arm": "window_rewrite",
+      "dialogue_id": "topic_switch",
+      "turn": 4,
+      "question": "When was it built?",
+      "expected_fact": "2020",
+      "expected_section": "Vega",
+      "expected_query_entity": "Vega",
+      "forbidden_query_entity": "Orion",
+      "query": "When was the Vega telescope built?",
+      "terminal_event": "done",
+      "status": "answered",
+      "error_code": null,
+      "answer": "The Vega telescope was built in 2020 by the South Observatory.",
+      "citation_ids": [
+        "49c31d1e-fe76-5915-a2e4-a5c840585d71"
+      ],
+      "citation_sections": [
+        "Telescope Notes > Vega"
+      ],
+      "summary_stage": null,
+      "llm_calls": [
+        {
+          "stage": "rewrite",
+          "requested_model": "group/docscope-free",
+          "response_model": "group/docscope-free",
+          "finish_reason": "stop",
+          "max_tokens": 4096,
+          "timeout_seconds": 60,
+          "prompt_tokens": 252,
+          "completion_tokens": 217,
+          "reasoning_tokens": 201,
+          "total_tokens": 469,
+          "elapsed_ms": 1728.413
+        }
+      ],
+      "request_count": 3,
+      "answer_correct": true,
+      "citation_correct": true,
+      "query_entity_correct": true,
+      "history_polluted": false,
+      "answer_history_polluted": false
+    },
+    {
+      "arm": "window_summary_rewrite",
+      "dialogue_id": "long_first_entity",
+      "turn": 1,
+      "question": "For this long conversation, please check the uploaded telescope notes every time, and remember the order in which we discuss subjects rather than assuming an answer from chat: which observatory built the Orion telescope?",
+      "expected_fact": "North Observatory",
+      "expected_section": "Orion",
+      "expected_query_entity": null,
+      "forbidden_query_entity": null,
+      "query": "For this long conversation, please check the uploaded telescope notes every time, and remember the order in which we discuss subjects rather than assuming an answer from chat: which observatory built the Orion telescope?",
+      "terminal_event": "done",
+      "status": "answered",
+      "error_code": null,
+      "answer": "The North Observatory built the Orion telescope.",
+      "citation_ids": [
+        "10063265-9085-5870-9668-f4aeec7cf557"
+      ],
+      "citation_sections": [
+        "Telescope Notes > Orion"
+      ],
+      "summary_stage": null,
+      "llm_calls": [],
+      "request_count": 2,
+      "answer_correct": true,
+      "citation_correct": true,
+      "query_entity_correct": null,
+      "history_polluted": null,
+      "answer_history_polluted": null
+    },
+    {
+      "arm": "window_summary_rewrite",
+      "dialogue_id": "long_first_entity",
+      "turn": 2,
+      "question": "For this long conversation, please check the uploaded telescope notes every time, and remember the order in which we discuss subjects rather than assuming an answer from chat: which observatory built the Vega telescope?",
+      "expected_fact": "South Observatory",
+      "expected_section": "Vega",
+      "expected_query_entity": null,
+      "forbidden_query_entity": null,
+      "query": "For this long conversation, please check the uploaded telescope notes every time, and remember the order in which we discuss subjects rather than assuming an answer from chat: which observatory built the Vega telescope?",
+      "terminal_event": "done",
+      "status": "answered",
+      "error_code": null,
+      "answer": "South Observatory",
+      "citation_ids": [
+        "49c31d1e-fe76-5915-a2e4-a5c840585d71"
+      ],
+      "citation_sections": [
+        "Telescope Notes > Vega"
+      ],
+      "summary_stage": null,
+      "llm_calls": [
+        {
+          "stage": "rewrite",
+          "requested_model": "group/docscope-free",
+          "response_model": "group/docscope-free",
+          "finish_reason": "stop",
+          "max_tokens": 4096,
+          "timeout_seconds": 60,
+          "prompt_tokens": 272,
+          "completion_tokens": 999,
+          "reasoning_tokens": 952,
+          "total_tokens": 1271,
+          "elapsed_ms": 6137.022
+        }
+      ],
+      "request_count": 3,
+      "answer_correct": true,
+      "citation_correct": true,
+      "query_entity_correct": null,
+      "history_polluted": null,
+      "answer_history_polluted": null
+    },
+    {
+      "arm": "window_summary_rewrite",
+      "dialogue_id": "long_first_entity",
+      "turn": 3,
+      "question": "For this long conversation, please check the uploaded telescope notes every time, and remember the order in which we discuss subjects rather than assuming an answer from chat: when was the Vega telescope built?",
+      "expected_fact": "2020",
+      "expected_section": "Vega",
+      "expected_query_entity": null,
+      "forbidden_query_entity": null,
+      "query": "For this long conversation, please check the uploaded telescope notes every time, and remember the order in which we discuss subjects rather than assuming an answer from chat: when was the Vega telescope built?",
+      "terminal_event": "done",
+      "status": "answered",
+      "error_code": null,
+      "answer": "The Vega telescope was built in 2020 by the South Observatory.",
+      "citation_ids": [
+        "49c31d1e-fe76-5915-a2e4-a5c840585d71"
+      ],
+      "citation_sections": [
+        "Telescope Notes > Vega"
+      ],
+      "summary_stage": null,
+      "llm_calls": [
+        {
+          "stage": "rewrite",
+          "requested_model": "group/docscope-free",
+          "response_model": "group/docscope-free",
+          "finish_reason": "stop",
+          "max_tokens": 4096,
+          "timeout_seconds": 60,
+          "prompt_tokens": 322,
+          "completion_tokens": 931,
+          "reasoning_tokens": 885,
+          "total_tokens": 1253,
+          "elapsed_ms": 6200.836
+        }
+      ],
+      "request_count": 3,
+      "answer_correct": true,
+      "citation_correct": true,
+      "query_entity_correct": null,
+      "history_polluted": null,
+      "answer_history_polluted": null
+    },
+    {
+      "arm": "window_summary_rewrite",
+      "dialogue_id": "long_first_entity",
+      "turn": 4,
+      "question": "For this long conversation, please check the uploaded telescope notes every time, and remember the order in which we discuss subjects rather than assuming an answer from chat: which observatory built the Vega telescope?",
+      "expected_fact": "South Observatory",
+      "expected_section": "Vega",
+      "expected_query_entity": null,
+      "forbidden_query_entity": null,
+      "query": "Which observatory built the Vega telescope?",
+      "terminal_event": "done",
+      "status": "answered",
+      "error_code": null,
+      "answer": "The South Observatory built the Vega telescope in 2020.",
+      "citation_ids": [
+        "49c31d1e-fe76-5915-a2e4-a5c840585d71"
+      ],
+      "citation_sections": [
+        "Telescope Notes > Vega"
+      ],
+      "summary_stage": null,
+      "llm_calls": [
+        {
+          "stage": "rewrite",
+          "requested_model": "group/docscope-free",
+          "response_model": "group/docscope-free",
+          "finish_reason": "stop",
+          "max_tokens": 4096,
+          "timeout_seconds": 60,
+          "prompt_tokens": 383,
+          "completion_tokens": 490,
+          "reasoning_tokens": 474,
+          "total_tokens": 873,
+          "elapsed_ms": 3664.393
+        }
+      ],
+      "request_count": 3,
+      "answer_correct": true,
+      "citation_correct": true,
+      "query_entity_correct": null,
+      "history_polluted": null,
+      "answer_history_polluted": null
+    },
+    {
+      "arm": "window_summary_rewrite",
+      "dialogue_id": "long_first_entity",
+      "turn": 5,
+      "question": "For this long conversation, please check the uploaded telescope notes every time, and remember the order in which we discuss subjects rather than assuming an answer from chat: when was the Vega telescope built?",
+      "expected_fact": "2020",
+      "expected_section": "Vega",
+      "expected_query_entity": null,
+      "forbidden_query_entity": null,
+      "query": "For this long conversation, please check the uploaded telescope notes every time, and remember the order in which we discuss subjects rather than assuming an answer from chat: when was the Vega telescope built?",
+      "terminal_event": "done",
+      "status": "answered",
+      "error_code": null,
+      "answer": "The Vega telescope was built in 2020.",
+      "citation_ids": [
+        "49c31d1e-fe76-5915-a2e4-a5c840585d71"
+      ],
+      "citation_sections": [
+        "Telescope Notes > Vega"
+      ],
+      "summary_stage": null,
+      "llm_calls": [
+        {
+          "stage": "rewrite",
+          "requested_model": "group/docscope-free",
+          "response_model": "group/docscope-free",
+          "finish_reason": "stop",
+          "max_tokens": 4096,
+          "timeout_seconds": 60,
+          "prompt_tokens": 442,
+          "completion_tokens": 521,
+          "reasoning_tokens": 475,
+          "total_tokens": 963,
+          "elapsed_ms": 3516.881
+        }
+      ],
+      "request_count": 3,
+      "answer_correct": true,
+      "citation_correct": true,
+      "query_entity_correct": null,
+      "history_polluted": null,
+      "answer_history_polluted": null
+    },
+    {
+      "arm": "window_summary_rewrite",
+      "dialogue_id": "long_first_entity",
+      "turn": 6,
+      "question": "For this long conversation, please check the uploaded telescope notes every time, and remember the order in which we discuss subjects rather than assuming an answer from chat: which observatory built the Vega telescope?",
+      "expected_fact": "South Observatory",
+      "expected_section": "Vega",
+      "expected_query_entity": null,
+      "forbidden_query_entity": null,
+      "query": "For this long conversation, please check the uploaded telescope notes every time, and remember the order in which we discuss subjects rather than assuming an answer from chat: which observatory built the Vega telescope?",
+      "terminal_event": "done",
+      "status": "answered",
+      "error_code": null,
+      "answer": "South Observatory",
+      "citation_ids": [
+        "49c31d1e-fe76-5915-a2e4-a5c840585d71"
+      ],
+      "citation_sections": [
+        "Telescope Notes > Vega"
+      ],
+      "summary_stage": null,
+      "llm_calls": [
+        {
+          "stage": "rewrite",
+          "requested_model": "group/docscope-free",
+          "response_model": "group/docscope-free",
+          "finish_reason": "stop",
+          "max_tokens": 4096,
+          "timeout_seconds": 60,
+          "prompt_tokens": 444,
+          "completion_tokens": 857,
+          "reasoning_tokens": 810,
+          "total_tokens": 1301,
+          "elapsed_ms": 5805.286
+        }
+      ],
+      "request_count": 3,
+      "answer_correct": true,
+      "citation_correct": true,
+      "query_entity_correct": null,
+      "history_polluted": null,
+      "answer_history_polluted": null
+    },
+    {
+      "arm": "window_summary_rewrite",
+      "dialogue_id": "long_first_entity",
+      "turn": 7,
+      "question": "For this long conversation, please check the uploaded telescope notes every time, and remember the order in which we discuss subjects rather than assuming an answer from chat: when was the Vega telescope built?",
+      "expected_fact": "2020",
+      "expected_section": "Vega",
+      "expected_query_entity": null,
+      "forbidden_query_entity": null,
+      "query": "When was the Vega telescope built?",
+      "terminal_event": "done",
+      "status": "answered",
+      "error_code": null,
+      "answer": "The Vega telescope was built in 2020 by the South Observatory.",
+      "citation_ids": [
+        "49c31d1e-fe76-5915-a2e4-a5c840585d71"
+      ],
+      "citation_sections": [
+        "Telescope Notes > Vega"
+      ],
+      "summary_stage": null,
+      "llm_calls": [
+        {
+          "stage": "rewrite",
+          "requested_model": "group/docscope-free",
+          "response_model": "group/docscope-free",
+          "finish_reason": "stop",
+          "max_tokens": 4096,
+          "timeout_seconds": 60,
+          "prompt_tokens": 444,
+          "completion_tokens": 3376,
+          "reasoning_tokens": 3360,
+          "total_tokens": 3820,
+          "elapsed_ms": 21220.985
+        }
+      ],
+      "request_count": 3,
+      "answer_correct": true,
+      "citation_correct": true,
+      "query_entity_correct": null,
+      "history_polluted": null,
+      "answer_history_polluted": null
+    },
+    {
+      "arm": "window_summary_rewrite",
+      "dialogue_id": "long_first_entity",
+      "turn": 8,
+      "question": "For this long conversation, please check the uploaded telescope notes every time, and remember the order in which we discuss subjects rather than assuming an answer from chat: which observatory built the Vega telescope?",
+      "expected_fact": "South Observatory",
+      "expected_section": "Vega",
+      "expected_query_entity": null,
+      "forbidden_query_entity": null,
+      "query": "For this long conversation, please check the uploaded telescope notes every time, and remember the order in which we discuss subjects rather than assuming an answer from chat: which observatory built the Vega telescope?",
+      "terminal_event": "done",
+      "status": "answered",
+      "error_code": null,
+      "answer": "The South Observatory built the Vega telescope.",
+      "citation_ids": [
+        "49c31d1e-fe76-5915-a2e4-a5c840585d71"
+      ],
+      "citation_sections": [
+        "Telescope Notes > Vega"
+      ],
+      "summary_stage": "completed",
+      "llm_calls": [
+        {
+          "stage": "summary",
+          "requested_model": "group/docscope-free",
+          "response_model": "group/docscope-free",
+          "finish_reason": "stop",
+          "max_tokens": 2048,
+          "timeout_seconds": 60,
+          "prompt_tokens": 286,
+          "completion_tokens": 600,
+          "reasoning_tokens": 505,
+          "total_tokens": 886,
+          "elapsed_ms": 4641.995
+        },
+        {
+          "stage": "rewrite",
+          "requested_model": "group/docscope-free",
+          "response_model": "group/docscope-free",
+          "finish_reason": "stop",
+          "max_tokens": 4096,
+          "timeout_seconds": 60,
+          "prompt_tokens": 539,
+          "completion_tokens": 521,
+          "reasoning_tokens": 474,
+          "total_tokens": 1060,
+          "elapsed_ms": 3483.892
+        }
+      ],
+      "request_count": 4,
+      "answer_correct": true,
+      "citation_correct": true,
+      "query_entity_correct": null,
+      "history_polluted": null,
+      "answer_history_polluted": null
+    },
+    {
+      "arm": "window_summary_rewrite",
+      "dialogue_id": "long_first_entity",
+      "turn": 9,
+      "question": "When was the first telescope we discussed built?",
+      "expected_fact": "2022",
+      "expected_section": "Orion",
+      "expected_query_entity": "Orion",
+      "forbidden_query_entity": "Vega",
+      "query": "When was the Orion telescope built?",
+      "terminal_event": "done",
+      "status": "answered",
+      "error_code": null,
+      "answer": "The Orion telescope was built in 2022 by the North Observatory.",
+      "citation_ids": [
+        "10063265-9085-5870-9668-f4aeec7cf557"
+      ],
+      "citation_sections": [
+        "Telescope Notes > Orion"
+      ],
+      "summary_stage": null,
+      "llm_calls": [
+        {
+          "stage": "rewrite",
+          "requested_model": "group/docscope-free",
+          "response_model": "group/docscope-free",
+          "finish_reason": "stop",
+          "max_tokens": 4096,
+          "timeout_seconds": 60,
+          "prompt_tokens": 505,
+          "completion_tokens": 159,
+          "reasoning_tokens": 144,
+          "total_tokens": 664,
+          "elapsed_ms": 1644.738
+        }
+      ],
+      "request_count": 3,
+      "answer_correct": true,
+      "citation_correct": true,
+      "query_entity_correct": true,
+      "history_polluted": false,
+      "answer_history_polluted": false
+    },
+    {
+      "arm": "window_summary_rewrite",
+      "dialogue_id": "topic_switch",
+      "turn": 1,
+      "question": "Which observatory built the Orion telescope?",
+      "expected_fact": "North Observatory",
+      "expected_section": "Orion",
+      "expected_query_entity": null,
+      "forbidden_query_entity": null,
+      "query": "Which observatory built the Orion telescope?",
+      "terminal_event": "done",
+      "status": "answered",
+      "error_code": null,
+      "answer": "The Orion telescope was built by the North Observatory.",
+      "citation_ids": [
+        "10063265-9085-5870-9668-f4aeec7cf557"
+      ],
+      "citation_sections": [
+        "Telescope Notes > Orion"
+      ],
+      "summary_stage": null,
+      "llm_calls": [],
+      "request_count": 2,
+      "answer_correct": true,
+      "citation_correct": true,
+      "query_entity_correct": null,
+      "history_polluted": null,
+      "answer_history_polluted": null
+    },
+    {
+      "arm": "window_summary_rewrite",
+      "dialogue_id": "topic_switch",
+      "turn": 2,
+      "question": "When was the Orion telescope built?",
+      "expected_fact": "2022",
+      "expected_section": "Orion",
+      "expected_query_entity": null,
+      "forbidden_query_entity": null,
+      "query": "When was the Orion telescope built?",
+      "terminal_event": "done",
+      "status": "answered",
+      "error_code": null,
+      "answer": "The Orion telescope was built in 2022 by the North Observatory.",
+      "citation_ids": [
+        "10063265-9085-5870-9668-f4aeec7cf557"
+      ],
+      "citation_sections": [
+        "Telescope Notes > Orion"
+      ],
+      "summary_stage": null,
+      "llm_calls": [
+        {
+          "stage": "rewrite",
+          "requested_model": "group/docscope-free",
+          "response_model": "group/docscope-free",
+          "finish_reason": "stop",
+          "max_tokens": 4096,
+          "timeout_seconds": 60,
+          "prompt_tokens": 211,
+          "completion_tokens": 118,
+          "reasoning_tokens": 102,
+          "total_tokens": 329,
+          "elapsed_ms": 1194.969
+        }
+      ],
+      "request_count": 3,
+      "answer_correct": true,
+      "citation_correct": true,
+      "query_entity_correct": null,
+      "history_polluted": null,
+      "answer_history_polluted": null
+    },
+    {
+      "arm": "window_summary_rewrite",
+      "dialogue_id": "topic_switch",
+      "turn": 3,
+      "question": "Which observatory built the Vega telescope?",
+      "expected_fact": "South Observatory",
+      "expected_section": "Vega",
+      "expected_query_entity": null,
+      "forbidden_query_entity": "Orion",
+      "query": "Which observatory built the Vega telescope?",
+      "terminal_event": "done",
+      "status": "answered",
+      "error_code": null,
+      "answer": "The South Observatory built the Vega telescope.",
+      "citation_ids": [
+        "49c31d1e-fe76-5915-a2e4-a5c840585d71"
+      ],
+      "citation_sections": [
+        "Telescope Notes > Vega"
+      ],
+      "summary_stage": null,
+      "llm_calls": [
+        {
+          "stage": "rewrite",
+          "requested_model": "group/docscope-free",
+          "response_model": "group/docscope-free",
+          "finish_reason": "stop",
+          "max_tokens": 4096,
+          "timeout_seconds": 60,
+          "prompt_tokens": 242,
+          "completion_tokens": 106,
+          "reasoning_tokens": 89,
+          "total_tokens": 348,
+          "elapsed_ms": 1319.777
+        }
+      ],
+      "request_count": 3,
+      "answer_correct": true,
+      "citation_correct": true,
+      "query_entity_correct": null,
+      "history_polluted": false,
+      "answer_history_polluted": false
+    },
+    {
+      "arm": "window_summary_rewrite",
+      "dialogue_id": "topic_switch",
+      "turn": 4,
+      "question": "When was it built?",
+      "expected_fact": "2020",
+      "expected_section": "Vega",
+      "expected_query_entity": "Vega",
+      "forbidden_query_entity": "Orion",
+      "query": "When was the Vega telescope built?",
+      "terminal_event": "done",
+      "status": "answered",
+      "error_code": null,
+      "answer": "The Vega telescope was built in 2020 by the South Observatory.",
+      "citation_ids": [
+        "49c31d1e-fe76-5915-a2e4-a5c840585d71"
+      ],
+      "citation_sections": [
+        "Telescope Notes > Vega"
+      ],
+      "summary_stage": null,
+      "llm_calls": [
+        {
+          "stage": "rewrite",
+          "requested_model": "group/docscope-free",
+          "response_model": "group/docscope-free",
+          "finish_reason": "stop",
+          "max_tokens": 4096,
+          "timeout_seconds": 60,
+          "prompt_tokens": 264,
+          "completion_tokens": 324,
+          "reasoning_tokens": 308,
+          "total_tokens": 588,
+          "elapsed_ms": 2535.725
+        }
+      ],
+      "request_count": 3,
+      "answer_correct": true,
+      "citation_correct": true,
+      "query_entity_correct": true,
+      "history_polluted": false,
+      "answer_history_polluted": false
+    }
+  ],
+  "status": "completed",
+  "remote_requests": 101,
+  "summary": {
+    "question_only": {
+      "turns": 13,
+      "answered": {
+        "count": 11,
+        "denominator": 13
+      },
+      "answer_correct": {
+        "count": 11,
+        "denominator": 13
+      },
+      "citation_correct": {
+        "count": 11,
+        "denominator": 13
+      },
+      "query_entity_correct": {
+        "count": 0,
+        "denominator": 2
+      },
+      "history_polluted": {
+        "count": 0,
+        "denominator": 3
+      },
+      "answer_history_polluted": {
+        "count": 0,
+        "denominator": 3
+      },
+      "summary_completed": 0,
+      "summary_failed": 0,
+      "remote_requests": 26
+    },
+    "window_rewrite": {
+      "turns": 13,
+      "answered": {
+        "count": 13,
+        "denominator": 13
+      },
+      "answer_correct": {
+        "count": 12,
+        "denominator": 13
+      },
+      "citation_correct": {
+        "count": 12,
+        "denominator": 13
+      },
+      "query_entity_correct": {
+        "count": 1,
+        "denominator": 2
+      },
+      "history_polluted": {
+        "count": 1,
+        "denominator": 3
+      },
+      "answer_history_polluted": {
+        "count": 1,
+        "denominator": 3
+      },
+      "summary_completed": 0,
+      "summary_failed": 0,
+      "remote_requests": 37
+    },
+    "window_summary_rewrite": {
+      "turns": 13,
+      "answered": {
+        "count": 13,
+        "denominator": 13
+      },
+      "answer_correct": {
+        "count": 13,
+        "denominator": 13
+      },
+      "citation_correct": {
+        "count": 13,
+        "denominator": 13
+      },
+      "query_entity_correct": {
+        "count": 2,
+        "denominator": 2
+      },
+      "history_polluted": {
+        "count": 0,
+        "denominator": 3
+      },
+      "answer_history_polluted": {
+        "count": 0,
+        "denominator": 3
+      },
+      "summary_completed": 1,
+      "summary_failed": 0,
+      "remote_requests": 38
+    }
+  },
+  "review": {
+    "source_artifact_sha256": "69c929e3223c1306cf5d274b85006632ec478d32fbea9795544523482bc0e8f9",
+    "sample_sha256": "b7b0efba7d2b0a753663897fc2af5b40cb0fc71ec860e61261ba162af5b944cb",
+    "source_sha256": "b25a61b38f4bc7b381e2c8880521e1b1fdac43cccd471500f289072fe4def8b9",
+    "scope": "offline rescore only; no model requests; original raw artifact retained",
+    "scorer": "reject negated expected fact and conflicting years; query and answer contamination separated"
+  }
+}

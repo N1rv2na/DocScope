@@ -7,8 +7,8 @@ line. The document list supports status refresh, replacement and deletion;
 old answer citations are revalidated before displaying source text. DOCS-014
 adds a separate Agent SSE action with stage/round trace, answer, citation,
 stop reason, and error display. DOCS-017/018 add persistent sessions, a bounded
-recent window and history-aware query rewriting. OCR and rolling summaries are
-not implemented.
+recent window and history-aware query rewriting. DOCS-019 adds bounded rolling
+summaries of older user questions for query rewriting. OCR is not implemented.
 
 ## Local start
 

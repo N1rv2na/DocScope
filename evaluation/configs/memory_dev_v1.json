@@ -1,0 +1,15 @@
+{
+  "sample_file": "evaluation/memory_samples/docs019_v1.json",
+  "sample_sha256": "b7b0efba7d2b0a753663897fc2af5b40cb0fc71ec860e61261ba162af5b944cb",
+  "source_sha256": "b25a61b38f4bc7b381e2c8880521e1b1fdac43cccd471500f289072fe4def8b9",
+  "arms": ["question_only", "window_rewrite", "window_summary_rewrite"],
+  "summary_trigger_estimated_tokens": 200,
+  "token_estimator": "ceil(UTF-8 bytes / 3); gateway tokenizer unknown",
+  "recent_turns": 4,
+  "summary_max_bytes": 1200,
+  "extra_model_requests": 0,
+  "max_remote_requests": 112,
+  "model": "group/docscope-free",
+  "split": "synthetic_dev_only",
+  "sealed_test_used": false
+}
