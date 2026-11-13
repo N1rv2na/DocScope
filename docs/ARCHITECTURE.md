@@ -55,7 +55,7 @@ DOCS-007 已冻结文档状态的 SQLite 持久化、替换可见性、Chunk 身
 3. M3 的单 Agent 识别缺失事实，执行检索、合并证据、评估覆盖情况；只有预算允许且有新检索目标时继续。后续查询须能依据前跳新事实改变。
 4. 程序控制检索/模型/上下文预算、重复查询与无新证据停止、引用 ID 合法性；LLM 评估哪些必要事实仍缺失。证据不足时拒答并记录停止原因。
 5. API 将文本、阶段、引用、完成或错误事件经 SSE 发送到 Web；UI 展示实际引用与简要轨迹。一个独立问题由 `run_id` 关联事件和评测记录。
-6. M4 才加载 `thread_id` 对应历史，进行近期窗口、增量摘要与查询改写；本轮暂态在下一轮前重置，事实性回答仍重新检索文档。
+6. DOCS-017/018 已按 `thread_id` 恢复会话，从最近已完成消息构造受限窗口并改写追问；增量摘要仍待 DOCS-019。本轮暂态在下一轮前重置，事实性回答仍重新检索文档。
 
 DOCS-014 冻结单次 POST SSE 事件：`stage`、`token`、`citation` 为过程事件；连接可写时以唯一的 `done` 或 `error` 结束，每项均有 `run_id` 与 `message_id`。`token` 是已校验回答的文本片段，不是模型原生逐 Token 输出；`stage` 随 LangGraph 节点完成发送。Web 在未收到终态时丢弃临时回答，不自动重试；重新提交会产生新 Run，不提供恢复或幂等保证。
 
@@ -74,7 +74,7 @@ DOCS-025 将检索停止与最终回答结果分开：首跳没有证据时直�
 - **Qdrant** 保存可检索 Chunk 的 Dense 向量、原文 payload、BM25 全文索引和来源元数据。该路径要求在 M0 固定并验证支持原生全文 BM25 的版本；参见 [ADR 0001](adr/0001-qdrant-hybrid-index.md)。
 - **本地文件存储** 保存上传的原始文件及必要解析产物。其内容与 Qdrant Chunk 通过稳定身份和源位置关联。
 - **远程 LLM** 通过后端配置的 OpenAI-compatible URL、调用标识和模型 ID 访问。开发与正式 A–E 评测可使用外部 Magpie `group/docscope-free`；它不属于 DocScope 的内部路由层。评测冻结路由组配置，逐次记录可获得的实际模型/渠道与 Token；渠道不可辨时明确标记未知。
-- **轻量状态存储** 保存导入状态。DOCS-017 已将 M4 会话目录和完整展示消息放在 `conversations.sqlite3`，LangGraph Run Checkpoint 放在 `checkpoints.sqlite3`，以服务端生成的 `thread_id` 关联；详见 [会话状态边界](conversation-state.md)。后续 Window、摘要和追问改写尚未实现。
+- **轻量状态存储** 保存导入状态。DOCS-017 已将 M4 会话目录和完整展示消息放在 `conversations.sqlite3`，LangGraph Run Checkpoint 放在 `checkpoints.sqlite3`，以服务端生成的 `thread_id` 关联；DOCS-018 加入近期窗口与追问改写，详见 [会话状态边界](conversation-state.md)。滚动摘要尚未实现。
 - **外部文档是不可信输入**。检索文本不能成为系统指令；LLM 凭据只在后端，公开产物不得包含凭据、保密材料或未经许可的原始语料。
 - **引用是运行时证据引用**。只有来自实际检索结果的 ID 才能进入答案；ID 合法还需与“内容支持具体结论”分开评估。参见 [ADR 0003](adr/0003-evidence-provenance-and-lifecycle.md)。
 

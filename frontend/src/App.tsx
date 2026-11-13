@@ -57,6 +57,7 @@ const chatErrors: Record<string, string> = {
   context_limit_exceeded: '问题和证据超出本轮上下文限制，请缩短问题。',
   source_changed: '回答期间文档已发生变化，请重新提问。',
   planner_failed: '查询规划失败，请稍后重试。',
+  query_rewrite_failed: '追问改写失败，本轮未检索或保存回答。请重试。',
   plan_output_invalid: '模型返回的查询规划无法验证，请重试。',
   run_record_failed: '无法保存本轮运行记录，请重试。',
   stream_failed: '回答流处理失败，请重试。',
@@ -429,14 +430,14 @@ export default function App() {
         <section aria-labelledby="question-title" className="min-w-0 rounded-[26px] border border-[#dce5de] bg-white p-6 shadow-[0_18px_50px_-38px_#153b30] sm:p-8">
           <div className="flex items-start gap-4">
             <span aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#e9f4eb] text-sm font-bold text-[#2c6a46]">02</span>
-            <div><h2 id="question-title" className="text-xl font-semibold tracking-tight">检索与问答</h2><p className="mt-1 text-sm leading-6 text-[#60736b]">会话保存历史；每轮事实仍独立检索，暂不根据历史改写追问。</p></div>
+            <div><h2 id="question-title" className="text-xl font-semibold tracking-tight">检索与问答</h2><p className="mt-1 text-sm leading-6 text-[#60736b]">会话中的追问会结合近期历史明确检索目标；事实仍从当前文档重新检索。</p></div>
           </div>
           <section aria-label="会话管理" className="mt-6 rounded-xl border border-[#d9e5dc] bg-[#f8faf7] p-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h3 className="text-sm font-semibold">会话</h3>
               <button type="button" disabled={asking || sessionBusy} onClick={() => { void createConversation() }} className={`rounded px-2 py-1 text-sm underline disabled:opacity-50 ${focus}`}>新建会话</button>
             </div>
-            <p className="mt-1 text-xs text-[#60736b]">选择会话后，Agent 回答和引用会保存；Dense 基线仍是独立问答。</p>
+            <p className="mt-1 text-xs text-[#60736b]">选择会话后，Agent 会用近期历史理解追问并保存回答；Dense 基线仍是独立问答。</p>
             <ul aria-label="会话列表" className="mt-3 space-y-2">
               {conversations.map(item => <li key={item.thread_id} className="flex items-center justify-between gap-2">
                 <button type="button" disabled={asking || sessionBusy} aria-current={threadId === item.thread_id ? 'true' : undefined} onClick={() => { void selectConversation(item.thread_id) }} className={`min-w-0 rounded px-2 py-1 text-left text-sm underline disabled:opacity-50 ${focus}`}>会话 {item.thread_id.slice(0, 8)}</button>
@@ -448,9 +449,9 @@ export default function App() {
           </section>
           <form onSubmit={ask} className="mt-8 space-y-4">
             <div>
-              <label htmlFor="question" className="block text-sm font-semibold">独立英文问题</label>
+              <label htmlFor="question" className="block text-sm font-semibold">{threadId ? '英文问题或追问' : '独立英文问题'}</label>
               <textarea ref={questionRef} id="question" value={question} onChange={event => { setQuestion(event.target.value); setQuestionError(null) }} maxLength={500} rows={3} placeholder="Which observatory built the Orion telescope?" aria-invalid={Boolean(questionError)} aria-describedby={questionError ? 'question-error' : 'question-hint'} className={`mt-2 w-full resize-y rounded-xl border border-[#cddbd0] bg-[#fbfcfa] px-4 py-3 text-sm leading-6 placeholder:text-[#60736b] ${focus}`} />
-              <p id="question-hint" className="mt-1 text-xs text-[#60736b]">可选择 Dense 基线或有界 Agent 流式问答；当前会话只保存历史，尚不理解指代追问。</p>
+              <p id="question-hint" className="mt-1 text-xs text-[#60736b]">会话内的 Agent 可改写指代追问；Dense 基线不使用会话历史。</p>
               {questionError && <p id="question-error" role="alert" className="mt-2 text-sm font-medium text-[#9a442a]">{questionError}</p>}
             </div>
             <div className="flex flex-wrap gap-3">
@@ -470,7 +471,7 @@ export default function App() {
           <div className="mt-8 border-t border-[#e6ece6] pt-7">
             <h3 className="text-xs font-bold uppercase tracking-[0.18em] text-[#52675d]">回答与证据</h3>
             {asking && <p role="status" aria-live="polite" className="mt-4 text-sm text-[#52695e]">{agentProgress?.stages.length
-              ? `Agent 正在运行：${agentProgress.stages.at(-1)?.status === 'failed' ? '阶段失败' : agentProgress.stages.at(-1)?.stage === 'retrieve' ? '检索完成' : agentProgress.stages.at(-1)?.stage === 'plan_next' ? '规划下一查询' : '生成回答'}`
+              ? `Agent 正在运行：${agentProgress.stages.at(-1)?.status === 'failed' ? '阶段失败' : agentProgress.stages.at(-1)?.stage === 'rewrite' ? '追问已改写' : agentProgress.stages.at(-1)?.stage === 'retrieve' ? '检索完成' : agentProgress.stages.at(-1)?.stage === 'plan_next' ? '规划下一查询' : '生成回答'}`
               : '正在检索原文并生成回答，请稍候。'}</p>}
             {asking && agentProgress?.text && <p aria-live="off" className="mt-4 text-lg leading-8 text-[#1a3b30]">临时回答，等待完成确认：{agentProgress.text}</p>}
             {!asking && !result && <p className="mt-4 text-sm leading-6 text-[#60736b]">回答和原文引用将在这里显示。</p>}
@@ -485,7 +486,7 @@ export default function App() {
               <h4 className="text-sm font-semibold">Agent 执行轨迹</h4>
               {agentProgress.runId && <p className="mt-1 break-all text-xs text-[#52675d]">Run ID：{agentProgress.runId}</p>}
               <ol className="mt-3 space-y-2 text-sm text-[#395d4b]">{agentProgress.stages.map((step, index) => <li key={index}>
-                <span className="font-medium">{step.stage === 'retrieve' ? `第 ${step.round} 轮检索${step.status === 'failed' ? '失败' : '完成'}` : step.status === 'failed' ? '运行阶段失败' : step.stage === 'plan' ? '查询已确定' : step.stage === 'plan_next' ? '证据评估与下一查询' : step.stage === 'answer' ? '回答阶段完成' : '运行阶段完成'}</span>
+                <span className="font-medium">{step.stage === 'retrieve' ? `第 ${step.round} 轮检索${step.status === 'failed' ? '失败' : '完成'}` : step.stage === 'rewrite' ? step.status === 'failed' ? '追问改写失败' : '追问改写完成' : step.status === 'failed' ? '运行阶段失败' : step.stage === 'plan' ? '查询已确定' : step.stage === 'plan_next' ? '证据评估与下一查询' : step.stage === 'answer' ? '回答阶段完成' : '运行阶段完成'}</span>
                 {(step.query || step.next_query) && <span className="block break-words">查询：{step.query ?? step.next_query}</span>}
                 {step.stage === 'retrieve' && <span className="block">返回 {step.evidence_ids?.length ?? 0} 条证据 · 新增 {step.new_evidence_ids?.length ?? 0} 条</span>}
               </li>)}</ol>
@@ -494,7 +495,7 @@ export default function App() {
           </div>
         </section>
       </div>
-      <p className="mt-10 text-center text-xs leading-5 text-[#60736b]">Dense 基线与有界 Agent 均可独立提问。引用可定位原文片段，仍需人工核对结论是否受证据支持。</p>
+      <p className="mt-10 text-center text-xs leading-5 text-[#60736b]">Dense 基线可独立提问，会话 Agent 可理解近期追问。引用可定位原文片段，仍需人工核对结论是否受证据支持。</p>
     </main>
   </div>
 }

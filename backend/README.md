@@ -51,6 +51,18 @@ Run one Uvicorn worker for each data directory/Qdrant collection. Lifecycle
 operations are serialized within that process. Do not share the same store
 between multiple API processes.
 
+DOCS-017/018 sessions use `POST /api/conversations`, `GET /api/conversations`,
+`GET/DELETE /api/conversations/{thread_id}`, and
+`POST /api/conversations/{thread_id}/runs/stream`. Completed messages live in
+`conversations.sqlite3`; LangGraph checkpoints live in `checkpoints.sqlite3`.
+When a session has completed turns, the Agent uses at most four recent turns
+to rewrite the current question before retrieval, without using old answers
+as evidence. The rewrite adds one model request outside the original Agent
+Planner/Answer budget. `LLM_REWRITE_MAX_TOKENS` defaults to 4096 and
+`LLM_REWRITE_TIMEOUT_SECONDS` defaults to 60; both obey the same bounds as
+the corresponding Planner settings. See
+[conversation state](../docs/conversation-state.md).
+
 PDF text is extracted with pinned `pypdf`; chunks stay within one PDF page and
 carry a one-based `page_number`. Markdown chunks retain their heading section
 and source line. PDF scans without extractable text, and damaged PDFs, remain

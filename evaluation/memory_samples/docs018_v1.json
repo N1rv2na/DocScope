@@ -1,0 +1,35 @@
+{
+  "sample_id": "docs018-telescope-followups-v1",
+  "source_file": "backend/tests/fixtures/telescopes.md",
+  "review_status": "implementation_reviewed_against_fixture",
+  "turns": [
+    {
+      "kind": "initial",
+      "question": "Which observatory built the Orion telescope?",
+      "expected_answer_fact": "North Observatory",
+      "expected_source_section": "Telescope Notes > Orion"
+    },
+    {
+      "kind": "dependent_followup",
+      "question": "When was it built?",
+      "required_query_entity": "Orion telescope",
+      "expected_answer_fact": "2022",
+      "expected_source_section": "Telescope Notes > Orion"
+    },
+    {
+      "kind": "topic_switch",
+      "question": "Which observatory built the Vega telescope?",
+      "forbidden_query_entity": "Orion",
+      "expected_answer_fact": "South Observatory",
+      "expected_source_section": "Telescope Notes > Vega"
+    },
+    {
+      "kind": "dependent_followup",
+      "question": "When was it built?",
+      "required_query_entity": "Vega telescope",
+      "forbidden_query_entity": "Orion",
+      "expected_answer_fact": "2020",
+      "expected_source_section": "Telescope Notes > Vega"
+    }
+  ]
+}

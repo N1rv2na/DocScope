@@ -23,6 +23,7 @@ from docscope.conversations import ConversationStore
 from docscope.document_store import DocumentStore
 from docscope.embedding import LocalEmbedder
 from docscope.llm import ContextLimitError, LLMCallError, OpenAIResponder
+from docscope.memory import recent_turns, standalone_question
 from docscope.markdown import markdown_chunks
 from docscope.pdf import pdf_chunks
 from docscope.qdrant_index import QdrantIndex
@@ -446,16 +447,42 @@ def create_app(data_dir: Path | None = None, embedder: Any = None, index: Any = 
             # Serialise turns and deletion on this single-process SQLite deployment.
             with conversation_run_lock:
                 try:
-                    if conversations().get(thread_id) is None:
+                    current_conversation = conversations().get(thread_id)
+                    if current_conversation is None:
                         yield encode("error", {"error_code": "conversation_not_found"})
                         return
+                    window = recent_turns(current_conversation["messages"])
+                    effective_question = request.question
+                    if window and callable(getattr(responder, "rewrite_question", None)):
+                        try:
+                            raw = responder.rewrite_question(request.question, window)
+                            effective_question = standalone_question(raw)
+                        except Exception as error:
+                            logger.warning("Conversation query rewrite failed for run %s: %s",
+                                           run_id, type(error).__name__)
+                            stage = {"stage": "rewrite", "status": "failed",
+                                     "llm_error_code": (error.code if isinstance(error, LLMCallError)
+                                                        else "rewrite_invalid")}
+                            if isinstance(error, LLMCallError):
+                                stage["llm_call"] = error.diagnostic
+                            yield encode("stage", stage)
+                            yield encode("error", {"error_code": "query_rewrite_failed"})
+                            return
+                        step = {"stage": "rewrite", "status": "completed",
+                                "query": effective_question, "history_turns": len(window)}
+                        diagnostic = getattr(raw, "diagnostic", None)
+                        if diagnostic is not None:
+                            step["llm_call"] = diagnostic
+                        yield encode("stage", step)
                     with SqliteSaver.from_conn_string(str(root / "checkpoints.sqlite3")) as saver:
                         session_agent = AgentRunner(
                             agent_evidence, responder.generate,
                             lambda raw, evidence: validated_answer(ModelAnswer.model_validate(raw), evidence),
                             sources_current, plan_next=getattr(responder, "plan_next", None),
                             extra_model_requests=int(extra_requests), checkpointer=saver)
-                        for kind, payload in session_agent.stream_run(request.question, run_id, thread_id):
+                        for kind, payload in session_agent.stream_run(
+                                request.question, run_id, thread_id,
+                                standalone_question=effective_question):
                             if kind == "stage":
                                 yield encode("stage", payload)
                                 continue

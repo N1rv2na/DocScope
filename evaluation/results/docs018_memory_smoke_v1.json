@@ -1,0 +1,280 @@
+{
+  "sample_id": "docs018-telescope-followups-v1",
+  "requested_model": "group/docscope-free",
+  "collection": "docscope_docs018_06a84ba4bbcd",
+  "request_cap": 12,
+  "turns": [
+    {
+      "turn": 1,
+      "kind": "initial",
+      "question": "Which observatory built the Orion telescope?",
+      "terminal_event": "done",
+      "status": "answered",
+      "error_code": null,
+      "initial_query": "Which observatory built the Orion telescope?",
+      "rewrite_query": null,
+      "rewrite_diagnostic": null,
+      "answer": "North Observatory",
+      "citation_sections": [
+        "Telescope Notes > Orion"
+      ],
+      "citation_ids": [
+        "e5ead3cc-58df-5f98-ba66-ce808e6411a6"
+      ],
+      "retrieval_rounds": [
+        1
+      ],
+      "actual_requests_after_turn": 2,
+      "agent_calls": {
+        "retrieval": 1,
+        "model": 2
+      },
+      "llm_diagnostics": [
+        {
+          "stage": "plan_next",
+          "requested_model": "group/docscope-free",
+          "response_model": "group/docscope-free",
+          "finish_reason": "stop",
+          "max_tokens": 4096,
+          "timeout_seconds": 60,
+          "prompt_tokens": 421,
+          "completion_tokens": 99,
+          "reasoning_tokens": 68,
+          "total_tokens": 520,
+          "elapsed_ms": 3609.212
+        },
+        {
+          "stage": "answer",
+          "requested_model": "group/docscope-free",
+          "response_model": "group/docscope-free",
+          "finish_reason": "stop",
+          "max_tokens": 2048,
+          "timeout_seconds": 60,
+          "prompt_tokens": 334,
+          "completion_tokens": 66,
+          "reasoning_tokens": 27,
+          "total_tokens": 400,
+          "elapsed_ms": 1032.212
+        }
+      ],
+      "query_entity_ok": true,
+      "no_old_topic_leak": true,
+      "answer_fact_ok": true,
+      "citation_section_ok": true
+    },
+    {
+      "turn": 2,
+      "kind": "dependent_followup",
+      "question": "When was it built?",
+      "terminal_event": "done",
+      "status": "answered",
+      "error_code": null,
+      "initial_query": "When was the Orion telescope built?",
+      "rewrite_query": "When was the Orion telescope built?",
+      "rewrite_diagnostic": {
+        "stage": "rewrite",
+        "requested_model": "group/docscope-free",
+        "response_model": "group/docscope-free",
+        "finish_reason": "stop",
+        "max_tokens": 4096,
+        "timeout_seconds": 60,
+        "prompt_tokens": 195,
+        "completion_tokens": 116,
+        "reasoning_tokens": 100,
+        "total_tokens": 311,
+        "elapsed_ms": 1305.913
+      },
+      "answer": "2022",
+      "citation_sections": [
+        "Telescope Notes > Orion"
+      ],
+      "citation_ids": [
+        "e5ead3cc-58df-5f98-ba66-ce808e6411a6"
+      ],
+      "retrieval_rounds": [
+        1
+      ],
+      "actual_requests_after_turn": 5,
+      "agent_calls": {
+        "retrieval": 1,
+        "model": 2
+      },
+      "llm_diagnostics": [
+        {
+          "stage": "plan_next",
+          "requested_model": "group/docscope-free",
+          "response_model": "group/docscope-free",
+          "finish_reason": "stop",
+          "max_tokens": 4096,
+          "timeout_seconds": 60,
+          "prompt_tokens": 420,
+          "completion_tokens": 78,
+          "reasoning_tokens": 47,
+          "total_tokens": 498,
+          "elapsed_ms": 1011.116
+        },
+        {
+          "stage": "answer",
+          "requested_model": "group/docscope-free",
+          "response_model": "group/docscope-free",
+          "finish_reason": "stop",
+          "max_tokens": 2048,
+          "timeout_seconds": 60,
+          "prompt_tokens": 333,
+          "completion_tokens": 84,
+          "reasoning_tokens": 45,
+          "total_tokens": 417,
+          "elapsed_ms": 1146.607
+        }
+      ],
+      "query_entity_ok": true,
+      "no_old_topic_leak": true,
+      "answer_fact_ok": true,
+      "citation_section_ok": true
+    },
+    {
+      "turn": 3,
+      "kind": "topic_switch",
+      "question": "Which observatory built the Vega telescope?",
+      "terminal_event": "done",
+      "status": "answered",
+      "error_code": null,
+      "initial_query": "Which observatory built the Vega telescope?",
+      "rewrite_query": "Which observatory built the Vega telescope?",
+      "rewrite_diagnostic": {
+        "stage": "rewrite",
+        "requested_model": "group/docscope-free",
+        "response_model": "group/docscope-free",
+        "finish_reason": "stop",
+        "max_tokens": 4096,
+        "timeout_seconds": 60,
+        "prompt_tokens": 214,
+        "completion_tokens": 151,
+        "reasoning_tokens": 134,
+        "total_tokens": 365,
+        "elapsed_ms": 1467.158
+      },
+      "answer": "The Vega telescope was built by the South Observatory.",
+      "citation_sections": [
+        "Telescope Notes > Vega"
+      ],
+      "citation_ids": [
+        "90919ba5-90c8-5944-ae3e-907b10160966"
+      ],
+      "retrieval_rounds": [
+        1
+      ],
+      "actual_requests_after_turn": 8,
+      "agent_calls": {
+        "retrieval": 1,
+        "model": 2
+      },
+      "llm_diagnostics": [
+        {
+          "stage": "plan_next",
+          "requested_model": "group/docscope-free",
+          "response_model": "group/docscope-free",
+          "finish_reason": "stop",
+          "max_tokens": 4096,
+          "timeout_seconds": 60,
+          "prompt_tokens": 421,
+          "completion_tokens": 104,
+          "reasoning_tokens": 73,
+          "total_tokens": 525,
+          "elapsed_ms": 1240.792
+        },
+        {
+          "stage": "answer",
+          "requested_model": "group/docscope-free",
+          "response_model": "group/docscope-free",
+          "finish_reason": "stop",
+          "max_tokens": 2048,
+          "timeout_seconds": 60,
+          "prompt_tokens": 334,
+          "completion_tokens": 81,
+          "reasoning_tokens": 32,
+          "total_tokens": 415,
+          "elapsed_ms": 952.854
+        }
+      ],
+      "query_entity_ok": true,
+      "no_old_topic_leak": true,
+      "answer_fact_ok": true,
+      "citation_section_ok": true
+    },
+    {
+      "turn": 4,
+      "kind": "dependent_followup",
+      "question": "When was it built?",
+      "terminal_event": "done",
+      "status": "answered",
+      "error_code": null,
+      "initial_query": "When was the Vega telescope built?",
+      "rewrite_query": "When was the Vega telescope built?",
+      "rewrite_diagnostic": {
+        "stage": "rewrite",
+        "requested_model": "group/docscope-free",
+        "response_model": "group/docscope-free",
+        "finish_reason": "stop",
+        "max_tokens": 4096,
+        "timeout_seconds": 60,
+        "prompt_tokens": 237,
+        "completion_tokens": 181,
+        "reasoning_tokens": 165,
+        "total_tokens": 418,
+        "elapsed_ms": 1711.758
+      },
+      "answer": "The Vega telescope was built in 2020 by the South Observatory.",
+      "citation_sections": [
+        "Telescope Notes > Vega"
+      ],
+      "citation_ids": [
+        "90919ba5-90c8-5944-ae3e-907b10160966"
+      ],
+      "retrieval_rounds": [
+        1
+      ],
+      "actual_requests_after_turn": 11,
+      "agent_calls": {
+        "retrieval": 1,
+        "model": 2
+      },
+      "llm_diagnostics": [
+        {
+          "stage": "plan_next",
+          "requested_model": "group/docscope-free",
+          "response_model": "group/docscope-free",
+          "finish_reason": "stop",
+          "max_tokens": 4096,
+          "timeout_seconds": 60,
+          "prompt_tokens": 420,
+          "completion_tokens": 74,
+          "reasoning_tokens": 43,
+          "total_tokens": 494,
+          "elapsed_ms": 1214.738
+        },
+        {
+          "stage": "answer",
+          "requested_model": "group/docscope-free",
+          "response_model": "group/docscope-free",
+          "finish_reason": "stop",
+          "max_tokens": 2048,
+          "timeout_seconds": 60,
+          "prompt_tokens": 333,
+          "completion_tokens": 89,
+          "reasoning_tokens": 36,
+          "total_tokens": 422,
+          "elapsed_ms": 966.089
+        }
+      ],
+      "query_entity_ok": true,
+      "no_old_topic_leak": true,
+      "answer_fact_ok": true,
+      "citation_section_ok": true
+    }
+  ],
+  "actual_provider": "unknown",
+  "scope": "fixed public sample, no sealed test",
+  "actual_requests": 11,
+  "all_checks_passed": true
+}

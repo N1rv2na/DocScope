@@ -42,7 +42,7 @@ test('create, switch, reopen and delete isolated conversation history', async ({
 
   await page.goto('/')
   await page.getByRole('button', { name: '新建会话' }).click()
-  await page.getByRole('textbox', { name: '独立英文问题' }).fill('Question one?')
+  await page.getByRole('textbox', { name: '英文问题或追问' }).fill('Question one?')
   await page.getByRole('button', { name: 'Agent 流式回答' }).click()
   await expect(page.getByRole('region', { name: '会话历史' })).toContainText('Question one?')
   await page.getByRole('button', { name: '新建会话' }).click()
@@ -54,4 +54,29 @@ test('create, switch, reopen and delete isolated conversation history', async ({
   await page.getByRole('button', { name: '删除会话 thread-1' }).click()
   await expect(page.getByRole('button', { name: '会话 thread-1', exact: true })).toHaveCount(0)
   await expect(page.getByRole('region', { name: '会话历史' })).toHaveCount(0)
+})
+
+test('rewrite failure is visible without a completed answer in session', async ({ page }) => {
+  const thread = { thread_id: 'thread-rewrite', created_at: '2026-11-13', updated_at: '2026-11-13' }
+  await page.addInitScript(() => window.localStorage.setItem('docscope-thread-id', 'thread-rewrite'))
+  await page.route('**/api/documents', route => route.fulfill({ json: { documents: [] } }))
+  await page.route('**/api/conversations', route => route.fulfill({ json: { conversations: [thread] } }))
+  await page.route('**/api/conversations/thread-rewrite', route => route.fulfill({ json: {
+    ...thread, messages: [{ message_id: 'user-1', run_id: 'run-1', role: 'user',
+      content: 'Which observatory built Orion?', status: null, citations: [] },
+    { message_id: 'assistant-1', run_id: 'run-1', role: 'assistant',
+      content: 'North Observatory', status: 'answered', citations: [] }],
+  } }))
+  await page.route('**/api/conversations/thread-rewrite/runs/stream', route => route.fulfill({
+    contentType: 'text/event-stream', body:
+      `event: stage\ndata: ${JSON.stringify({ run_id: 'run-2', message_id: 'msg-2',
+        thread_id: 'thread-rewrite', stage: 'rewrite', status: 'failed' })}\n\n`
+      + `event: error\ndata: ${JSON.stringify({ run_id: 'run-2', message_id: 'msg-2',
+        thread_id: 'thread-rewrite', error_code: 'query_rewrite_failed' })}\n\n`,
+  }))
+  await page.goto('/')
+  await page.getByRole('textbox', { name: '英文问题或追问' }).fill('When was it built?')
+  await page.getByRole('button', { name: 'Agent 流式回答' }).click()
+  await expect(page.getByRole('alert')).toContainText('追问改写失败')
+  await expect(page.getByRole('region', { name: '会话历史' })).not.toContainText('When was it built?')
 })

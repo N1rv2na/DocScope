@@ -6,7 +6,9 @@ citations show a one-based page number; Markdown citations show section and
 line. The document list supports status refresh, replacement and deletion;
 old answer citations are revalidated before displaying source text. DOCS-014
 adds a separate Agent SSE action with stage/round trace, answer, citation,
-stop reason, and error display. OCR and sessions are not implemented.
+stop reason, and error display. DOCS-017/018 add persistent sessions, a bounded
+recent window and history-aware query rewriting. OCR and rolling summaries are
+not implemented.
 
 ## Local start
 
@@ -36,6 +38,11 @@ never retries automatically, and the Run ID is shown beside the public trace.
 The `token` event carries chunks of the validated final answer after the model
 returns, not native model tokens. Stage changes are announced as status;
 fragment text is not announced character by character.
+In a session, the Agent rewrites each follow-up using at most four completed
+recent turns and then retrieves from current documents. The Dense baseline
+continues to handle each question independently. Session history can be
+reopened and deleted; an unsuccessful rewrite produces an error and does not
+save a completed turn. See [conversation state](../docs/conversation-state.md).
 For a PDF check, upload `backend/tests/fixtures/observatories.pdf` and ask the
 same Orion question. The citation should show page 2 and the Orion sentence.
 Damaged or image-only PDFs should display a failed import, not "索引就绪".

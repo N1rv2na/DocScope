@@ -281,11 +281,11 @@ Thread ID → Load Checkpoint / Recent Messages / Rolling Summary
 - **History-aware Query Rewriting**：将“它”“之前那个版本”等上下文相关问题改写成独立查询；
 - **Evidence separation**：对话摘要不是知识库 Ground Truth，不允许未经重新检索验证即据其给出新的事实性结论。
 
-**[建议默认]** Recent Window 先试 4–6 轮；以 Token 阈值而非单纯轮数触发摘要，并限定摘要长度。每个新 Turn 重置 `retrieval_plan`、`retrieval_round`、`retrieved_evidence` 等暂态，避免跨轮污染。
+**[DOCS-018 已实现]** Recent Window 固定最多 4 轮已完成消息、6000 UTF-8 字节窗口；改写只负责独立化当前问题。以 Token 阈值触发摘要仍是 DOCS-019 的候选方案。每个新 Turn 重置 `retrieval_plan`、`retrieval_round`、`retrieved_evidence` 等暂态，避免跨轮污染。
 
 **持久化边界**：数据库可保留用于 UI 展示的完整消息与来源引用；LLM 每轮仅获得受控 Working Context。用户删除会话时应能删除对应消息和 Checkpoint。
 
-**[DOCS-017 已实现]** 使用 LangGraph SQLite Checkpointer 和独立 SQLite 消息表；服务端生成 `thread_id`，删除会话时清理消息和对应 Checkpoint。具体状态边界见 [conversation-state.md](conversation-state.md)。摘要失败与重复请求的恢复语义仍留待后续 M4 Issue；当前未实现 Window、摘要或追问改写。
+**[DOCS-017/018 已实现]** 使用 LangGraph SQLite Checkpointer 和独立 SQLite 消息表；服务端生成 `thread_id`，删除会话时清理消息和对应 Checkpoint。会话追问从受限近期窗口改写独立问题，再用当前文档重新检索。具体状态边界见 [conversation-state.md](conversation-state.md)。滚动摘要及其失败/重复请求恢复语义仍留待后续 M4 Issue。
 
 ### 6.5 Web Application：前端与 API
 

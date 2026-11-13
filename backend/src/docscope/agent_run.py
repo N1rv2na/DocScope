@@ -38,6 +38,7 @@ MAX_MISSING_FACT_CHARS = 240
 class RunState(TypedDict, total=False):
     run_id: str
     question: str
+    standalone_question: str
     query: str
     evidence: list[dict[str, Any]]
     retrieved_evidence_ids: list[str]
@@ -87,7 +88,7 @@ class AgentRunner:
         self.extra_model_requests = extra_model_requests
         def plan(state: RunState) -> dict:
             started = time.monotonic()
-            query = state["question"]
+            query = state["standalone_question"]
             return {"query": query, "trace": state["trace"] + [{
                 "stage": "plan", "status": "completed", "query": query,
                 "elapsed_ms": round((time.monotonic() - started) * 1000, 3),
@@ -142,9 +143,9 @@ class AgentRunner:
         def plan_from_evidence(state: RunState) -> dict:
             started = time.monotonic()
             result = self._invoke_model(
-                state, "plan_next", lambda: plan_next(state["question"], state["evidence"]),
+                state, "plan_next", lambda: plan_next(state["standalone_question"], state["evidence"]),
                 lambda proposal: self._validate_proposal(
-                    proposal, state["question"], state["query"], state["evidence"]),
+                    proposal, state["standalone_question"], state["query"], state["evidence"]),
                 "proposal_invalid", lambda: sources_current(state["evidence"]))
             calls = result["calls"]
             details = result["details"]
@@ -183,7 +184,7 @@ class AgentRunner:
                 return validate(raw, state["evidence"])
 
             result = self._invoke_model(state, "answer",
-                                        lambda: generate(state["question"], state["evidence"]),
+                                        lambda: generate(state["standalone_question"], state["evidence"]),
                                         validate_answer, "answer_invalid",
                                         lambda: sources_current(state["evidence"]))
             calls = result["calls"]
@@ -370,9 +371,10 @@ class AgentRunner:
         return {**self._failure(code), "calls": calls,
                 "trace": state["trace"] + [self._step("answer", "failed", started, **details)]}
 
-    def run(self, question: str, thread_id: str | None = None) -> dict[str, Any]:
+    def run(self, question: str, thread_id: str | None = None,
+            standalone_question: str | None = None) -> dict[str, Any]:
         started = time.monotonic()
-        initial = self._initial_state(question)
+        initial = self._initial_state(question, standalone_question=standalone_question)
         try:
             config = {"configurable": {"thread_id": thread_id}} if thread_id else None
             state = self.graph.invoke(initial, config=config)
@@ -382,10 +384,11 @@ class AgentRunner:
                      "trace": [self._step("graph", "failed", started)]}
         return self._record(state, started)
 
-    def stream_run(self, question: str, run_id: str, thread_id: str | None = None):
+    def stream_run(self, question: str, run_id: str, thread_id: str | None = None,
+                   standalone_question: str | None = None):
         """Yield completed graph stages, then one final Run record."""
         started = time.monotonic()
-        initial = self._initial_state(question, run_id)
+        initial = self._initial_state(question, run_id, standalone_question)
         state: RunState = initial.copy()
         try:
             config = {"configurable": {"thread_id": thread_id}} if thread_id else None
@@ -406,8 +409,10 @@ class AgentRunner:
             yield "stage", {"stage": "graph", "status": "failed"}
         yield "result", self._record(state, started)
 
-    def _initial_state(self, question: str, run_id: str | None = None) -> RunState:
+    def _initial_state(self, question: str, run_id: str | None = None,
+                       standalone_question: str | None = None) -> RunState:
         return {"run_id": run_id or str(uuid.uuid4()), "question": question,
+                "standalone_question": standalone_question or question,
                 "query": question, "evidence": [], "status": None,
                 "stop_reason": None, "retrieval_stop_reason": None,
                 "error_code": None, "answer": None, "citations": [],
@@ -426,6 +431,8 @@ class AgentRunner:
             usage[f"known_{key}"] = sum(value for value in values if type(value) is int and value >= 0)
             usage[f"unknown_{key}_calls"] = sum(value is None for value in values)
         return {"run_id": state["run_id"], "question": state["question"],
+                **({"standalone_question": state["standalone_question"]}
+                   if state["standalone_question"] != state["question"] else {}),
                 "query": state.get("query", state["question"]),
                 "status": state["status"], "stop_reason": state["stop_reason"],
                 "retrieval_stop_reason": state.get("retrieval_stop_reason"),
