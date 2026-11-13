@@ -37,6 +37,8 @@ type AgentStage = {
   new_evidence_ids?: string[]
 }
 type AgentProgress = { runId: string; stages: AgentStage[]; text: string; citations: Citation[] }
+type ConversationRecord = { thread_id: string; created_at: string; updated_at: string }
+type ConversationMessage = { message_id: string; run_id: string; role: 'user' | 'assistant'; content: string | null; status: string | null; citations: Citation[] }
 
 const uploadErrors: Record<string, string> = {
   parse_failed: '文档索引失败：没有可检索的正文。请检查文件内容。',
@@ -86,6 +88,12 @@ export default function App() {
   const [result, setResult] = useState<ChatResult | null>(null)
   const [agentProgress, setAgentProgress] = useState<AgentProgress | null>(null)
   const [agentStopReason, setAgentStopReason] = useState<string | null>(null)
+  const [conversations, setConversations] = useState<ConversationRecord[]>([])
+  const [threadId, setThreadId] = useState<string | null>(null)
+  const [history, setHistory] = useState<ConversationMessage[]>([])
+  const [sessionError, setSessionError] = useState<string | null>(null)
+  const [sessionBusy, setSessionBusy] = useState(false)
+  const sessionRequest = useRef(0)
   const questionRef = useRef<HTMLTextAreaElement>(null)
   const uploadButtonRef = useRef<HTMLButtonElement>(null)
   const askButtonRef = useRef<HTMLButtonElement>(null)
@@ -96,6 +104,77 @@ export default function App() {
   const documentsRequest = useRef(0)
 
   useEffect(() => () => agentAbortRef.current?.abort(), [])
+
+  const loadHistory = useCallback(async (id: string) => {
+    const request = ++sessionRequest.current
+    const response = await fetch(`/api/conversations/${encodeURIComponent(id)}`)
+    const data = await jsonBody<{ messages: ConversationMessage[] }>(response)
+    if (!response.ok || !Array.isArray(data?.messages)) throw new Error('invalid conversation')
+    if (request === sessionRequest.current) setHistory(data.messages)
+  }, [])
+
+  const refreshConversations = useCallback(async () => {
+    const response = await fetch('/api/conversations')
+    const data = await jsonBody<{ conversations: ConversationRecord[] }>(response)
+    if (!response.ok || !Array.isArray(data?.conversations)) throw new Error('invalid conversations')
+    setConversations(data.conversations)
+    return data.conversations
+  }, [])
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const records = await refreshConversations()
+        const saved = window.localStorage.getItem('docscope-thread-id')
+        if (saved && records.some(item => item.thread_id === saved)) {
+          setThreadId(saved)
+          await loadHistory(saved)
+        } else window.localStorage.removeItem('docscope-thread-id')
+      } catch { /* Existing independent-question UI remains available if sessions are unavailable. */ }
+    })()
+  }, [loadHistory, refreshConversations])
+
+  async function selectConversation(id: string | null) {
+    if (asking) return
+    ++sessionRequest.current
+    setThreadId(id)
+    setHistory([])
+    setResult(null)
+    setAgentProgress(null)
+    setAgentStopReason(null)
+    setSessionError(null)
+    if (id) window.localStorage.setItem('docscope-thread-id', id)
+    else window.localStorage.removeItem('docscope-thread-id')
+    if (id) {
+      try { await loadHistory(id) }
+      catch { setSessionError('无法读取会话历史，请重新选择或刷新。') }
+    }
+  }
+
+  async function createConversation() {
+    setSessionBusy(true)
+    setSessionError(null)
+    try {
+      const response = await fetch('/api/conversations', { method: 'POST' })
+      const data = await jsonBody<ConversationRecord>(response)
+      if (!response.ok || !data?.thread_id) throw new Error('create failed')
+      await refreshConversations()
+      await selectConversation(data.thread_id)
+    } catch { setSessionError('新建会话失败，请重试。') }
+    finally { setSessionBusy(false) }
+  }
+
+  async function deleteConversation(id: string) {
+    setSessionBusy(true)
+    setSessionError(null)
+    try {
+      const response = await fetch(`/api/conversations/${encodeURIComponent(id)}`, { method: 'DELETE' })
+      if (!response.ok) throw new Error('delete failed')
+      if (threadId === id) await selectConversation(null)
+      await refreshConversations()
+    } catch { setSessionError('删除会话失败，请重试。') }
+    finally { setSessionBusy(false) }
+  }
 
   const refreshDocuments = useCallback(async () => {
     const request = ++documentsRequest.current
@@ -229,6 +308,8 @@ export default function App() {
     if (!text) return
     const restoreFocus = window.document.activeElement === agentButtonRef.current
     const controller = new AbortController()
+    const activeThread = threadId
+    let completed = false
     agentAbortRef.current = controller
     const progress: AgentProgress = { runId: '', stages: [], text: '', citations: [] }
     setAsking(true)
@@ -236,7 +317,9 @@ export default function App() {
     setAgentStopReason(null)
     setAgentProgress(progress)
     try {
-      const response = await fetch('/api/agent/run/stream', {
+      const response = await fetch(activeThread
+        ? `/api/conversations/${encodeURIComponent(activeThread)}/runs/stream`
+        : '/api/agent/run/stream', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ question: text }), signal: controller.signal,
       })
@@ -267,6 +350,7 @@ export default function App() {
             setResult({ kind: 'insufficient' })
           } else throw new Error('invalid completed run')
           setAgentStopReason(data.stop_reason)
+          completed = true
         } else if (event === 'error') {
           progress.text = ''
           progress.citations = []
@@ -282,6 +366,10 @@ export default function App() {
         ? '回答流连接中断，本轮未完成。请重新提问。'
         : 'Agent 回答流不可用或格式异常，请稍后重试。' })
     } finally {
+      if (completed && activeThread) {
+        try { await loadHistory(activeThread); await refreshConversations() }
+        catch { setSessionError('回答已完成，但无法刷新会话历史。') }
+      }
       agentAbortRef.current = null
       setAsking(false)
       if (restoreFocus) requestAnimationFrame(() => agentButtonRef.current?.focus())
@@ -341,13 +429,28 @@ export default function App() {
         <section aria-labelledby="question-title" className="min-w-0 rounded-[26px] border border-[#dce5de] bg-white p-6 shadow-[0_18px_50px_-38px_#153b30] sm:p-8">
           <div className="flex items-start gap-4">
             <span aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#e9f4eb] text-sm font-bold text-[#2c6a46]">02</span>
-            <div><h2 id="question-title" className="text-xl font-semibold tracking-tight">检索与问答</h2><p className="mt-1 text-sm leading-6 text-[#60736b]">每次提问独立检索，不依赖聊天历史。</p></div>
+            <div><h2 id="question-title" className="text-xl font-semibold tracking-tight">检索与问答</h2><p className="mt-1 text-sm leading-6 text-[#60736b]">会话保存历史；每轮事实仍独立检索，暂不根据历史改写追问。</p></div>
           </div>
+          <section aria-label="会话管理" className="mt-6 rounded-xl border border-[#d9e5dc] bg-[#f8faf7] p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h3 className="text-sm font-semibold">会话</h3>
+              <button type="button" disabled={asking || sessionBusy} onClick={() => { void createConversation() }} className={`rounded px-2 py-1 text-sm underline disabled:opacity-50 ${focus}`}>新建会话</button>
+            </div>
+            <p className="mt-1 text-xs text-[#60736b]">选择会话后，Agent 回答和引用会保存；Dense 基线仍是独立问答。</p>
+            <ul aria-label="会话列表" className="mt-3 space-y-2">
+              {conversations.map(item => <li key={item.thread_id} className="flex items-center justify-between gap-2">
+                <button type="button" disabled={asking || sessionBusy} aria-current={threadId === item.thread_id ? 'true' : undefined} onClick={() => { void selectConversation(item.thread_id) }} className={`min-w-0 rounded px-2 py-1 text-left text-sm underline disabled:opacity-50 ${focus}`}>会话 {item.thread_id.slice(0, 8)}</button>
+                <button type="button" disabled={asking || sessionBusy} aria-label={`删除会话 ${item.thread_id.slice(0, 8)}`} onClick={() => { void deleteConversation(item.thread_id) }} className={`rounded px-2 py-1 text-sm text-[#9a442a] underline disabled:opacity-50 ${focus}`}>删除</button>
+              </li>)}
+            </ul>
+            {threadId && <button type="button" disabled={asking || sessionBusy} onClick={() => { void selectConversation(null) }} className={`mt-3 rounded px-2 py-1 text-xs underline disabled:opacity-50 ${focus}`}>切换到独立提问</button>}
+            {sessionError && <p role="alert" className="mt-2 text-sm text-[#9a442a]">{sessionError}</p>}
+          </section>
           <form onSubmit={ask} className="mt-8 space-y-4">
             <div>
               <label htmlFor="question" className="block text-sm font-semibold">独立英文问题</label>
               <textarea ref={questionRef} id="question" value={question} onChange={event => { setQuestion(event.target.value); setQuestionError(null) }} maxLength={500} rows={3} placeholder="Which observatory built the Orion telescope?" aria-invalid={Boolean(questionError)} aria-describedby={questionError ? 'question-error' : 'question-hint'} className={`mt-2 w-full resize-y rounded-xl border border-[#cddbd0] bg-[#fbfcfa] px-4 py-3 text-sm leading-6 placeholder:text-[#60736b] ${focus}`} />
-              <p id="question-hint" className="mt-1 text-xs text-[#60736b]">可选择 Dense 基线或有界 Agent 流式问答；每次提问独立运行。</p>
+              <p id="question-hint" className="mt-1 text-xs text-[#60736b]">可选择 Dense 基线或有界 Agent 流式问答；当前会话只保存历史，尚不理解指代追问。</p>
               {questionError && <p id="question-error" role="alert" className="mt-2 text-sm font-medium text-[#9a442a]">{questionError}</p>}
             </div>
             <div className="flex flex-wrap gap-3">
@@ -355,6 +458,15 @@ export default function App() {
               <button ref={agentButtonRef} type="button" disabled={asking} onClick={() => { void askAgent() }} className={`rounded-xl bg-[#173b34] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#0f2c27] disabled:cursor-wait disabled:opacity-60 ${focus}`}>Agent 流式回答</button>
             </div>
           </form>
+          {threadId && <section aria-label="会话历史" className="mt-7 border-t border-[#e6ece6] pt-5">
+            <h3 className="text-sm font-semibold">会话历史</h3>
+            {!history.length && <p className="mt-2 text-sm text-[#60736b]">当前会话还没有已完成的问答。</p>}
+            <ol className="mt-3 space-y-4">{history.map(item => <li key={item.message_id} className="rounded-xl border border-[#d9e5dc] p-3">
+              <p className="text-xs font-semibold text-[#52675d]">{item.role === 'user' ? '提问' : 'Agent 回答'}</p>
+              <p className="mt-1 whitespace-pre-wrap text-sm leading-6">{item.role === 'assistant' && item.status === 'insufficient_evidence' ? '当前文档没有足够证据回答这个问题。' : item.content}</p>
+              {item.role === 'assistant' && item.citations.length > 0 && <div className="mt-3 space-y-2">{item.citations.map((citation, index) => <CitationView key={`${item.message_id}-${citation.chunk_id}`} citation={citation} index={index} refreshToken={citationRefresh} updating={uploading || Boolean(deleting)} focusClass={focus} />)}</div>}
+            </li>)}</ol>
+          </section>}
           <div className="mt-8 border-t border-[#e6ece6] pt-7">
             <h3 className="text-xs font-bold uppercase tracking-[0.18em] text-[#52675d]">回答与证据</h3>
             {asking && <p role="status" aria-live="polite" className="mt-4 text-sm text-[#52695e]">{agentProgress?.stages.length

@@ -285,7 +285,7 @@ Thread ID → Load Checkpoint / Recent Messages / Rolling Summary
 
 **持久化边界**：数据库可保留用于 UI 展示的完整消息与来源引用；LLM 每轮仅获得受控 Working Context。用户删除会话时应能删除对应消息和 Checkpoint。
 
-**[待 M4 Issue]** LangGraph SQLite Checkpointer 的具体集成版本、摘要失败与重复请求的恢复语义、是否需要独立消息表，以及 Thread ID 如何管理。进入 M4 前先固定多轮测试集与状态边界。
+**[DOCS-017 已实现]** 使用 LangGraph SQLite Checkpointer 和独立 SQLite 消息表；服务端生成 `thread_id`，删除会话时清理消息和对应 Checkpoint。具体状态边界见 [conversation-state.md](conversation-state.md)。摘要失败与重复请求的恢复语义仍留待后续 M4 Issue；当前未实现 Window、摘要或追问改写。
 
 ### 6.5 Web Application：前端与 API
 

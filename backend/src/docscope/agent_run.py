@@ -80,7 +80,8 @@ class AgentRunner:
                  validate: Callable[[dict, list[dict]], dict],
                  sources_current: Callable[[list[dict]], bool],
                  plan_next: Callable[[str, list[dict]], dict] | None = None,
-                 extra_model_requests: int = MAX_EXTRA_MODEL_REQUESTS):
+                 extra_model_requests: int = MAX_EXTRA_MODEL_REQUESTS,
+                 checkpointer: Any = None):
         if type(extra_model_requests) is not int or not 0 <= extra_model_requests <= 1:
             raise ValueError("extra_model_requests must be 0 or 1")
         self.extra_model_requests = extra_model_requests
@@ -213,7 +214,7 @@ class AgentRunner:
         graph.add_conditional_edges("retrieve", next_stage, ["plan_next", "answer", END])
         graph.add_conditional_edges("plan_next", after_followup, ["retrieve", "answer", END])
         graph.add_edge("answer", END)
-        self.graph = graph.compile()
+        self.graph = graph.compile(checkpointer=checkpointer)
 
     @staticmethod
     def _validate_proposal(proposal: dict | None, question: str, prior_query: str,
@@ -369,24 +370,26 @@ class AgentRunner:
         return {**self._failure(code), "calls": calls,
                 "trace": state["trace"] + [self._step("answer", "failed", started, **details)]}
 
-    def run(self, question: str) -> dict[str, Any]:
+    def run(self, question: str, thread_id: str | None = None) -> dict[str, Any]:
         started = time.monotonic()
         initial = self._initial_state(question)
         try:
-            state = self.graph.invoke(initial)
+            config = {"configurable": {"thread_id": thread_id}} if thread_id else None
+            state = self.graph.invoke(initial, config=config)
         except Exception:
             logger.exception("LangGraph execution failed for run %s", initial["run_id"])
             state = {**initial, **self._failure("graph_failed"),
                      "trace": [self._step("graph", "failed", started)]}
         return self._record(state, started)
 
-    def stream_run(self, question: str, run_id: str):
+    def stream_run(self, question: str, run_id: str, thread_id: str | None = None):
         """Yield completed graph stages, then one final Run record."""
         started = time.monotonic()
         initial = self._initial_state(question, run_id)
         state: RunState = initial.copy()
         try:
-            for update in self.graph.stream(initial, stream_mode="updates"):
+            config = {"configurable": {"thread_id": thread_id}} if thread_id else None
+            for update in self.graph.stream(initial, stream_mode="updates", config=config):
                 for stage, fields in update.items():
                     if stage == "__interrupt__":
                         continue
@@ -405,6 +408,9 @@ class AgentRunner:
 
     def _initial_state(self, question: str, run_id: str | None = None) -> RunState:
         return {"run_id": run_id or str(uuid.uuid4()), "question": question,
+                "query": question, "evidence": [], "status": None,
+                "stop_reason": None, "retrieval_stop_reason": None,
+                "error_code": None, "answer": None, "citations": [],
                 "trace": [], "calls": {"retrieval": 0, "model": 0},
                 "retry_requests": 0,
                 "model_request_budget": MAX_MODEL_ATTEMPTS + self.extra_model_requests,

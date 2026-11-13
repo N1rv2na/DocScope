@@ -6,17 +6,20 @@ import hashlib
 import json
 import logging
 import os
+import sqlite3
 import uuid
 from pathlib import Path
-from threading import RLock
+from threading import Lock, RLock
 from typing import Any, Literal
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
 from fastapi.responses import StreamingResponse
+from langgraph.checkpoint.sqlite import SqliteSaver
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from docscope.agent_run import AgentRunner, RunStore
+from docscope.conversations import ConversationStore
 from docscope.document_store import DocumentStore
 from docscope.embedding import LocalEmbedder
 from docscope.llm import ContextLimitError, LLMCallError, OpenAIResponder
@@ -381,6 +384,107 @@ def create_app(data_dir: Path | None = None, embedder: Any = None, index: Any = 
                         sources_current, plan_next=getattr(responder, "plan_next", None),
                         extra_model_requests=int(extra_requests))
     run_store = RunStore(root)
+    session_lock = RLock()
+    conversation_run_lock = Lock()
+    session_store: ConversationStore | None = None
+
+    def conversations() -> ConversationStore:
+        nonlocal session_store
+        with session_lock:
+            if session_store is None:
+                session_store = ConversationStore(root)
+                for pending in session_store.pending_deletions():
+                    with SqliteSaver.from_conn_string(str(root / "checkpoints.sqlite3")) as saver:
+                        saver.delete_thread(pending)
+                    session_store.finish_delete(pending)
+            return session_store
+
+    @api.post("/api/conversations", status_code=201)
+    def create_conversation() -> dict:
+        with session_lock:
+            return conversations().create()
+
+    @api.get("/api/conversations")
+    def list_conversations() -> dict:
+        with session_lock:
+            return {"conversations": conversations().list()}
+
+    @api.get("/api/conversations/{thread_id}")
+    def get_conversation(thread_id: str) -> dict:
+        with session_lock:
+            record = conversations().get(thread_id)
+            if record is None:
+                raise HTTPException(404, "conversation not found")
+            return record
+
+    @api.delete("/api/conversations/{thread_id}")
+    def delete_conversation(thread_id: str) -> dict:
+        with conversation_run_lock, session_lock:
+            if not conversations().mark_deleting(thread_id):
+                raise HTTPException(404, "conversation not found")
+            try:
+                with SqliteSaver.from_conn_string(str(root / "checkpoints.sqlite3")) as saver:
+                    saver.delete_thread(thread_id)
+                conversations().finish_delete(thread_id)
+            except (OSError, sqlite3.Error):
+                logger.exception("Conversation cleanup failed for thread %s", thread_id)
+                raise HTTPException(503, "conversation cleanup failed")
+            return {"thread_id": thread_id, "status": "deleted"}
+
+    @api.post("/api/conversations/{thread_id}/runs/stream")
+    def conversation_stream(thread_id: str, request: ChatQuestion) -> StreamingResponse:
+        with session_lock:
+            if conversations().get(thread_id) is None:
+                raise HTTPException(404, "conversation not found")
+        run_id, message_id = str(uuid.uuid4()), str(uuid.uuid4())
+
+        def encode(kind: str, payload: dict) -> str:
+            data = {"run_id": run_id, "message_id": message_id, "thread_id": thread_id, **payload}
+            return f"event: {kind}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
+
+        def events():
+            # Serialise turns and deletion on this single-process SQLite deployment.
+            with conversation_run_lock:
+                try:
+                    if conversations().get(thread_id) is None:
+                        yield encode("error", {"error_code": "conversation_not_found"})
+                        return
+                    with SqliteSaver.from_conn_string(str(root / "checkpoints.sqlite3")) as saver:
+                        session_agent = AgentRunner(
+                            agent_evidence, responder.generate,
+                            lambda raw, evidence: validated_answer(ModelAnswer.model_validate(raw), evidence),
+                            sources_current, plan_next=getattr(responder, "plan_next", None),
+                            extra_model_requests=int(extra_requests), checkpointer=saver)
+                        for kind, payload in session_agent.stream_run(request.question, run_id, thread_id):
+                            if kind == "stage":
+                                yield encode("stage", payload)
+                                continue
+                            if payload["status"] == "error":
+                                yield encode("error", {"error_code": payload["error_code"],
+                                                       "stop_reason": payload["stop_reason"]})
+                                return
+                            conversations().append_turn(thread_id, request.question, payload)
+                            if payload["status"] == "answered":
+                                answer = payload["answer"]
+                                for offset in range(0, len(answer), 80):
+                                    yield encode("token", {"text": answer[offset:offset + 80]})
+                                for citation in payload["citations"]:
+                                    yield encode("citation", {"citation": citation})
+                            yield encode("done", {"status": payload["status"],
+                                                  "stop_reason": payload["stop_reason"],
+                                                  "retrieval_stop_reason": payload["retrieval_stop_reason"],
+                                                  "answer": payload["answer"],
+                                                  "citation_ids": [item["chunk_id"] for item in payload["citations"]]})
+                            return
+                except (OSError, sqlite3.Error):
+                    logger.exception("Could not persist conversation turn for run %s", run_id)
+                    yield encode("error", {"error_code": "run_record_failed"})
+                except Exception:
+                    logger.exception("Conversation stream failed for run %s", run_id)
+                    yield encode("error", {"error_code": "stream_failed"})
+
+        return StreamingResponse(events(), media_type="text/event-stream",
+                                 headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
     @api.post("/api/agent/run", response_model=None)
     def agent_run(request: ChatQuestion) -> dict | JSONResponse:
